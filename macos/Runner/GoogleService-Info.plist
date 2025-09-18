@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCk6Z9A9Pk-oDgeKRxR3Ortzy7brYDz6Ls</string>
+	<key>GCM_SENDER_ID</key>
+	<string>74153425042</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.saferoute</string>
+	<key>PROJECT_ID</key>
+	<string>saferoute-11</string>
+	<key>STORAGE_BUCKET</key>
+	<string>saferoute-11.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:74153425042:ios:02eff83d8d10e056404e4b</string>
+	<key>DATABASE_URL</key>
+	<string>https://saferoute-11-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

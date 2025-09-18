@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "74153425042",
+    "firebase_url": "https://saferoute-11-default-rtdb.firebaseio.com",
+    "project_id": "saferoute-11",
+    "storage_bucket": "saferoute-11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74153425042:android:26c76fc659f4c111404e4b",
+        "android_client_info": {
+          "package_name": "com.example.saferoute"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBI07by9_dOumevc88ZBsIT_P1v3h47ia8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.saferoute"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
