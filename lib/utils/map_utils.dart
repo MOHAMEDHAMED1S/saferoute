@@ -4,8 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapUtils {
   // Default map configuration
-  static const LatLng defaultLocation = LatLng(24.7136, 46.6753); // Riyadh
-  static const double defaultZoom = 14.0;
+  static const LatLng defaultLocation = LatLng(30.0444, 31.2357); // Cairo, Egypt
+  static const double defaultZoom = 12.0;
   static const double minZoom = 8.0;
   static const double maxZoom = 20.0;
 
@@ -105,12 +105,12 @@ class MapUtils {
     return earthRadius * c;
   }
 
-  // Check if location is within Saudi Arabia bounds (approximate)
-  static bool isLocationInSaudiArabia(LatLng location) {
-    const double minLat = 16.0;
-    const double maxLat = 32.5;
-    const double minLng = 34.5;
-    const double maxLng = 55.7;
+  // Check if location is within Egypt bounds (approximate)
+  static bool isLocationInEgypt(LatLng location) {
+    const double minLat = 22.0;
+    const double maxLat = 31.7;
+    const double minLng = 25.0;
+    const double maxLng = 35.0;
 
     return location.latitude >= minLat &&
            location.latitude <= maxLat &&

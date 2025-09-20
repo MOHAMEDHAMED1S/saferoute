@@ -6,6 +6,7 @@ import '../../utils/map_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../models/report_model.dart';
+
 import 'widgets/map_widget.dart';
 import 'widgets/reports_bottom_sheet.dart';
 import 'widgets/filter_bottom_sheet.dart';
@@ -99,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             duration: const Duration(seconds: 4),
           ),
         );
-        // Set default location (Riyadh) if location fails
+        // Set default location (Cairo) if location fails
         setState(() {
           _currentPosition = null;
         });
@@ -310,11 +311,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_mapController != null && _currentPosition != null) {
       final latLng = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       
-      // Validate location is within Saudi Arabia bounds
-      if (!MapUtils.isLocationInSaudiArabia(latLng)) {
+      // Validate location is within Egypt bounds
+      if (!MapUtils.isLocationInEgypt(latLng)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('الموقع خارج حدود المملكة العربية السعودية'),
+            content: Text('الموقع خارج حدود جمهورية مصر العربية'),
             duration: Duration(seconds: 4),
           ),
         );
@@ -504,6 +505,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             )
           : null,
+
     );
   }
 }

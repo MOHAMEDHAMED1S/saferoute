@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+
 import '../../models/report_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -150,6 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           _buildStatsTab(),
         ],
       ),
+
     );
   }
 

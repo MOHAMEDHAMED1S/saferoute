@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
@@ -7,12 +8,14 @@ import 'providers/reports_provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/app_settings_provider.dart';
+import 'providers/dashboard_provider.dart';
 import 'services/firestore_service.dart';
 import 'services/location_service.dart';
 import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/reports/add_report_screen.dart';
 import 'screens/profile/profile_screen.dart';
 
@@ -45,12 +48,23 @@ class SafeRouteApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
         ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
           return MaterialApp(
             title: 'SafeRoute',
             debugShowCheckedModeBanner: false,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('ar', 'SA'), // Arabic
+              Locale('en', 'US'), // English
+            ],
+            locale: const Locale('ar', 'SA'),
             theme: ThemeData(
               primarySwatch: Colors.blue,
               primaryColor: const Color(0xFF4A90E2),
@@ -155,13 +169,14 @@ class SafeRouteApp extends StatelessWidget {
                 }
                 
                 return authProvider.isAuthenticated 
-                    ? const HomeScreen() 
+                    ? const DashboardScreen() 
                     : const LoginScreen();
               },
             ),
             routes: {
               '/login': (context) => const LoginScreen(),
               '/register': (context) => const RegisterScreen(),
+              '/dashboard': (context) => const DashboardScreen(),
               '/home': (context) => const HomeScreen(),
               '/add-report': (context) => const AddReportScreen(),
               '/profile': (context) => const ProfileScreen(),

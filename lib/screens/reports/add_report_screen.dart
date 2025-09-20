@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/report_model.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/common/bottom_navigation_widget.dart';
 
 class AddReportScreen extends StatefulWidget {
   static const String routeName = '/add-report';
@@ -233,6 +234,28 @@ class _AddReportScreenState extends State<AddReportScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigationWidget(
+        currentIndex: 2, // Add report tab index
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.of(context).pushReplacementNamed('/dashboard');
+              break;
+            case 1:
+              Navigator.of(context).pushReplacementNamed('/home');
+              break;
+            case 2:
+              // Already on add report screen
+              break;
+            case 3:
+              // Navigate to community screen
+              break;
+            case 4:
+              Navigator.of(context).pushReplacementNamed('/profile');
+              break;
+          }
+        },
       ),
     );
   }

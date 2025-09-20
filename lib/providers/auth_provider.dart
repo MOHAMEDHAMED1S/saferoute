@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -64,7 +65,10 @@ class AuthProvider extends ChangeNotifier {
       _clearError();
     }
     
-    notifyListeners();
+    // Use post frame callback to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   // Load user data from Firestore
@@ -344,17 +348,23 @@ class AuthProvider extends ChangeNotifier {
   // Helper methods
   void _setLoading(bool loading) {
     _isLoading = loading;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _setError(String error) {
     _errorMessage = error;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void _clearError() {
     _errorMessage = null;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   // Clear all data (for testing)

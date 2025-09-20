@@ -1,12 +1,28 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  late final GoogleSignIn? _googleSignIn;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  AuthService() {
+    // Initialize Google Sign-In safely for web
+    try {
+      if (kIsWeb) {
+        // Disable Google Sign-In for web temporarily to avoid errors
+        _googleSignIn = null;
+      } else {
+        _googleSignIn = GoogleSignIn();
+      }
+    } catch (e) {
+      print('Google Sign-In initialization failed: $e');
+      _googleSignIn = null;
+    }
+  }
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -75,9 +91,13 @@ class AuthService {
 
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
+    if (_googleSignIn == null) {
+      throw 'Google Sign-In غير متاح في هذه البيئة';
+    }
+    
     try {
       // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
       
       if (googleUser == null) {
         return null; // User cancelled the sign-in
@@ -116,10 +136,13 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      List<Future> signOutFutures = [_auth.signOut()];
+      
+      if (_googleSignIn != null) {
+        signOutFutures.add(_googleSignIn!.signOut());
+      }
+      
+      await Future.wait(signOutFutures);
     } catch (e) {
       throw 'حدث خطأ في تسجيل الخروج: ${e.toString()}';
     }

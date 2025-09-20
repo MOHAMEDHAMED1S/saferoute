@@ -134,11 +134,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Logo
                 Container(
                   height: 120,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/images/logo.png'),
-                      fit: BoxFit.contain,
-                    ),
+                  child: const Icon(
+                    Icons.security,
+                    size: 80,
+                    color: Color(0xFF4A90E2),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -217,10 +216,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Google Sign In Button
                 OutlinedButton.icon(
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: Image.asset(
-                    'assets/images/google_logo.png',
-                    height: 24,
-                    width: 24,
+                  icon: const Icon(
+                    Icons.login,
+                    size: 24,
+                    color: Color(0xFF4285F4),
                   ),
                   label: const Text(
                     'تسجيل الدخول بـ Google',
