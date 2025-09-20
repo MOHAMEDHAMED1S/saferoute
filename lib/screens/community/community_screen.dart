@@ -202,7 +202,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 title: 'البلاغات',
                 value: '24',
                 subtitle: 'هذا الشهر',
-                color: LiquidGlassTheme.primaryColor,
+                color: Colors.white,
               ),
             ),
             const SizedBox(width: 16),
@@ -250,7 +250,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             ),
             child: Icon(
               icon,
-              color: color,
+              color: Colors.white,
               size: 24,
             ),
           ),
@@ -260,7 +260,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 4),
@@ -340,7 +340,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             ),
             child: Icon(
               icon,
-              color: color,
+              color: Colors.white,
               size: 24,
             ),
           ),
@@ -394,31 +394,31 @@ class _CommunityScreenState extends State<CommunityScreen>
         Row(
           children: [
             Expanded(
-              child: _buildAchievementCard(
-                icon: '🏆',
-                title: 'مبلغ نشط',
-                description: '10 بلاغات',
-                isUnlocked: true,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildAchievementCard(
-                icon: '⭐',
-                title: 'نجم المجتمع',
-                description: '100 نقطة',
-                isUnlocked: true,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildAchievementCard(
-                icon: '🎯',
-                title: 'هدف الشهر',
-                description: '50 بلاغ',
-                isUnlocked: false,
-              ),
-            ),
+               child: _buildAchievementCard(
+                 icon: Icons.emoji_events,
+                 title: 'مبلغ نشط',
+                 description: '10 بلاغات',
+                 isUnlocked: true,
+               ),
+             ),
+             const SizedBox(width: 16),
+             Expanded(
+               child: _buildAchievementCard(
+                 icon: Icons.star,
+                 title: 'نجم المجتمع',
+                 description: '100 نقطة',
+                 isUnlocked: true,
+               ),
+             ),
+             const SizedBox(width: 16),
+             Expanded(
+               child: _buildAchievementCard(
+                 icon: Icons.track_changes,
+                 title: 'هدف الشهر',
+                 description: '50 بلاغ',
+                 isUnlocked: false,
+               ),
+             ),
           ],
         ),
       ],
@@ -426,22 +426,32 @@ class _CommunityScreenState extends State<CommunityScreen>
   }
 
   Widget _buildAchievementCard({
-    required String icon,
-    required String title,
-    required String description,
-    required bool isUnlocked,
-  }) {
-    return LiquidGlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Text(
-            icon,
-            style: TextStyle(
-              fontSize: 32,
-              color: isUnlocked ? null : Colors.grey,
-            ),
-          ),
+     required IconData icon,
+     required String title,
+     required String description,
+     required bool isUnlocked,
+   }) {
+     return LiquidGlassContainer(
+       type: LiquidGlassType.secondary,
+       padding: const EdgeInsets.all(16),
+       child: Column(
+         children: [
+           Container(
+             padding: const EdgeInsets.all(8),
+             decoration: BoxDecoration(
+               color: isUnlocked 
+                   ? LiquidGlassTheme.primaryColor.withOpacity(0.1)
+                   : Colors.grey.withOpacity(0.1),
+               borderRadius: BorderRadius.circular(12),
+             ),
+             child: Icon(
+               icon,
+               size: 24,
+               color: isUnlocked 
+                   ? Colors.white
+                   : Colors.grey,
+             ),
+           ),
           const SizedBox(height: 8),
           Text(
             title,
@@ -479,79 +489,84 @@ class _CommunityScreenState extends State<CommunityScreen>
         ),
         const SizedBox(height: 16),
         _buildLeaderboardItem(
-          rank: 1,
-          name: 'أحمد محمد',
-          points: 2450,
-          avatar: '👨',
-          isCurrentUser: false,
-        ),
-        const SizedBox(height: 12),
-        _buildLeaderboardItem(
-          rank: 2,
-          name: 'فاطمة علي',
-          points: 2100,
-          avatar: '👩',
-          isCurrentUser: false,
-        ),
-        const SizedBox(height: 12),
-        _buildLeaderboardItem(
-          rank: 3,
-          name: 'محمد سالم',
-          points: 1890,
-          avatar: '👨',
-          isCurrentUser: false,
-        ),
-        const SizedBox(height: 12),
-        _buildLeaderboardItem(
-          rank: 12,
-          name: 'أنت',
-          points: 1250,
-          avatar: '👤',
-          isCurrentUser: true,
-        ),
+           rank: 1,
+           name: 'أحمد محمد',
+           points: 2450,
+           isCurrentUser: false,
+         ),
+         const SizedBox(height: 12),
+         _buildLeaderboardItem(
+           rank: 2,
+           name: 'فاطمة علي',
+           points: 2100,
+           isCurrentUser: false,
+         ),
+         const SizedBox(height: 12),
+         _buildLeaderboardItem(
+           rank: 3,
+           name: 'محمد سالم',
+           points: 1890,
+           isCurrentUser: false,
+         ),
+         const SizedBox(height: 12),
+         _buildLeaderboardItem(
+           rank: 12,
+           name: 'أنت',
+           points: 1250,
+           isCurrentUser: true,
+         ),
       ],
     );
   }
 
   Widget _buildLeaderboardItem({
-    required int rank,
-    required String name,
-    required int points,
-    required String avatar,
-    required bool isCurrentUser,
-  }) {
-    return LiquidGlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isCurrentUser 
-                  ? LiquidGlassTheme.primaryColor.withOpacity(0.1)
-                  : LiquidGlassTheme.accentColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Center(
-              child: Text(
-                '#$rank',
-                style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: isCurrentUser 
-                      ? LiquidGlassTheme.primaryColor
-                      : LiquidGlassTheme.accentColor,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            avatar,
-            style: const TextStyle(fontSize: 24),
-          ),
-          const SizedBox(width: 12),
+     required int rank,
+     required String name,
+     required int points,
+     required bool isCurrentUser,
+   }) {
+     return LiquidGlassContainer(
+       type: LiquidGlassType.secondary,
+       padding: const EdgeInsets.all(16),
+       child: Row(
+         children: [
+           Container(
+             width: 40,
+             height: 40,
+             decoration: BoxDecoration(
+               color: isCurrentUser 
+                   ? LiquidGlassTheme.primaryColor.withOpacity(0.1)
+                   : LiquidGlassTheme.accentColor.withOpacity(0.1),
+               borderRadius: BorderRadius.circular(20),
+             ),
+             child: Center(
+               child: Text(
+                 '#$rank',
+                 style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                   fontSize: 14,
+                   fontWeight: FontWeight.bold,
+                   color: isCurrentUser 
+                       ? Colors.white
+                       : Colors.white,
+                 ),
+               ),
+             ),
+           ),
+           const SizedBox(width: 16),
+           Container(
+             width: 40,
+             height: 40,
+             decoration: BoxDecoration(
+               color: LiquidGlassTheme.primaryColor.withOpacity(0.1),
+               borderRadius: BorderRadius.circular(20),
+             ),
+             child: Icon(
+               Icons.person,
+               color: LiquidGlassTheme.primaryColor,
+               size: 20,
+             ),
+           ),
+           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,7 +576,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: isCurrentUser ? LiquidGlassTheme.primaryColor : null,
+                    color: isCurrentUser ? Colors.white : null,
                   ),
                 ),
                 Text(
@@ -574,10 +589,26 @@ class _CommunityScreenState extends State<CommunityScreen>
             ),
           ),
           if (rank <= 3)
-            Text(
-              rank == 1 ? '🥇' : rank == 2 ? '🥈' : '🥉',
-              style: const TextStyle(fontSize: 24),
-            ),
+             Container(
+               padding: const EdgeInsets.all(6),
+               decoration: BoxDecoration(
+                 color: rank == 1 
+                     ? Colors.amber.withOpacity(0.2)
+                     : rank == 2 
+                         ? Colors.grey.withOpacity(0.2)
+                         : Colors.orange.withOpacity(0.2),
+                 borderRadius: BorderRadius.circular(12),
+               ),
+               child: Icon(
+                 Icons.emoji_events,
+                 color: rank == 1 
+                     ? Colors.amber
+                     : rank == 2 
+                         ? Colors.grey[600]
+                         : Colors.orange,
+                 size: 20,
+               ),
+             ),
         ],
       ),
     );

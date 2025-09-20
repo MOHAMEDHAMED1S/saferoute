@@ -97,7 +97,10 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    // Only dispose controller if map is ready to avoid Google Maps Flutter Web error
+    if (_isMapReady && _controller != null) {
+      _controller!.dispose();
+    }
     super.dispose();
   }
 }
