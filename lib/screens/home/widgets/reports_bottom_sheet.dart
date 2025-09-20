@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/liquid_glass_theme.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/reports_provider.dart';
 import '../../../models/report_model.dart';
@@ -70,7 +71,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
             GestureDetector(
               onTap: _closeSheet,
               child: Container(
-                color: Colors.black.withOpacity(_fadeAnimation.value),
+                color: LiquidGlassTheme.getGradientByName('shadow').colors.first.withOpacity(_fadeAnimation.value),
                 width: double.infinity,
                 height: double.infinity,
               ),
@@ -97,7 +98,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.3),
+                          color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -110,7 +111,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                             Expanded(
                               child: Text(
                                 'البلاغات القريبة',
-                                style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                                style: LiquidGlassTheme.headerTextStyle.copyWith(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -120,7 +121,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                               onPressed: _closeSheet,
                               icon: Icon(
                                 Icons.close,
-                                color: LiquidGlassTheme.secondaryTextStyle.color,
+                                color: LiquidGlassTheme.getTextColor('secondary'),
                               ),
                             ),
                           ],
@@ -134,7 +135,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                             if (reportsProvider.isLoading) {
                               return Center(
                                 child: CircularProgressIndicator(
-                                  color: LiquidGlassTheme.adaptiveTextColor,
+                                  color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               );
                             }
@@ -147,12 +148,12 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     Icon(
                                       Icons.error_outline,
                                       size: 48,
-                                      color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
+                                      color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.6),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       reportsProvider.errorMessage!,
-                                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
                                         fontSize: 16,
                                       ),
                                       textAlign: TextAlign.center,
@@ -187,7 +188,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     const SizedBox(height: 16),
                                     Text(
                                       'لا توجد بلاغات قريبة',
-                                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
                                         fontSize: 16,
                                       ),
                                     ),
@@ -248,7 +249,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                   children: [
                     Text(
                       _getReportTypeTitle(report.type),
-                      style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                      style: LiquidGlassTheme.headerTextStyle.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -256,7 +257,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                     const SizedBox(height: 4),
                     Text(
                       _formatDateTime(report.createdAt),
-                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
                         fontSize: 12,
                       ),
                     ),
@@ -275,7 +276,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
           const SizedBox(height: 12),
           Text(
             report.description,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 14,
               height: 1.4,
             ),
@@ -286,7 +287,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               Icon(
                 Icons.thumb_up_outlined,
                 size: 16,
-                color: Colors.grey[600],
+                color: LiquidGlassTheme.getTextColor('secondary'),
               ),
               const SizedBox(width: 4),
               Text(
@@ -299,7 +300,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               Icon(
                 Icons.thumb_down_outlined,
                 size: 16,
-                color: Colors.grey[600],
+                color: LiquidGlassTheme.getTextColor('secondary'),
               ),
               const SizedBox(width: 4),
               Text(
@@ -335,17 +336,17 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
   Color _getReportColor(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return Colors.red;
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
       case ReportType.jam:
-        return Colors.orange;
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
       case ReportType.carBreakdown:
-        return Colors.blue;
+        return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportType.bump:
-        return Colors.amber;
+        return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
-        return Colors.purple;
+        return LiquidGlassTheme.getGradientByName('primary').colors.first;
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 

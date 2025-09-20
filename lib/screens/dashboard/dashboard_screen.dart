@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/add_report_screen.dart';
+import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/dashboard_models.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
@@ -27,7 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const DashboardHomeWidget(),
     const HomeScreen(),
     const AddReportScreen(),
-    const Center(child: Text('المجتمع', style: TextStyle(fontSize: 24))),
+    const CommunityScreen(),
     const ProfileScreen(),
   ];
 
@@ -35,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationWidget(
         currentIndex: _currentIndex,
@@ -70,7 +71,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       body: SafeArea(
         child: Consumer<DashboardProvider>(
           builder: (context, dashboardProvider, child) {
@@ -131,9 +132,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             type: LiquidGlassType.secondary,
             padding: const EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(16),
-            child: const Icon(
+            child: Icon(
               Icons.shield,
-              color: Colors.white,
+              color: LiquidGlassTheme.getIconColor('primary'),
               size: 28,
             ),
           ),
@@ -141,7 +142,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
           Expanded(
             child: Text(
               'سلامة السائقين',
-              style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
@@ -154,9 +155,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             borderRadius: BorderRadius.circular(12),
             child: Stack(
               children: [
-                const Icon(
+                Icon(
                   Icons.notifications_outlined,
-                  color: Colors.white,
+                  color: LiquidGlassTheme.getTextColor('primary'),
                   size: 24,
                 ),
                 Positioned(
@@ -165,22 +166,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFE53935), Color(0xFFD32F2F)],
+                      gradient: LinearGradient(
+                        colors: LiquidGlassTheme.getGradientByName('danger').colors,
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFE53935).withOpacity(0.5),
+                          color: LiquidGlassTheme.getGradientByName('danger').colors.first.withOpacity(0.5),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Text(
+                    child: Text(
                       '3',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: LiquidGlassTheme.getIconColor('primary'),
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -196,9 +197,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             isInteractive: true,
             padding: const EdgeInsets.all(8),
             borderRadius: BorderRadius.circular(12),
-            child: const Icon(
+            child: Icon(
               Icons.settings_outlined,
-              color: Colors.white,
+              color: LiquidGlassTheme.getTextColor('primary'),
               size: 24,
             ),
           ),
@@ -224,10 +225,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 children: [
                   Text(
                     'مرحباً زياد! 👋',
-                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: LiquidGlassTheme.headerTextStyle.copyWith(
+          fontSize: 26,
+          fontWeight: FontWeight.w800,
+        ),
                   ),
                   const Spacer(),
                   LiquidGlassContainer(
@@ -244,8 +245,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                         const SizedBox(width: 6),
                         Text(
                           '${weather.temperature}°',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: LiquidGlassTheme.getTextColor('primary'),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -257,20 +258,20 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
           const SizedBox(height: 12),
           Text(
             '${timeFormat.format(now)} • ${dateFormat.format(now)}',
-            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.directions_car, color: Colors.white, size: 22),
+              Icon(Icons.directions_car, color: LiquidGlassTheme.getIconColor('primary'), size: 22),
               const SizedBox(width: 10),
               Text(
                 'رحلة آمنة اليوم • ${weather.drivingCondition}',
-                style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                  fontSize: 16,
-                ),
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+          fontSize: 16,
+        ),
               ),
             ],
           ),
@@ -290,8 +291,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               '${stats.nearbyRisks}',
               'في دائرة 2 كم',
               Icons.warning,
-              const Color(0xFFFFEBEE),
-              const Color(0xFFE53935),
+              LiquidGlassTheme.getGradientByName('danger').colors.first.withOpacity(0.1),
+                LiquidGlassTheme.getGradientByName('danger').colors.first,
             ),
           ),
           const SizedBox(width: 12),
@@ -301,8 +302,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               '${stats.trustPoints}',
               stats.trustLevel,
               Icons.star,
-              const Color(0xFFE8F5E8),
-              const Color(0xFF4CAF50),
+              LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.1),
+                LiquidGlassTheme.getGradientByName('success').colors.first,
             ),
           ),
           const SizedBox(width: 12),
@@ -312,8 +313,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               '${stats.monthlyReports}',
               'هذا الشهر',
               Icons.report,
-              const Color(0xFFE3F2FD),
-              const Color(0xFF2196F3),
+              LiquidGlassTheme.getGradientByName('info').colors.first.withOpacity(0.1),
+                LiquidGlassTheme.getGradientByName('info').colors.first,
             ),
           ),
         ],
@@ -330,34 +331,39 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
       borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
-          LiquidGlassContainer(
-            type: LiquidGlassType.secondary,
+          Container(
             padding: const EdgeInsets.all(8),
-            borderRadius: BorderRadius.circular(12),
-            child: Icon(icon, color: Colors.white, size: 26),
+            decoration: BoxDecoration(
+              color: bgColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 26),
           ),
           const SizedBox(height: 12),
           Text(
             value,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 22,
               fontWeight: FontWeight.w700,
+              color: LiquidGlassTheme.primaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             title,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w600,
+              color: LiquidGlassTheme.primaryTextColor,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(
               fontSize: 11,
+              color: LiquidGlassTheme.secondaryTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -377,10 +383,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
         children: [
           Text(
             'الإجراءات السريعة',
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -389,7 +395,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 child: _buildActionButton(
                   'إبلاغ سريع',
                   Icons.report_problem,
-                  const Color(0xFFE53935),
+                  LiquidGlassTheme.getGradientByName('danger').colors.first,
                   () {
                     Navigator.pushNamed(context, AddReportScreen.routeName);
                   },
@@ -400,7 +406,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 child: _buildActionButton(
                   'عرض الخريطة',
                   Icons.map,
-                  const Color(0xFF2196F3),
+                  LiquidGlassTheme.getGradientByName('info').colors.first,
                   () {
                     Navigator.pushNamed(context, HomeScreen.routeName);
                   },
@@ -415,7 +421,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 child: _buildActionButton(
                   'إحصائياتي',
                   Icons.bar_chart,
-                  const Color(0xFF4CAF50),
+                  LiquidGlassTheme.getGradientByName('success').colors.first,
                   () {},
                 ),
               ),
@@ -424,7 +430,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 child: _buildActionButton(
                   'المجتمع',
                   Icons.people,
-                  const Color(0xFF9C27B0),
+                  LiquidGlassTheme.getGradientByName('warning').colors.first,
                   () {},
                 ),
               ),
@@ -439,24 +445,27 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     return GestureDetector(
       onTap: onTap,
       child: LiquidGlassContainer(
-        type: LiquidGlassType.secondary,
+        type: LiquidGlassType.ultraLight,
         borderRadius: BorderRadius.circular(16),
         padding: const EdgeInsets.all(22),
         child: Column(
           children: [
-            LiquidGlassContainer(
-              type: LiquidGlassType.primary,
-              padding: const EdgeInsets.all(10),
-              borderRadius: BorderRadius.circular(12),
-              child: Icon(icon, color: Colors.white, size: 28),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 12),
             Text(
                 title,
-                style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: LiquidGlassTheme.primaryTextColor,
+            ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -476,10 +485,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
         children: [
           Text(
             'ماذا يحدث حولك؟',
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
           ),
           const SizedBox(height: 16),
           ...reports.map((report) => Padding(
@@ -512,7 +521,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             type: LiquidGlassType.primary,
             padding: const EdgeInsets.all(10),
             borderRadius: BorderRadius.circular(12),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(icon, color: LiquidGlassTheme.getIconColor('primary'), size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -521,17 +530,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               children: [
                 Text(
                   title,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '$distance • $time',
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
-                    fontSize: 13,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                fontSize: 13,
+              ),
                 ),
               ],
             ),
@@ -543,18 +552,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.check_circle,
-                  color: Colors.white,
+                  color: LiquidGlassTheme.getTextColor('primary'),
                   size: 18,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '$confirmations',
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
                 ),
               ],
             ),
@@ -577,9 +586,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             type: LiquidGlassType.primary,
             padding: const EdgeInsets.all(12),
             borderRadius: BorderRadius.circular(14),
-            child: const Icon(
+            child: Icon(
               Icons.lightbulb,
-              color: Colors.white,
+              color: LiquidGlassTheme.getTextColor('primary'),
               size: 26,
             ),
           ),
@@ -590,17 +599,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               children: [
                 Text(
                   tip.title,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   tip.content,
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
-                    fontSize: 14,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                fontSize: 14,
+              ),
                 ),
               ],
             ),
@@ -616,19 +625,19 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     
     switch (alert.severity) {
       case AlertSeverity.low:
-        alertColor = Colors.yellow;
+        alertColor = LiquidGlassTheme.getGradientByName('warning').colors.first;
         alertIcon = Icons.info;
         break;
       case AlertSeverity.medium:
-        alertColor = Colors.orange;
+        alertColor = LiquidGlassTheme.getGradientByName('warning').colors.last;
         alertIcon = Icons.warning;
         break;
       case AlertSeverity.high:
-        alertColor = Colors.red;
+        alertColor = LiquidGlassTheme.getGradientByName('danger').colors.first;
         alertIcon = Icons.error;
         break;
       case AlertSeverity.critical:
-        alertColor = Colors.red.shade900;
+        alertColor = LiquidGlassTheme.getGradientByName('danger').colors.last;
         alertIcon = Icons.dangerous;
         break;
     }
@@ -647,7 +656,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             borderRadius: BorderRadius.circular(14),
             child: Icon(
               alertIcon,
-              color: Colors.white,
+              color: LiquidGlassTheme.getTextColor('primary'),
               size: 28,
             ),
           ),
@@ -658,24 +667,24 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               children: [
                 Text(
                   'تنبيه طوارئ',
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   alert.message,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 15,
-                  ),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 15,
+              ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${alert.location} • ${alert.distanceText}',
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
-                    fontSize: 13,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                fontSize: 13,
+              ),
                 ),
               ],
             ),

@@ -30,19 +30,19 @@ class LiquidGlassContainer extends StatelessWidget {
     
     switch (type) {
       case LiquidGlassType.primary:
-        decoration = LiquidGlassTheme.primaryGlassDecoration;
+        decoration = LiquidGlassTheme.headerCardDecoration;
         break;
       case LiquidGlassType.secondary:
-        decoration = LiquidGlassTheme.secondaryGlassDecoration;
+        decoration = LiquidGlassTheme.welcomeCardDecoration;
         break;
       case LiquidGlassType.toolbar:
-        decoration = LiquidGlassTheme.toolbarGlassDecoration;
+        decoration = LiquidGlassTheme.bottomNavDecoration;
         break;
       case LiquidGlassType.ultraLight:
-        decoration = LiquidGlassTheme.ultraLightGlassDecoration;
+        decoration = LiquidGlassTheme.settingsCardDecoration;
         break;
       case LiquidGlassType.adaptive:
-        decoration = LiquidGlassTheme.adaptiveDecoration;
+        decoration = LiquidGlassTheme.headerCardDecoration;
         break;
     }
     
@@ -202,14 +202,14 @@ class LiquidGlassButton extends StatelessWidget {
             if (icon != null) ...[
               Icon(
                 icon,
-                color: LiquidGlassTheme.adaptiveTextColor,
+                color: LiquidGlassTheme.getTextColor('primary'),
                 size: 20,
               ),
               const SizedBox(width: 8),
             ],
             Text(
               text,
-              style: LiquidGlassTheme.primaryTextStyle,
+              style: LiquidGlassTheme.headerTextStyle,
             ),
           ],
         ),
@@ -275,11 +275,11 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: LiquidGlassTheme.toolbarGlassDecoration,
+      decoration: LiquidGlassTheme.bottomNavDecoration,
       child: AppBar(
         title: Text(
           title,
-          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+          style: LiquidGlassTheme.headerTextStyle.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -289,8 +289,8 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: elevation,
         leading: leading,
         actions: actions,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
+        iconTheme: IconThemeData(
+          color: LiquidGlassTheme.getIconColor('primary'),
         ),
       ),
     );
@@ -336,17 +336,17 @@ class LiquidGlassTextField extends StatelessWidget {
         keyboardType: keyboardType,
         onChanged: onChanged,
         validator: validator,
-        style: LiquidGlassTheme.primaryTextStyle,
+        style: LiquidGlassTheme.headerTextStyle,
         decoration: InputDecoration(
           hintText: hintText,
           labelText: labelText,
-          hintStyle: LiquidGlassTheme.captionTextStyle,
-          labelStyle: LiquidGlassTheme.secondaryTextStyle,
+          hintStyle: LiquidGlassTheme.subtitleTextStyle,
+          labelStyle: LiquidGlassTheme.bodyTextStyle,
           border: InputBorder.none,
           prefixIcon: prefixIcon,
           suffixIcon: suffixIcon,
-          prefixIconColor: LiquidGlassTheme.adaptiveTextColor,
-          suffixIconColor: LiquidGlassTheme.adaptiveTextColor,
+          prefixIconColor: LiquidGlassTheme.getTextColor('secondary'),
+          suffixIconColor: LiquidGlassTheme.getTextColor('secondary'),
         ),
       ),
     );
@@ -414,7 +414,7 @@ class _LiquidGlassLoadingIndicatorState extends State<LiquidGlassLoadingIndicato
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    widget.color ?? LiquidGlassTheme.adaptiveTextColor,
+                    widget.color ?? LiquidGlassTheme.getTextColor('primary'),
                   ),
                 ),
               ),

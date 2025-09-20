@@ -77,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -87,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: LiquidGlassTheme.getGradientByName('success').colors.first,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -101,13 +101,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       appBar: AppBar(
         title: Text(
           'الملف الشخصي',
-          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+          style: LiquidGlassTheme.headerTextStyle.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: LiquidGlassTheme.primaryTextStyle.color),
+        iconTheme: IconThemeData(color: LiquidGlassTheme.getTextColor('primary')),
         actions: [
           if (_isEditing)
             LiquidGlassButton(
@@ -135,9 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: LiquidGlassTheme.secondaryTextStyle.color,
-          indicatorColor: Colors.white,
+          labelColor: LiquidGlassTheme.getTextColor('primary'),
+          unselectedLabelColor: LiquidGlassTheme.getTextColor('secondary'),
+          indicatorColor: LiquidGlassTheme.getIconColor('primary'),
           tabs: const [
             Tab(text: 'المعلومات'),
             Tab(text: 'بلاغاتي'),
@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Icon(
                   Icons.person,
                   size: 60,
-                  color: Colors.white,
+                  color: LiquidGlassTheme.getIconColor('primary'),
                 ),
               ),
               
@@ -264,12 +264,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Icon(
                   Icons.report_outlined,
                   size: 64,
-                  color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
+                  color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.6),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد بلاغات',
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 18,
                   ),
                 ),
@@ -302,13 +302,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _buildStatCard('إجمالي البلاغات', totalReports.toString(), Icons.report, LiquidGlassTheme.adaptiveTextColor),
+              _buildStatCard('إجمالي البلاغات', totalReports.toString(), Icons.report, LiquidGlassTheme.getTextColor('primary')),
               const SizedBox(height: 16),
-              _buildStatCard('البلاغات النشطة', activeReports.toString(), Icons.check_circle, Colors.green),
+              _buildStatCard('البلاغات النشطة', activeReports.toString(), Icons.check_circle, LiquidGlassTheme.getGradientByName('success').colors.first),
               const SizedBox(height: 16),
-              _buildStatCard('البلاغات المؤكدة', confirmedReports.toString(), Icons.verified, Colors.orange),
+              _buildStatCard('البلاغات المؤكدة', confirmedReports.toString(), Icons.verified, LiquidGlassTheme.getGradientByName('warning').colors.first),
               const SizedBox(height: 16),
-              _buildStatCard('معدل التأكيد', '${totalReports > 0 ? ((confirmedReports / totalReports) * 100).toStringAsFixed(1) : '0'}%', Icons.trending_up, Colors.purple),
+              _buildStatCard('معدل التأكيد', '${totalReports > 0 ? ((confirmedReports / totalReports) * 100).toStringAsFixed(1) : '0'}%', Icons.trending_up, LiquidGlassTheme.getGradientByName('info').colors.first),
             ],
           ),
         );
@@ -324,7 +324,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 100,
           child: Text(
             label,
-            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -333,7 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         Expanded(
           child: Text(
             value,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -364,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Expanded(
                 child: Text(
                   _getReportTypeTitle(report.type),
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -390,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           const SizedBox(height: 12),
           Text(
             report.description,
-            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(
               fontSize: 14,
             ),
             maxLines: 2,
@@ -402,12 +402,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               Icon(
                 Icons.access_time,
                 size: 14,
-                color: LiquidGlassTheme.secondaryTextStyle.color,
+                color: LiquidGlassTheme.getTextColor('secondary'),
               ),
               const SizedBox(width: 4),
               Text(
                 _formatDate(report.createdAt),
-                style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                style: LiquidGlassTheme.bodyTextStyle.copyWith(
                   fontSize: 12,
                 ),
               ),
@@ -417,28 +417,28 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Icon(
                     Icons.thumb_up,
                     size: 14,
-                    color: Colors.green[600],
+                    color: LiquidGlassTheme.getGradientByName('success').colors.first,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     report.confirmations.trueVotes.toString(),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.green[600],
+                      color: LiquidGlassTheme.getGradientByName('success').colors.first,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Icon(
                     Icons.thumb_down,
                     size: 14,
-                    color: Colors.red[600],
+                    color: LiquidGlassTheme.getGradientByName('danger').colors.first,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     report.confirmations.falseVotes.toString(),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.red[600],
+                      color: LiquidGlassTheme.getGradientByName('danger').colors.first,
                     ),
                   ),
                 ],
@@ -464,7 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             padding: const EdgeInsets.all(12),
             child: Icon(
               icon,
-              color: Colors.white,
+              color: LiquidGlassTheme.getTextColor('primary'),
               size: 24,
             ),
           ),
@@ -475,14 +475,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 Text(
                   title,
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   value,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -519,17 +519,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   Color _getReportColor(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return Colors.red;
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
       case ReportType.jam:
-        return Colors.orange;
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
       case ReportType.carBreakdown:
-        return Colors.blue;
+        return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportType.bump:
-        return Colors.amber;
+        return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
-        return Colors.purple;
+        return LiquidGlassTheme.getGradientByName('primary').colors.first;
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 
@@ -553,13 +553,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   Color _getStatusColor(ReportStatus status) {
     switch (status) {
       case ReportStatus.active:
-        return Colors.green;
+        return LiquidGlassTheme.getGradientByName('success').colors.first;
       case ReportStatus.removed:
-        return Colors.blue;
+        return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportStatus.expired:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 

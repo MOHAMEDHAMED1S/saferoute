@@ -53,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
-              backgroundColor: Colors.red,
+              backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
               duration: const Duration(seconds: 4),
             ),
           );
@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تسجيل الدخول: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
-              backgroundColor: Colors.red,
+              backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
               duration: const Duration(seconds: 4),
             ),
           );
@@ -106,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تسجيل الدخول بـ Google: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -139,14 +139,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Icon(
                     Icons.security,
                     size: 80,
-                    color: LiquidGlassTheme.adaptiveTextColor,
+                    color: LiquidGlassTheme.getTextColor('primary'),
                   ),
                 ),
                 const SizedBox(height: 40),
                 // Title
                 Text(
                   'مرحباً بك',
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                   ),
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'سجل دخولك للمتابعة',
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 16,
                   ),
                   textAlign: TextAlign.center,
@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'أو',
-                        style: LiquidGlassTheme.secondaryTextStyle,
+                        style: LiquidGlassTheme.bodyTextStyle,
                       ),
                     ),
                     const Expanded(child: Divider()),
@@ -233,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Text(
                     'نسيت كلمة المرور؟',
                     style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                      color: LiquidGlassTheme.adaptiveTextColor,
+                      color: LiquidGlassTheme.getTextColor('primary'),
                       fontSize: 16,
                     ),
                   ),
@@ -245,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(
                       'ليس لديك حساب؟ ',
-                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
                         fontSize: 16,
                       ),
                     ),
@@ -255,8 +255,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       child: Text(
                         'إنشاء حساب',
-                        style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                          color: LiquidGlassTheme.adaptiveTextColor,
+                        style: LiquidGlassTheme.headerTextStyle.copyWith(
+          color: LiquidGlassTheme.getTextColor('primary'),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

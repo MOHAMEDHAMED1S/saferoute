@@ -84,7 +84,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -94,7 +94,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: LiquidGlassTheme.getGradientByName('success').colors.first,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -107,14 +107,14 @@ class _AddReportScreenState extends State<AddReportScreen> {
       appBar: AppBar(
         title: Text(
           'إضافة بلاغ جديد',
-          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+          style: LiquidGlassTheme.headerTextStyle.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: LiquidGlassTheme.primaryTextStyle.color),
+        iconTheme: IconThemeData(color: LiquidGlassTheme.getTextColor('primary')),
       ),
       body: Form(
         key: _formKey,
@@ -126,7 +126,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
               // Report Type Selection
               Text(
                 'نوع البلاغ',
-                style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -185,7 +185,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
                   children: [
                     Icon(
                       Icons.location_on,
-                      color: LiquidGlassTheme.adaptiveTextColor,
+                      color: LiquidGlassTheme.getTextColor('primary'),
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -203,7 +203,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'سيتم استخدام موقعك الحالي للبلاغ',
-                            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                            style: LiquidGlassTheme.bodyTextStyle.copyWith(
                               fontSize: 12,
                             ),
                           ),
@@ -279,18 +279,18 @@ class _AddReportScreenState extends State<AddReportScreen> {
                 Icon(
                   _getReportIcon(type),
                   size: 24,
-                  color: isSelected ? Colors.white : _getReportColor(type),
+                  color: isSelected ? LiquidGlassTheme.getIconColor('primary') : _getReportColor(type),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _getReportTypeTitle(type),
                   style: isSelected 
-                    ? LiquidGlassTheme.primaryTextStyle.copyWith(
+                    ? LiquidGlassTheme.headerTextStyle.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: LiquidGlassTheme.getIconColor('primary'),
                       )
-                    : LiquidGlassTheme.primaryTextStyle.copyWith(
+                    : LiquidGlassTheme.headerTextStyle.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -318,12 +318,12 @@ class _AddReportScreenState extends State<AddReportScreen> {
             Icon(
               Icons.camera_alt,
               size: 32,
-              color: LiquidGlassTheme.secondaryTextStyle.color,
+              color: LiquidGlassTheme.getTextColor('secondary'),
             ),
             const SizedBox(height: 8),
             Text(
               'اضغط لإضافة صورة',
-              style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+              style: LiquidGlassTheme.bodyTextStyle.copyWith(
                 fontSize: 14,
               ),
             ),
@@ -353,17 +353,17 @@ class _AddReportScreenState extends State<AddReportScreen> {
   Color _getReportColor(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return Colors.red;
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
       case ReportType.jam:
-        return Colors.orange;
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
       case ReportType.carBreakdown:
-        return Colors.blue;
+        return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportType.bump:
-        return Colors.amber;
+        return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
-        return Colors.purple;
+        return LiquidGlassTheme.getGradientByName('primary').colors.first;
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 

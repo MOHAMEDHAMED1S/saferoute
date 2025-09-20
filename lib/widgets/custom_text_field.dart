@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/liquid_glass_theme.dart';
 import 'package:flutter/services.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -122,15 +123,15 @@ class CustomTextField extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: LiquidGlassTheme.getGradientByName('danger').colors.first,
                 width: 1,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: const BorderSide(
-                color: Colors.red,
+              borderSide: BorderSide(
+                color: LiquidGlassTheme.getGradientByName('danger').colors.first,
                 width: 2,
               ),
             ),

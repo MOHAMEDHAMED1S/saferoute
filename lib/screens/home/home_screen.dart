@@ -98,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تحديد الموقع: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تحميل البلاغات: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
           ),
         );
       }
@@ -211,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(12),
                   child: Icon(
                     _getReportIcon(report.type),
-                    color: Colors.white,
+                    color: LiquidGlassTheme.getIconColor('primary'),
                     size: 24,
                   ),
                 ),
@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Expanded(
                   child: Text(
                     _getReportTypeTitle(report.type),
-                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                    style: LiquidGlassTheme.headerTextStyle.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -239,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             const SizedBox(height: 16),
             Text(
               report.description,
-              style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
                 fontSize: 16,
               ),
             ),
@@ -249,12 +249,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Icon(
                   Icons.access_time,
                   size: 16,
-                  color: LiquidGlassTheme.secondaryTextStyle.color,
+                  color: LiquidGlassTheme.getTextColor('secondary'),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _formatDateTime(report.createdAt),
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 14,
                   ),
                 ),
@@ -287,17 +287,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Color _getReportColor(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return Colors.red;
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
       case ReportType.jam:
-        return Colors.orange;
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
       case ReportType.carBreakdown:
-        return Colors.blue;
+        return LiquidGlassTheme.getIconColor('primary');
       case ReportType.bump:
-        return Colors.amber;
+        return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
-        return Colors.purple;
+        return LiquidGlassTheme.getIconColor('secondary');
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 
@@ -392,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ? NetworkImage(authProvider.userModel!.photoUrl!)
                               : null,
                           child: authProvider.userModel?.photoUrl == null
-                              ? const Icon(Icons.person, color: Colors.white)
+                              ? Icon(Icons.person, color: LiquidGlassTheme.getIconColor('primary'))
                               : null,
                         );
                       },
@@ -417,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         Text(
                           'ابق آمناً على الطريق',
-                          style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                          style: LiquidGlassTheme.bodyTextStyle.copyWith(
                             fontSize: 12,
                           ),
                         ),

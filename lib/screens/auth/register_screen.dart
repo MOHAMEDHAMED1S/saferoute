@@ -43,9 +43,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('يجب الموافقة على الشروط والأحكام'),
-          backgroundColor: Colors.red,
+          backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
         ),
       );
       return;
@@ -72,7 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في إنشاء الحساب: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
           ),
         );
       }
@@ -95,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
-            color: LiquidGlassTheme.adaptiveTextColor,
+            color: LiquidGlassTheme.getTextColor('primary'),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -111,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Title
                 Text(
                   'إنشاء حساب جديد',
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -120,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'أدخل بياناتك لإنشاء حساب جديد',
-                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 16,
                   ),
                   textAlign: TextAlign.center,
@@ -208,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _acceptTerms = value ?? false;
                         });
                       },
-                      activeColor: LiquidGlassTheme.adaptiveTextColor,
+                      activeColor: LiquidGlassTheme.getTextColor('primary'),
                     ),
                     Expanded(
                       child: GestureDetector(
@@ -219,7 +219,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         },
                         child: Text(
                           'أوافق على الشروط والأحكام وسياسة الخصوصية',
-                          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                          style: LiquidGlassTheme.headerTextStyle.copyWith(
                             fontSize: 14,
                           ),
                         ),
@@ -243,7 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Text(
                       'لديك حساب بالفعل؟ ',
-                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
                         fontSize: 16,
                       ),
                     ),
@@ -254,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Text(
                         'تسجيل الدخول',
                         style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                          color: LiquidGlassTheme.adaptiveTextColor,
+                          color: LiquidGlassTheme.getTextColor('primary'),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

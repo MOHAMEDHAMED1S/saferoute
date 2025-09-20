@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/liquid_glass_theme.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -34,22 +35,22 @@ class CustomButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? const Color(0xFF4A90E2),
-          foregroundColor: textColor ?? Colors.white,
+          backgroundColor: backgroundColor ?? LiquidGlassTheme.getGradientByName('primary').colors.first,
+          foregroundColor: textColor ?? LiquidGlassTheme.getTextColor('primary'),
           padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: borderRadius ?? BorderRadius.circular(12),
           ),
           elevation: 2,
-          shadowColor: Colors.black26,
+          shadowColor: LiquidGlassTheme.getGradientByName('shadow').colors.first.withOpacity(0.26),
         ),
         child: isLoading
-            ? const SizedBox(
+            ? SizedBox(
                 height: 20,
                 width: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(LiquidGlassTheme.getTextColor('primary') ?? Colors.blue),
                 ),
               )
             : Row(
@@ -66,7 +67,7 @@ class CustomButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: textColor ?? Colors.white,
+                      color: textColor ?? LiquidGlassTheme.getTextColor('primary'),
                     ),
                   ),
                 ],
@@ -110,10 +111,10 @@ class CustomOutlinedButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: textColor ?? const Color(0xFF4A90E2),
+          foregroundColor: textColor ?? LiquidGlassTheme.getGradientByName('primary').colors.first,
           padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           side: BorderSide(
-            color: borderColor ?? const Color(0xFF4A90E2),
+            color: borderColor ?? LiquidGlassTheme.getGradientByName('primary').colors.first,
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -127,7 +128,7 @@ class CustomOutlinedButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    textColor ?? const Color(0xFF4A90E2),
+                    textColor ?? LiquidGlassTheme.getGradientByName('primary').colors.first,
                   ),
                 ),
               )
@@ -145,7 +146,7 @@ class CustomOutlinedButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: textColor ?? const Color(0xFF4A90E2),
+                      color: textColor ?? LiquidGlassTheme.getGradientByName('primary').colors.first,
                     ),
                   ),
                 ],

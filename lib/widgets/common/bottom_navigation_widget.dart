@@ -16,7 +16,7 @@ class BottomNavigationWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(16),
-      decoration: LiquidGlassTheme.toolbarGlassDecoration.copyWith(
+      decoration: LiquidGlassTheme.bottomNavDecoration.copyWith(
         borderRadius: BorderRadius.circular(32),
       ),
       child: ClipRRect(
@@ -27,16 +27,16 @@ class BottomNavigationWidget extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: const Color(0xB3FFFFFF), // 70% opacity
-          selectedLabelStyle: LiquidGlassTheme.primaryTextStyle.copyWith(
+          selectedItemColor: LiquidGlassTheme.getIconColor('primary'),
+          unselectedItemColor: LiquidGlassTheme.getIconColor('secondary'),
+          selectedLabelStyle: LiquidGlassTheme.headerTextStyle.copyWith(
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
-          unselectedLabelStyle: LiquidGlassTheme.captionTextStyle.copyWith(
+          unselectedLabelStyle: LiquidGlassTheme.subtitleTextStyle.copyWith(
             fontSize: 11,
           ),
-        items: [
+          items: [
           const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'الرئيسية',
@@ -52,24 +52,19 @@ class BottomNavigationWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFE53935),
-                      Color(0xFFD32F2F),
-                    ],
-                  ),
+                  gradient: LiquidGlassTheme.getGradientByName('quickReportButton'),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFE53935).withOpacity(0.3),
+                      color: LiquidGlassTheme.getGradientByName('quickReportButton').colors.first.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.add,
-                  color: Colors.white,
+                  color: LiquidGlassTheme.getIconColor('primary'),
                   size: 24,
                 ),
               ),

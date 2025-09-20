@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../theme/liquid_glass_theme.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/reports_provider.dart';
 import '../../../models/report_model.dart';
@@ -101,7 +102,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
             GestureDetector(
               onTap: _closeSheet,
               child: Container(
-                color: Colors.black.withOpacity(_fadeAnimation.value),
+                color: LiquidGlassTheme.getGradientByName('shadow').colors.first.withOpacity(_fadeAnimation.value),
                 width: double.infinity,
                 height: double.infinity,
               ),
@@ -117,7 +118,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                 child: Container(
                   height: MediaQuery.of(context).size.height * 0.7,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: LiquidGlassTheme.backgroundColor,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(20),
                     ),
@@ -130,7 +131,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -140,31 +141,31 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                         padding: const EdgeInsets.all(20),
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'تصفية البلاغات',
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2E3A59),
+                                  color: LiquidGlassTheme.getTextColor('primary') ?? Colors.black,
                                 ),
                               ),
                             ),
                             TextButton(
                               onPressed: _resetFilters,
-                              child: const Text(
+                              child: Text(
                                 'إعادة تعيين',
                                 style: TextStyle(
-                                  color: Color(0xFF4A90E2),
+                                  color: LiquidGlassTheme.getGradientByName('primary').colors.first,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                             IconButton(
                               onPressed: _closeSheet,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.close,
-                                color: Color(0xFF8B9DC3),
+                                color: LiquidGlassTheme.getTextColor('secondary'),
                               ),
                             ),
                           ],
@@ -179,12 +180,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Report Types Section
-                              const Text(
+                              Text(
                                 'نوع البلاغ',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
+                                  color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -193,12 +194,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                               const SizedBox(height: 32),
                               
                               // Search Radius Section
-                              const Text(
+                              Text(
                                 'نطاق البحث',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
+                                  color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -207,12 +208,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                               const SizedBox(height: 32),
                               
                               // Status Filter Section
-                              const Text(
+                              Text(
                                 'حالة البلاغ',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF2E3A59),
+                                  color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -266,10 +267,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF4A90E2) : Colors.white,
+              color: isSelected ? LiquidGlassTheme.getGradientByName('primary').colors.first : LiquidGlassTheme.backgroundColor,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isSelected ? const Color(0xFF4A90E2) : Colors.grey[300]!,
+                color: isSelected ? LiquidGlassTheme.getGradientByName('primary').colors.first : (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -279,7 +280,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                 Icon(
                   _getReportIcon(type),
                   size: 16,
-                  color: isSelected ? Colors.white : _getReportColor(type),
+                  color: isSelected ? LiquidGlassTheme.getIconColor('primary') : _getReportColor(type),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -288,7 +289,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: isSelected ? Colors.white : const Color(0xFF2E3A59),
+                      color: isSelected ? LiquidGlassTheme.getIconColor('primary') : LiquidGlassTheme.getTextColor('primary'),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -307,26 +308,26 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               '1 كم',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF8B9DC3),
+                color: LiquidGlassTheme.getTextColor('secondary'),
               ),
             ),
             Text(
               '${_searchRadius.toStringAsFixed(1)} كم',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF2E3A59),
+                color: LiquidGlassTheme.getTextColor('primary'),
               ),
             ),
-            const Text(
+            Text(
               '20 كم',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF8B9DC3),
+                color: LiquidGlassTheme.getTextColor('secondary'),
               ),
             ),
           ],
@@ -334,10 +335,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
         const SizedBox(height: 8),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: const Color(0xFF4A90E2),
-            inactiveTrackColor: Colors.grey[300],
-            thumbColor: const Color(0xFF4A90E2),
-            overlayColor: const Color(0xFF4A90E2).withOpacity(0.2),
+            activeTrackColor: LiquidGlassTheme.getGradientByName('primary').colors.first,
+          inactiveTrackColor: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
+          thumbColor: LiquidGlassTheme.getGradientByName('primary').colors.first,
+          overlayColor: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.2),
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
           ),
@@ -361,10 +362,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: LiquidGlassTheme.backgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey[200]!,
+          color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.2) ?? Colors.grey[200]!,
           width: 1,
         ),
       ),
@@ -373,26 +374,26 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
           Icon(
             Icons.info_outline,
             size: 20,
-            color: Colors.grey[600],
+            color: LiquidGlassTheme.getTextColor('secondary'),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'البلاغات النشطة فقط',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF2E3A59),
+                    color: LiquidGlassTheme.getTextColor('primary'),
                   ),
                 ),
                 Text(
                   'إظهار البلاغات النشطة وغير المنتهية الصلاحية فقط',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: LiquidGlassTheme.getTextColor('secondary'),
                   ),
                 ),
               ],
@@ -405,7 +406,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                 _showActiveOnly = value;
               });
             },
-            activeColor: const Color(0xFF4A90E2),
+            activeColor: LiquidGlassTheme.getGradientByName('primary').colors.first,
           ),
         ],
       ),
@@ -432,17 +433,17 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
   Color _getReportColor(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return Colors.red;
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
       case ReportType.jam:
-        return Colors.orange;
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
       case ReportType.carBreakdown:
-        return Colors.blue;
+        return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportType.bump:
-        return Colors.amber;
+        return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
-        return Colors.purple;
+        return LiquidGlassTheme.getGradientByName('primary').colors.first;
       default:
-        return Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 
