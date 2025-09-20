@@ -6,6 +6,8 @@ import '../../utils/map_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../models/report_model.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 import 'widgets/map_widget.dart';
 import 'widgets/reports_bottom_sheet.dart';
@@ -193,46 +195,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      builder: (context) => LiquidGlassContainer(
+        type: LiquidGlassType.secondary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  _getReportIcon(report.type),
-                  color: _getReportColor(report.type),
-                  size: 24,
+                LiquidGlassContainer(
+                  type: LiquidGlassType.primary,
+                  borderRadius: BorderRadius.circular(16),
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(
+                    _getReportIcon(report.type),
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     _getReportTypeTitle(report.type),
-                    style: const TextStyle(
+                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E3A59),
                     ),
                   ),
                 ),
-                IconButton(
+                LiquidGlassButton(
+                  text: '',
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  type: LiquidGlassType.secondary,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.all(8),
+                  icon: Icons.close,
                 ),
+               
               ],
             ),
             const SizedBox(height: 16),
             Text(
               report.description,
-              style: const TextStyle(
+              style: LiquidGlassTheme.primaryTextStyle.copyWith(
                 fontSize: 16,
-                color: Color(0xFF2E3A59),
               ),
             ),
             const SizedBox(height: 16),
@@ -241,14 +249,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Icon(
                   Icons.access_time,
                   size: 16,
-                  color: Colors.grey[600],
+                  color: LiquidGlassTheme.secondaryTextStyle.color,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _formatDateTime(report.createdAt),
-                  style: TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 14,
-                    color: Colors.grey[600],
                   ),
                 ),
               ],
@@ -352,6 +359,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       body: Stack(
         children: [
           // Map
@@ -364,20 +373,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           
           // Top App Bar
           SafeArea(
-            child: Container(
+            child: LiquidGlassContainer(
+              type: LiquidGlassType.secondary,
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              borderRadius: BorderRadius.circular(16),
               child: Row(
                 children: [
                   GestureDetector(
@@ -398,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,30 +408,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           builder: (context, authProvider, child) {
                             return Text(
                               'مرحباً، ${authProvider.userModel?.name ?? 'المستخدم'}',
-                              style: const TextStyle(
+                              style: LiquidGlassTheme.primaryTextStyle.copyWith(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF2E3A59),
                               ),
                             );
                           },
                         ),
-                        const Text(
+                        Text(
                           'ابق آمناً على الطريق',
-                          style: TextStyle(
+                          style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                             fontSize: 12,
-                            color: Color(0xFF8B9DC3),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
+                  LiquidGlassButton(
+                    text: '',
                     onPressed: _toggleFilterSheet,
-                    icon: const Icon(
-                      Icons.tune,
-                      color: Color(0xFF4A90E2),
-                    ),
+                    type: LiquidGlassType.primary,
+                    borderRadius: 12,
+                    padding: const EdgeInsets.all(8),
+                    icon: Icons.filter_list,
                   ),
                 ],
               ),
@@ -460,14 +459,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 // My Location Button
                 ScaleTransition(
                   scale: _fabAnimation,
-                  child: FloatingActionButton(
-                    heroTag: 'location',
+                  child: LiquidGlassButton(
+                    text: '',
                     onPressed: _animateToCurrentLocation,
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.my_location,
-                      color: Color(0xFF4A90E2),
-                    ),
+                    type: LiquidGlassType.secondary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.my_location,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -475,14 +473,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 // Reports List Button
                 ScaleTransition(
                   scale: _fabAnimation,
-                  child: FloatingActionButton(
-                    heroTag: 'reports',
+                  child: LiquidGlassButton(
+                    text: '',
                     onPressed: _toggleReportsSheet,
-                    backgroundColor: Colors.white,
-                    child: const Icon(
-                      Icons.list,
-                      color: Color(0xFF4A90E2),
-                    ),
+                    type: LiquidGlassType.secondary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.list,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -490,16 +487,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 // Add Report Button
                 ScaleTransition(
                   scale: _fabAnimation,
-                  child: FloatingActionButton(
-                    heroTag: 'add_report',
+                  child: LiquidGlassButton(
+                    text: '',
                     onPressed: () {
                       Navigator.of(context).pushNamed('/add-report');
                     },
-                    backgroundColor: const Color(0xFF4A90E2),
-                    child: const Icon(
-                      Icons.add,
-                      color: Colors.white,
-                    ),
+                    type: LiquidGlassType.primary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.add,
                   ),
                 ),
               ],

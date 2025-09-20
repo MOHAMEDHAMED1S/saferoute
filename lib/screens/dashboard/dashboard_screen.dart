@@ -7,6 +7,8 @@ import '../reports/add_report_screen.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/dashboard_models.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
   static const String routeName = '/dashboard';
@@ -32,6 +34,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
+      backgroundColor: const Color(0xFF0A0E27),
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationWidget(
         currentIndex: _currentIndex,
@@ -66,13 +70,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFF0A0E27),
       body: SafeArea(
         child: Consumer<DashboardProvider>(
           builder: (context, dashboardProvider, child) {
             if (dashboardProvider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(),
+                child: LiquidGlassLoadingIndicator(),
               );
             }
 
@@ -116,74 +120,83 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1565C0),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.primary,
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(24),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.secondary,
+            padding: const EdgeInsets.all(12),
+            borderRadius: BorderRadius.circular(16),
             child: const Icon(
               Icons.shield,
               color: Colors.white,
-              size: 24,
+              size: 28,
             ),
           ),
-          const SizedBox(width: 12),
-          const Expanded(
+          const SizedBox(width: 16),
+          Expanded(
             child: Text(
               'سلامة السائقين',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
+          LiquidGlassContainer(
+            type: LiquidGlassType.ultraLight,
+            isInteractive: true,
+            padding: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              children: [
+                const Icon(
                   Icons.notifications_outlined,
                   color: Colors.white,
                   size: 24,
                 ),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE53935),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Text(
-                    '3',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFE53935), Color(0xFFD32F2F)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFE53935).withOpacity(0.5),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      '3',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
+          const SizedBox(width: 8),
+          LiquidGlassContainer(
+            type: LiquidGlassType.ultraLight,
+            isInteractive: true,
+            padding: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            child: const Icon(
               Icons.settings_outlined,
               color: Colors.white,
               size: 24,
@@ -199,55 +212,38 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     final timeFormat = DateFormat('HH:mm');
     final dateFormat = DateFormat('EEEE، d MMMM yyyy', 'ar');
     
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF42A5F5), Color(0xFF1E88E5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(24),
+      borderRadius: BorderRadius.circular(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              const Text(
-                'مرحباً زياد! 👋',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      weather.icon,
-                      style: const TextStyle(fontSize: 16),
+                children: [
+                  Text(
+                    'مرحباً زياد! 👋',
+                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${weather.temperature}°',
+                  ),
+                  const Spacer(),
+                  LiquidGlassContainer(
+                    type: LiquidGlassType.ultraLight,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          weather.icon,
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${weather.temperature}°',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -258,23 +254,21 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '${timeFormat.format(now)} • ${dateFormat.format(now)}',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.directions_car, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
+              const Icon(Icons.directions_car, color: Colors.white, size: 22),
+              const SizedBox(width: 10),
               Text(
                 'رحلة آمنة اليوم • ${weather.drivingCondition}',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                style: LiquidGlassTheme.primaryTextStyle.copyWith(
                   fontSize: 16,
                 ),
               ),
@@ -329,46 +323,41 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
 
   Widget _buildStatCard(String title, String value, String subtitle, 
                        IconData icon, Color bgColor, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 8),
+          LiquidGlassContainer(
+            type: LiquidGlassType.secondary,
+            padding: const EdgeInsets.all(8),
+            borderRadius: BorderRadius.circular(12),
+            child: Icon(icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
-              color: iconColor,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
+            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+              fontSize: 11,
             ),
             textAlign: TextAlign.center,
           ),
@@ -378,15 +367,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
       margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'الإجراءات السريعة',
-            style: TextStyle(
-              fontSize: 18,
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -446,42 +438,46 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   Widget _buildActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
+      child: LiquidGlassContainer(
+        type: LiquidGlassType.secondary,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(22),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
+            LiquidGlassContainer(
+              type: LiquidGlassType.primary,
+              padding: const EdgeInsets.all(10),
+              borderRadius: BorderRadius.circular(12),
+              child: Icon(icon, color: Colors.white, size: 28),
             ),
-          ],
-        ),
+            const SizedBox(height: 12),
+            Text(
+                title,
+                style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
       ),
     );
   }
 
   Widget _buildAroundYouSection(List<NearbyReport> reports) {
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
       margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'ماذا يحدث حولك؟',
-            style: TextStyle(
-              fontSize: 18,
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -504,73 +500,59 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
 
   Widget _buildReportCard(String title, String distance, String time, 
                          int confirmations, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(10),
+            borderRadius: BorderRadius.circular(12),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   '$distance • $time',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            borderRadius: BorderRadius.circular(16),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.check,
-                  color: Color(0xFF4CAF50),
-                  size: 12,
+                  Icons.check_circle,
+                  color: Colors.white,
+                  size: 18,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Text(
                   '$confirmations',
-                  style: const TextStyle(
-                    color: Color(0xFF4CAF50),
-                    fontSize: 12,
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -583,47 +565,41 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
   }
 
   Widget _buildSafetyTip(SafetyTip tip) {
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFB74D), width: 1),
-      ),
+      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(18),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFB74D),
-              borderRadius: BorderRadius.circular(8),
-            ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(12),
+            borderRadius: BorderRadius.circular(14),
             child: const Icon(
               Icons.lightbulb,
               color: Colors.white,
-              size: 24,
+              size: 26,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   tip.title,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFE65100),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   tip.content,
-                  style: const TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 14,
-                    color: Color(0xFFBF360C),
                   ),
                 ),
               ],
@@ -657,61 +633,62 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
         break;
     }
 
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.primary,
+      isInteractive: true,
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: alertColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: alertColor, width: 2),
-      ),
+      padding: const EdgeInsets.all(20),
+      borderRadius: BorderRadius.circular(18),
       child: Row(
         children: [
-          Icon(
-            alertIcon,
-            color: alertColor,
-            size: 24,
+          LiquidGlassContainer(
+            type: LiquidGlassType.secondary,
+            padding: const EdgeInsets.all(12),
+            borderRadius: BorderRadius.circular(14),
+            child: Icon(
+              alertIcon,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'تنبيه طوارئ',
-                  style: TextStyle(
-                    fontSize: 16,
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: alertColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   alert.message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: alertColor.withOpacity(0.8),
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   '${alert.location} • ${alert.distanceText}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: alertColor.withOpacity(0.6),
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
+          LiquidGlassButton(
+            text: '',
             onPressed: () {
               // إخفاء التنبيه
             },
-            icon: Icon(
-              Icons.close,
-              color: alertColor,
-            ),
+            type: LiquidGlassType.secondary,
+            borderRadius: 12,
+            padding: const EdgeInsets.all(8),
+            icon: Icons.close,
           ),
         ],
       ),

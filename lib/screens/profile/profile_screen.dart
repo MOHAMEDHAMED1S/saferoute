@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 import '../../models/report_model.dart';
 
@@ -94,48 +96,48 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: LiquidGlassTheme.backgroundColor,
+      extendBody: true,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'الملف الشخصي',
-          style: TextStyle(
-            color: Color(0xFF2E3A59),
+          style: LiquidGlassTheme.primaryTextStyle.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF2E3A59)),
+        iconTheme: IconThemeData(color: LiquidGlassTheme.primaryTextStyle.color),
         actions: [
           if (_isEditing)
-            TextButton(
+            LiquidGlassButton(
+              text: 'إلغاء',
               onPressed: () {
                 setState(() {
                   _isEditing = false;
                   _loadUserData(); // Reset data
                 });
               },
-              child: const Text(
-                'إلغاء',
-                style: TextStyle(
-                  color: Color(0xFF8B9DC3),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              type: LiquidGlassType.secondary,
+              borderRadius: 12,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
-          IconButton(
+          const SizedBox(width: 8),
+          LiquidGlassButton(
             onPressed: _signOut,
-            icon: const Icon(
-              Icons.logout,
-              color: Colors.red,
-            ),
+            type: LiquidGlassType.primary,
+            borderRadius: 12,
+            padding: const EdgeInsets.all(8),
+            icon: Icons.logout,
+            text: '',
           ),
+          const SizedBox(width: 16),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF4A90E2),
-          unselectedLabelColor: const Color(0xFF8B9DC3),
-          indicatorColor: const Color(0xFF4A90E2),
+          labelColor: Colors.white,
+          unselectedLabelColor: LiquidGlassTheme.secondaryTextStyle.color,
+          indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'المعلومات'),
             Tab(text: 'بلاغاتي'),
@@ -171,41 +173,24 @@ class _ProfileScreenState extends State<ProfileScreen>
           child: Column(
             children: [
               // Profile Picture
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF4A90E2).withOpacity(0.1),
-                  border: Border.all(
-                    color: const Color(0xFF4A90E2),
-                    width: 2,
-                  ),
-                ),
+              LiquidGlassContainer(
+                type: LiquidGlassType.primary,
+                borderRadius: BorderRadius.circular(60),
+                padding: const EdgeInsets.all(20),
                 child: Icon(
                   Icons.person,
-                  size: 50,
-                  color: const Color(0xFF4A90E2),
+                  size: 60,
+                  color: Colors.white,
                 ),
               ),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
               // User Info Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+              LiquidGlassContainer(
+                type: LiquidGlassType.secondary,
+                borderRadius: BorderRadius.circular(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
                     if (_isEditing) ...[
@@ -228,10 +213,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 24),
-                      CustomButton(
+                      LiquidGlassButton(
                         text: 'حفظ التغييرات',
                         onPressed: _updateProfile,
-                        isLoading: authProvider.isLoading,
+                        type: LiquidGlassType.primary,
+                        borderRadius: 12,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ] else ...[
                       _buildInfoRow('الاسم', user.name),
@@ -242,13 +229,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const Divider(height: 32),
                       _buildInfoRow('تاريخ التسجيل', _formatDate(user.createdAt)),
                       const SizedBox(height: 24),
-                      CustomButton(
+                      LiquidGlassButton(
                         text: 'تعديل المعلومات',
                         onPressed: () {
                           setState(() {
                             _isEditing = true;
                           });
                         },
+                        type: LiquidGlassType.secondary,
+                        borderRadius: 12,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ],
                   ],
@@ -267,21 +257,20 @@ class _ProfileScreenState extends State<ProfileScreen>
         final userReports = reportsProvider.userReports;
         
         if (userReports.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.report_outlined,
                   size: 64,
-                  color: Color(0xFF8B9DC3),
+                  color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   'لا توجد بلاغات',
-                  style: TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 18,
-                    color: Color(0xFF8B9DC3),
                   ),
                 ),
               ],
@@ -313,7 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              _buildStatCard('إجمالي البلاغات', totalReports.toString(), Icons.report, Colors.blue),
+              _buildStatCard('إجمالي البلاغات', totalReports.toString(), Icons.report, LiquidGlassTheme.adaptiveTextColor),
               const SizedBox(height: 16),
               _buildStatCard('البلاغات النشطة', activeReports.toString(), Icons.check_circle, Colors.green),
               const SizedBox(height: 16),
@@ -335,9 +324,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 100,
           child: Text(
             label,
-            style: const TextStyle(
+            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
               fontSize: 14,
-              color: Color(0xFF8B9DC3),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -345,9 +333,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
               fontSize: 14,
-              color: Color(0xFF2E3A59),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -359,22 +346,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildReportCard(ReportModel report) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: LiquidGlassContainer(
+        type: LiquidGlassType.secondary,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Icon(
@@ -386,10 +364,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               Expanded(
                 child: Text(
                   _getReportTypeTitle(report.type),
-                  style: const TextStyle(
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF2E3A59),
                   ),
                 ),
               ),
@@ -413,9 +390,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           const SizedBox(height: 12),
           Text(
             report.description,
-            style: const TextStyle(
+            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
               fontSize: 14,
-              color: Color(0xFF8B9DC3),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -426,14 +402,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               Icon(
                 Icons.access_time,
                 size: 14,
-                color: Colors.grey[600],
+                color: LiquidGlassTheme.secondaryTextStyle.color,
               ),
               const SizedBox(width: 4),
               Text(
                 _formatDate(report.createdAt),
-                style: TextStyle(
+                style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
-                  color: Colors.grey[600],
                 ),
               ),
               const Spacer(),
@@ -471,58 +446,45 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
         ],
+        ),
       ),
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(24),
       child: Row(
         children: [
-          Container(
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            borderRadius: BorderRadius.circular(16),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
             child: Icon(
               icon,
-              color: color,
+              color: Colors.white,
               size: 24,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 14,
-                    color: Color(0xFF8B9DC3),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E3A59),
                   ),
                 ),
               ],

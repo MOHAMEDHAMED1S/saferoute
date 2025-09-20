@@ -5,6 +5,8 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
 import 'register_screen.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   static const String routeName = '/login';
@@ -121,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -134,29 +136,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Logo
                 Container(
                   height: 120,
-                  child: const Icon(
+                  child: Icon(
                     Icons.security,
                     size: 80,
-                    color: Color(0xFF4A90E2),
+                    color: LiquidGlassTheme.adaptiveTextColor,
                   ),
                 ),
                 const SizedBox(height: 40),
                 // Title
-                const Text(
+                Text(
                   'مرحباً بك',
-                  style: TextStyle(
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E3A59),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'سجل دخولك للمتابعة',
-                  style: TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 16,
-                    color: Color(0xFF8B9DC3),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -192,49 +192,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Login Button
-                CustomButton(
+                LiquidGlassButton(
                   text: 'تسجيل الدخول',
                   onPressed: _isLoading ? null : _handleLogin,
-                  isLoading: _isLoading,
+                  type: LiquidGlassType.primary,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 const SizedBox(height: 16),
                 // Divider
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'أو',
-                        style: TextStyle(color: Color(0xFF8B9DC3)),
+                        style: LiquidGlassTheme.secondaryTextStyle,
                       ),
                     ),
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
                   ],
                 ),
                 const SizedBox(height: 16),
                 // Google Sign In Button
-                OutlinedButton.icon(
+                LiquidGlassButton(
+                  text: 'تسجيل الدخول بـ Google',
                   onPressed: _isLoading ? null : _handleGoogleSignIn,
-                  icon: const Icon(
-                    Icons.login,
-                    size: 24,
-                    color: Color(0xFF4285F4),
-                  ),
-                  label: const Text(
-                    'تسجيل الدخول بـ Google',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF2E3A59),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Color(0xFFE0E6ED)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                  type: LiquidGlassType.secondary,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  icon: Icons.login,
                 ),
                 const SizedBox(height: 24),
                 // Forgot Password
@@ -242,10 +230,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     // TODO: Implement forgot password
                   },
-                  child: const Text(
+                  child: Text(
                     'نسيت كلمة المرور؟',
-                    style: TextStyle(
-                      color: Color(0xFF4A90E2),
+                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                      color: LiquidGlassTheme.adaptiveTextColor,
                       fontSize: 16,
                     ),
                   ),
@@ -255,10 +243,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'ليس لديك حساب؟ ',
-                      style: TextStyle(
-                        color: Color(0xFF8B9DC3),
+                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                         fontSize: 16,
                       ),
                     ),
@@ -266,10 +253,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.of(context).pushNamed(RegisterScreen.routeName);
                       },
-                      child: const Text(
+                      child: Text(
                         'إنشاء حساب',
-                        style: TextStyle(
-                          color: Color(0xFF4A90E2),
+                        style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                          color: LiquidGlassTheme.adaptiveTextColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

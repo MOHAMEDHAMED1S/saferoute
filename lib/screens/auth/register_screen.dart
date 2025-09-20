@@ -4,6 +4,8 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 class RegisterScreen extends StatefulWidget {
   static const String routeName = '/register';
@@ -86,14 +88,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios,
-            color: Color(0xFF2E3A59),
+            color: LiquidGlassTheme.adaptiveTextColor,
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -107,21 +109,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Title
-                const Text(
+                Text(
                   'إنشاء حساب جديد',
-                  style: TextStyle(
+                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E3A59),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'أدخل بياناتك لإنشاء حساب جديد',
-                  style: TextStyle(
+                  style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                     fontSize: 16,
-                    color: Color(0xFF8B9DC3),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -208,7 +208,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           _acceptTerms = value ?? false;
                         });
                       },
-                      activeColor: const Color(0xFF4A90E2),
+                      activeColor: LiquidGlassTheme.adaptiveTextColor,
                     ),
                     Expanded(
                       child: GestureDetector(
@@ -217,11 +217,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             _acceptTerms = !_acceptTerms;
                           });
                         },
-                        child: const Text(
+                        child: Text(
                           'أوافق على الشروط والأحكام وسياسة الخصوصية',
-                          style: TextStyle(
+                          style: LiquidGlassTheme.primaryTextStyle.copyWith(
                             fontSize: 14,
-                            color: Color(0xFF2E3A59),
                           ),
                         ),
                       ),
@@ -230,20 +229,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
                 // Register Button
-                CustomButton(
+                LiquidGlassButton(
                   text: 'إنشاء الحساب',
                   onPressed: _isLoading ? null : _handleRegister,
-                  isLoading: _isLoading,
+                  type: LiquidGlassType.primary,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 const SizedBox(height: 24),
                 // Login Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'لديك حساب بالفعل؟ ',
-                      style: TextStyle(
-                        color: Color(0xFF8B9DC3),
+                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                         fontSize: 16,
                       ),
                     ),
@@ -251,10 +251,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text(
+                      child: Text(
                         'تسجيل الدخول',
-                        style: TextStyle(
-                          color: Color(0xFF4A90E2),
+                        style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                          color: LiquidGlassTheme.adaptiveTextColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

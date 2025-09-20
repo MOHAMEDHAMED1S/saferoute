@@ -6,6 +6,8 @@ import '../../models/report_model.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
+import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 
 class AddReportScreen extends StatefulWidget {
   static const String routeName = '/add-report';
@@ -101,18 +103,18 @@ class _AddReportScreenState extends State<AddReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: LiquidGlassTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'إضافة بلاغ جديد',
-          style: TextStyle(
-            color: Color(0xFF2E3A59),
+          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF2E3A59)),
+        iconTheme: IconThemeData(color: LiquidGlassTheme.primaryTextStyle.color),
       ),
       body: Form(
         key: _formKey,
@@ -122,12 +124,11 @@ class _AddReportScreenState extends State<AddReportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Report Type Selection
-              const Text(
+              Text(
                 'نوع البلاغ',
-                style: TextStyle(
+                style: LiquidGlassTheme.primaryTextStyle.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2E3A59),
                 ),
               ),
               const SizedBox(height: 16),
@@ -136,12 +137,11 @@ class _AddReportScreenState extends State<AddReportScreen> {
               const SizedBox(height: 32),
               
               // Description Field
-              const Text(
+              Text(
                 'وصف البلاغ',
-                style: TextStyle(
+                style: LiquidGlassTheme.primaryTextStyle.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2E3A59),
                 ),
               ),
               const SizedBox(height: 16),
@@ -164,12 +164,11 @@ class _AddReportScreenState extends State<AddReportScreen> {
               const SizedBox(height: 32),
               
               // Image Section
-              const Text(
+              Text(
                 'إضافة صورة (اختياري)',
-                style: TextStyle(
+                style: LiquidGlassTheme.primaryTextStyle.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF2E3A59),
                 ),
               ),
               const SizedBox(height: 16),
@@ -178,21 +177,15 @@ class _AddReportScreenState extends State<AddReportScreen> {
               const SizedBox(height: 32),
               
               // Location Info
-              Container(
+              LiquidGlassContainer(
+                type: LiquidGlassType.secondary,
+                borderRadius: BorderRadius.circular(12),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.blue[200]!,
-                    width: 1,
-                  ),
-                ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.location_on,
-                      color: Colors.blue[600],
+                      color: LiquidGlassTheme.adaptiveTextColor,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -200,20 +193,18 @@ class _AddReportScreenState extends State<AddReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'الموقع الحالي',
-                            style: TextStyle(
+                            style: LiquidGlassTheme.primaryTextStyle.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF2E3A59),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'سيتم استخدام موقعك الحالي للبلاغ',
-                            style: TextStyle(
+                            style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                               fontSize: 12,
-                              color: Colors.grey[600],
                             ),
                           ),
                         ],
@@ -226,10 +217,12 @@ class _AddReportScreenState extends State<AddReportScreen> {
               const SizedBox(height: 40),
               
               // Submit Button
-              CustomButton(
+              LiquidGlassButton(
                 text: _isSubmitting ? 'جاري الإرسال...' : 'إرسال البلاغ',
                 onPressed: _isSubmitting ? null : _submitReport,
-                isLoading: _isSubmitting,
+                type: LiquidGlassType.primary,
+                borderRadius: 12,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ],
           ),
@@ -276,16 +269,10 @@ class _AddReportScreenState extends State<AddReportScreen> {
               _selectedType = type;
             });
           },
-          child: Container(
+          child: LiquidGlassContainer(
+            type: isSelected ? LiquidGlassType.primary : LiquidGlassType.secondary,
+            borderRadius: BorderRadius.circular(12),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF4A90E2) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? const Color(0xFF4A90E2) : Colors.grey[300]!,
-                width: 2,
-              ),
-            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -297,11 +284,16 @@ class _AddReportScreenState extends State<AddReportScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _getReportTypeTitle(type),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : const Color(0xFF2E3A59),
-                  ),
+                  style: isSelected 
+                    ? LiquidGlassTheme.primaryTextStyle.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      )
+                    : LiquidGlassTheme.primaryTextStyle.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -315,35 +307,28 @@ class _AddReportScreenState extends State<AddReportScreen> {
   Widget _buildImageSection() {
     return GestureDetector(
       onTap: _pickImage,
-      child: Container(
+      child: LiquidGlassContainer(
+        type: LiquidGlassType.secondary,
+        borderRadius: BorderRadius.circular(12),
         height: 120,
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
         child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.camera_alt,
-                    size: 32,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'اضغط لإضافة صورة',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.camera_alt,
+              size: 32,
+              color: LiquidGlassTheme.secondaryTextStyle.color,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'اضغط لإضافة صورة',
+              style: LiquidGlassTheme.secondaryTextStyle.copyWith(
+                fontSize: 14,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

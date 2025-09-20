@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../../providers/reports_provider.dart';
 import '../../../models/report_model.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../theme/liquid_glass_theme.dart';
+import '../../../widgets/liquid_glass_widgets.dart';
 
 class ReportsBottomSheet extends StatefulWidget {
   final VoidCallback onClose;
@@ -81,14 +83,12 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               right: 0,
               child: Transform.translate(
                 offset: Offset(0, MediaQuery.of(context).size.height * 0.6 * _slideAnimation.value),
-                child: Container(
-                  height: MediaQuery.of(context).size.height * 0.6,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
+                child: LiquidGlassContainer(
+                  type: LiquidGlassType.secondary,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
                   ),
+                  height: MediaQuery.of(context).size.height * 0.6,
                   child: Column(
                     children: [
                       // Handle
@@ -97,7 +97,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -107,21 +107,20 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                         padding: const EdgeInsets.all(20),
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'البلاغات القريبة',
-                                style: TextStyle(
+                                style: LiquidGlassTheme.primaryTextStyle.copyWith(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2E3A59),
                                 ),
                               ),
                             ),
                             IconButton(
                               onPressed: _closeSheet,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.close,
-                                color: Color(0xFF8B9DC3),
+                                color: LiquidGlassTheme.secondaryTextStyle.color,
                               ),
                             ),
                           ],
@@ -133,9 +132,9 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                         child: Consumer<ReportsProvider>(
                           builder: (context, reportsProvider, child) {
                             if (reportsProvider.isLoading) {
-                              return const Center(
+                              return Center(
                                 child: CircularProgressIndicator(
-                                  color: Color(0xFF4A90E2),
+                                  color: LiquidGlassTheme.adaptiveTextColor,
                                 ),
                               );
                             }
@@ -148,23 +147,25 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     Icon(
                                       Icons.error_outline,
                                       size: 48,
-                                      color: Colors.grey[400],
+                                      color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       reportsProvider.errorMessage!,
-                                      style: TextStyle(
+                                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                                         fontSize: 16,
-                                        color: Colors.grey[600],
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 16),
-                                    CustomButton(
+                                    LiquidGlassButton(
                                       text: 'إعادة المحاولة',
                                       onPressed: () {
                                         reportsProvider.initialize();
                                       },
+                                      type: LiquidGlassType.primary,
+                                      borderRadius: 12,
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                                     ),
                                   ],
                                 ),
@@ -181,14 +182,13 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     Icon(
                                       Icons.report_off,
                                       size: 48,
-                                      color: Colors.grey[400],
+                                      color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       'لا توجد بلاغات قريبة',
-                                      style: TextStyle(
+                                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                                         fontSize: 16,
-                                        color: Colors.grey[600],
                                       ),
                                     ),
                                   ],
@@ -219,24 +219,11 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
   }
 
   Widget _buildReportCard(ReportModel report) {
-    return Container(
+    return LiquidGlassContainer(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey[200]!,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      type: LiquidGlassType.secondary,
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -261,18 +248,16 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                   children: [
                     Text(
                       _getReportTypeTitle(report.type),
-                      style: const TextStyle(
+                      style: LiquidGlassTheme.primaryTextStyle.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF2E3A59),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _formatDateTime(report.createdAt),
-                      style: TextStyle(
+                      style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                         fontSize: 12,
-                        color: Colors.grey[600],
                       ),
                     ),
                   ],
@@ -280,9 +265,8 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               ),
               Text(
                 '${_calculateDistance(report)} كم',
-                style: TextStyle(
+                style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
-                  color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -291,9 +275,8 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
           const SizedBox(height: 12),
           Text(
             report.description,
-            style: const TextStyle(
+            style: LiquidGlassTheme.primaryTextStyle.copyWith(
               fontSize: 14,
-              color: Color(0xFF2E3A59),
               height: 1.4,
             ),
           ),
@@ -308,9 +291,8 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               const SizedBox(width: 4),
               Text(
                 '${report.confirmations.trueVotes}',
-                style: TextStyle(
+                style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
-                  color: Colors.grey[600],
                 ),
               ),
               const SizedBox(width: 16),
@@ -322,9 +304,8 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               const SizedBox(width: 4),
               Text(
                 '${report.confirmations.falseVotes}',
-                style: TextStyle(
+                style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
-                  color: Colors.grey[600],
                 ),
               ),
             ],
