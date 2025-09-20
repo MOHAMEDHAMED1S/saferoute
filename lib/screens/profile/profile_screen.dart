@@ -289,6 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               // بطاقة المعلومات الشخصية
               LiquidGlassContainer(
                 type: LiquidGlassType.secondary,
+                isInteractive: true,
                 borderRadius: BorderRadius.circular(20),
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -362,6 +363,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               // بطاقة الإعدادات
               LiquidGlassContainer(
                 type: LiquidGlassType.secondary,
+                isInteractive: true,
                 borderRadius: BorderRadius.circular(20),
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -524,7 +526,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               // بطاقة الإنجازات
               LiquidGlassContainer(
-                type: LiquidGlassType.secondary,
+                type: LiquidGlassType.ultraLight,
+                isInteractive: true,
                 borderRadius: BorderRadius.circular(20),
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -561,7 +564,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               // الشارات
               if (totalReports > 0) ...[
                 LiquidGlassContainer(
-                  type: LiquidGlassType.secondary,
+                  type: LiquidGlassType.ultraLight,
+                  isInteractive: true,
                   borderRadius: BorderRadius.circular(20),
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -599,23 +603,37 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return LiquidGlassContainer(
-      type: LiquidGlassType.primary,
+      type: LiquidGlassType.ultraLight,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
       borderRadius: BorderRadius.circular(16),
-      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: LiquidGlassTheme.primaryTextColor,
             ),
           ),
+          const SizedBox(height: 8),
           Text(
             title,
-            style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: LiquidGlassTheme.primaryTextColor,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -643,6 +661,60 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildReportCard(ReportModel report) {
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(10),
+            borderRadius: BorderRadius.circular(12),
+            child: Icon(_getReportIcon(report.type), color: LiquidGlassTheme.getIconColor('primary'), size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getReportTypeTitle(report.type),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _formatDate(report.createdAt),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            borderRadius: BorderRadius.circular(16),
+            child: Text(
+              _getStatusTitle(report.status),
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOldReportCard(ReportModel report) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: LiquidGlassContainer(

@@ -222,6 +222,65 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
   Widget _buildReportCard(ReportModel report) {
     return LiquidGlassContainer(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      borderRadius: BorderRadius.circular(16),
+      child: Row(
+        children: [
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(10),
+            borderRadius: BorderRadius.circular(12),
+            child: Icon(
+              _getReportIcon(report.type),
+              color: LiquidGlassTheme.getIconColor('primary'),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getReportTypeTitle(report.type),
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${_calculateDistance(report)} كم • ${_formatDateTime(report.createdAt)}',
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            borderRadius: BorderRadius.circular(8),
+            child: Text(
+              '${report.confirmations.trueVotes}',
+              style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: LiquidGlassTheme.getIconColor('primary'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOldReportCard(ReportModel report) {
+    return LiquidGlassContainer(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       type: LiquidGlassType.secondary,
       borderRadius: BorderRadius.circular(12),

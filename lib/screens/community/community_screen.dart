@@ -238,44 +238,48 @@ class _CommunityScreenState extends State<CommunityScreen>
     required String subtitle,
     required Color color,
   }) {
-    return LiquidGlassCard(
-      padding: const EdgeInsets.all(16),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 26),
           ),
           const SizedBox(height: 12),
           Text(
             value,
             style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: LiquidGlassTheme.primaryTextColor,
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: LiquidGlassTheme.primaryTextColor,
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
-            title,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
             subtitle,
             style: LiquidGlassTheme.bodyTextStyle.copyWith(
-              fontSize: 10,
+              fontSize: 11,
+              color: LiquidGlassTheme.secondaryTextColor,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -328,21 +332,19 @@ class _CommunityScreenState extends State<CommunityScreen>
     required String time,
     required Color color,
   }) {
-    return LiquidGlassCard(
-      padding: const EdgeInsets.all(16),
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
+          LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(10),
+            borderRadius: BorderRadius.circular(12),
+            child: Icon(icon, color: LiquidGlassTheme.getIconColor('primary'), size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -351,16 +353,16 @@ class _CommunityScreenState extends State<CommunityScreen>
               children: [
                 Text(
                   title,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 16,
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   description,
                   style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -432,33 +434,31 @@ class _CommunityScreenState extends State<CommunityScreen>
      required bool isUnlocked,
    }) {
      return LiquidGlassContainer(
-       type: LiquidGlassType.secondary,
-       padding: const EdgeInsets.all(16),
+       type: LiquidGlassType.ultraLight,
+       isInteractive: true,
+       padding: const EdgeInsets.all(18),
+       borderRadius: BorderRadius.circular(16),
        child: Column(
          children: [
-           Container(
-             padding: const EdgeInsets.all(8),
-             decoration: BoxDecoration(
-               color: isUnlocked 
-                   ? LiquidGlassTheme.primaryColor.withOpacity(0.1)
-                   : Colors.grey.withOpacity(0.1),
-               borderRadius: BorderRadius.circular(12),
-             ),
+           LiquidGlassContainer(
+             type: LiquidGlassType.primary,
+             padding: const EdgeInsets.all(10),
+             borderRadius: BorderRadius.circular(12),
              child: Icon(
                icon,
-               size: 24,
+               size: 22,
                color: isUnlocked 
-                   ? Colors.white
+                   ? LiquidGlassTheme.getIconColor('primary')
                    : Colors.grey,
              ),
            ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             title,
-            style: LiquidGlassTheme.primaryTextStyle.copyWith(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isUnlocked ? null : Colors.grey,
+            style: LiquidGlassTheme.headerTextStyle.copyWith(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isUnlocked ? LiquidGlassTheme.primaryTextColor : Colors.grey,
             ),
             textAlign: TextAlign.center,
           ),
@@ -466,7 +466,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           Text(
             description,
             style: LiquidGlassTheme.bodyTextStyle.copyWith(
-              fontSize: 12,
+              fontSize: 11,
               color: isUnlocked ? LiquidGlassTheme.secondaryTextColor : Colors.grey,
             ),
             textAlign: TextAlign.center,
@@ -527,78 +527,63 @@ class _CommunityScreenState extends State<CommunityScreen>
    }) {
      return LiquidGlassContainer(
        type: LiquidGlassType.secondary,
-       padding: const EdgeInsets.all(16),
+       isInteractive: true,
+       padding: const EdgeInsets.all(18),
+       borderRadius: BorderRadius.circular(16),
+       margin: const EdgeInsets.only(bottom: 2),
        child: Row(
          children: [
-           Container(
-             width: 40,
-             height: 40,
-             decoration: BoxDecoration(
-               color: isCurrentUser 
-                   ? LiquidGlassTheme.primaryColor.withOpacity(0.1)
-                   : LiquidGlassTheme.accentColor.withOpacity(0.1),
-               borderRadius: BorderRadius.circular(20),
-             ),
-             child: Center(
-               child: Text(
-                 '#$rank',
-                 style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                   fontSize: 14,
-                   fontWeight: FontWeight.bold,
-                   color: isCurrentUser 
-                       ? Colors.white
-                       : Colors.white,
-                 ),
+           LiquidGlassContainer(
+             type: LiquidGlassType.primary,
+             padding: const EdgeInsets.all(10),
+             borderRadius: BorderRadius.circular(12),
+             child: Text(
+               '#$rank',
+               style: LiquidGlassTheme.headerTextStyle.copyWith(
+                 fontSize: 14,
+                 fontWeight: FontWeight.bold,
+                 color: LiquidGlassTheme.getIconColor('primary'),
                ),
              ),
            ),
            const SizedBox(width: 16),
-           Container(
-             width: 40,
-             height: 40,
-             decoration: BoxDecoration(
-               color: LiquidGlassTheme.primaryColor.withOpacity(0.1),
-               borderRadius: BorderRadius.circular(20),
-             ),
+           LiquidGlassContainer(
+             type: LiquidGlassType.primary,
+             padding: const EdgeInsets.all(10),
+             borderRadius: BorderRadius.circular(12),
              child: Icon(
                Icons.person,
-               color: LiquidGlassTheme.primaryColor,
+               color: LiquidGlassTheme.getIconColor('primary'),
                size: 20,
              ),
            ),
-           const SizedBox(width: 12),
+           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                    fontSize: 16,
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: isCurrentUser ? Colors.white : null,
                   ),
                 ),
+                const SizedBox(height: 6),
                 Text(
                   '$points نقطة',
                   style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
           if (rank <= 3)
-             Container(
-               padding: const EdgeInsets.all(6),
-               decoration: BoxDecoration(
-                 color: rank == 1 
-                     ? Colors.amber.withOpacity(0.2)
-                     : rank == 2 
-                         ? Colors.grey.withOpacity(0.2)
-                         : Colors.orange.withOpacity(0.2),
-                 borderRadius: BorderRadius.circular(12),
-               ),
+             LiquidGlassContainer(
+               type: LiquidGlassType.primary,
+               padding: const EdgeInsets.all(8),
+               borderRadius: BorderRadius.circular(12),
                child: Icon(
                  Icons.emoji_events,
                  color: rank == 1 
@@ -606,7 +591,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                      : rank == 2 
                          ? Colors.grey[600]
                          : Colors.orange,
-                 size: 20,
+                 size: 18,
                ),
              ),
         ],

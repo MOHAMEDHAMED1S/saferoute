@@ -415,7 +415,8 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           const SizedBox(height: 16),
           
           LiquidGlassContainer(
-            type: LiquidGlassType.secondary,
+            type: LiquidGlassType.ultraLight,
+            isInteractive: true,
             borderRadius: BorderRadius.circular(16),
             padding: const EdgeInsets.all(16),
             child: TextFormField(
@@ -693,37 +694,32 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             child: LiquidGlassContainer(
-              type: isSelected ? LiquidGlassType.primary : LiquidGlassType.secondary,
+              type: isSelected ? LiquidGlassType.primary : LiquidGlassType.ultraLight,
+              isInteractive: true,
               borderRadius: BorderRadius.circular(16),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                        ? Colors.white.withOpacity(0.1)
-                        : _getReportColor(type).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  LiquidGlassContainer(
+                    type: LiquidGlassType.primary,
+                    padding: const EdgeInsets.all(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Icon(
                       _getReportIcon(type),
-                      size: 24,
-                      color: isSelected 
-                        ? Colors.white
-                        : _getReportColor(type),
+                      size: 22,
+                      color: LiquidGlassTheme.getIconColor('primary'),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     _getReportTypeTitle(type),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    style: LiquidGlassTheme.headerTextStyle.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                       color: isSelected 
                         ? Colors.white
-                        : LiquidGlassTheme.getTextColor('primary'),
+                        : LiquidGlassTheme.primaryTextColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
