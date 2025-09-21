@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -15,7 +14,7 @@ class UserProvider with ChangeNotifier {
   bool _isOnline = false;
   String? _error;
   List<UserModel> _nearbyUsers = [];
-  List<String> _blockedUsers = [];
+  final List<String> _blockedUsers = [];
 
   UserProvider({
     required AuthService authService,
@@ -210,7 +209,7 @@ class UserProvider with ChangeNotifier {
       _currentUser = updatedUser;
       notifyListeners();
     } catch (e) {
-      print('خطأ في تحديث حالة الاتصال: $e');
+      debugPrint('خطأ في تحديث حالة الاتصال: $e');
     }
   }
 

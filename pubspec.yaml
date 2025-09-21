@@ -52,7 +52,7 @@ dependencies:
   provider: ^6.1.2
   
   # Location Services
-  location: ^7.0.0
+  location: ^8.0.1
   geolocator: ^13.0.1
   geocoding: ^3.0.0
   
@@ -62,11 +62,22 @@ dependencies:
   # UI Components
   flutter_local_notifications: ^18.0.1
   audioplayers: ^6.1.0
+  fl_chart: ^0.69.0
+  
+  # Voice Services
+  speech_to_text: ^7.3.0
+  flutter_tts: ^4.0.2
   
   # Utilities
   intl: ^0.20.2
   uuid: ^4.5.1
   shared_preferences: ^2.3.2
+  equatable: ^2.0.5
+  
+  # Security
+  local_auth: ^2.3.0
+  device_info_plus: ^10.1.2
+  crypto: ^3.0.5
 
 dev_dependencies:
   flutter_test:

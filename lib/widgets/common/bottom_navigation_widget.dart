@@ -56,7 +56,7 @@ class BottomNavigationWidget extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: LiquidGlassTheme.getGradientByName('quickReportButton').colors.first.withOpacity(0.3),
+                      color: LiquidGlassTheme.getGradientByName('quickReportButton').colors.first.withAlpha(76),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

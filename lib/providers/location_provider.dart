@@ -61,7 +61,7 @@ class LocationProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _isLocationEnabled = false;
-      throw e;
+      rethrow;
     }
   }
 
@@ -141,7 +141,7 @@ class LocationProvider extends ChangeNotifier {
       LocationData locationData = _locationService.positionToLocationData(position);
       await _firestoreService.updateUserLocation(userId, locationData);
     } catch (e) {
-      print('Error updating user location in Firestore: $e');
+      debugPrint('Error updating user location in Firestore: $e');
     }
   }
 

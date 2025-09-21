@@ -135,7 +135,7 @@ class AppSettingsProvider extends ChangeNotifier {
         // TODO: Enable background location tracking
       }
     } catch (e) {
-      print('Error applying settings: $e');
+      debugPrint('Error applying settings: $e');
     }
   }
 

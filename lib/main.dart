@@ -14,10 +14,21 @@ import 'services/location_service.dart';
 import 'services/notification_service.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/home/home_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'screens/reports/add_report_screen.dart';
+import 'screens/reports/advanced_reports_screen.dart';
+import 'screens/security/security_monitor_screen.dart';
+import 'screens/security/security_settings_screen.dart';
+import 'screens/security/threat_management_screen.dart';
+import 'screens/ai/ai_prediction_screen.dart';
+import 'screens/notifications/smart_notifications_screen.dart';
+import 'screens/maps/3d_maps_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/driving/driving_mode_screen.dart';
+import 'theme/enhanced_theme.dart';
+import 'utils/performance_utils.dart';
+import 'utils/network_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,11 +38,22 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Initialize performance monitoring
+  PerformanceMonitor.startPeriodicReporting();
+  MemoryOptimizer.startPeriodicCleanup();
+  
+  // Initialize network manager
+  NetworkManager().initialize();
+  BandwidthMonitor().startMonitoring();
+  
+  // Warm up shaders for better performance
+  PerformanceUtils.warmUpShaders();
+  
   runApp(const SafeRouteApp());
 }
 
 class SafeRouteApp extends StatelessWidget {
-  const SafeRouteApp({Key? key}) : super(key: key);
+  const SafeRouteApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +65,6 @@ class SafeRouteApp extends StatelessWidget {
           create: (_) => ReportsProvider(
             firestoreService: FirestoreService(),
             locationService: LocationService(),
-            notificationService: NotificationService(),
           ),
         ),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),
@@ -65,121 +86,74 @@ class SafeRouteApp extends StatelessWidget {
               Locale('en', 'US'), // English
             ],
             locale: const Locale('ar', 'SA'),
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              primaryColor: const Color(0xFF4A90E2),
-              scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-              fontFamily: 'Cairo',
-              textTheme: const TextTheme(
-                headlineLarge: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2E3A59),
-                ),
-                headlineMedium: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2E3A59),
-                ),
-                bodyLarge: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF2E3A59),
-                ),
-                bodyMedium: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF8B9DC3),
-                ),
-              ),
-              elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A90E2),
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-              inputDecorationTheme: InputDecorationTheme(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE1E5E9),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE1E5E9),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF4A90E2),
-                    width: 2,
-                  ),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
-                  ),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Colors.red,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.white,
-                elevation: 0,
-                iconTheme: IconThemeData(
-                  color: Color(0xFF2E3A59),
-                ),
-                titleTextStyle: TextStyle(
-                  color: Color(0xFF2E3A59),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            theme: EnhancedTheme.lightTheme.copyWith(
+              extensions: [CustomColors.light],
             ),
-            home: FutureBuilder(
-              future: authProvider.initialize(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-                
-                return authProvider.isAuthenticated 
-                    ? const DashboardScreen() 
-                    : const LoginScreen();
-              },
+            darkTheme: EnhancedTheme.darkTheme.copyWith(
+              extensions: [CustomColors.dark],
+            ),
+            themeMode: ThemeMode.system,
+            home: NetworkAwareWidget(
+              child: FutureBuilder(
+                future: authProvider.initialize(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  
+                  return authProvider.isAuthenticated 
+                      ? const DashboardScreen() 
+                      : const LoginScreen();
+                },
+              ),
             ),
             routes: {
-              '/login': (context) => const LoginScreen(),
-              '/register': (context) => const RegisterScreen(),
-              '/dashboard': (context) => const DashboardScreen(),
-              '/home': (context) => const HomeScreen(),
-              '/add-report': (context) => const AddReportScreen(),
-              '/profile': (context) => const ProfileScreen(),
+              '/login': (context) => const NetworkAwareWidget(
+                child: LoginScreen(),
+              ),
+              '/register': (context) => const NetworkAwareWidget(
+                child: RegisterScreen(),
+              ),
+              '/dashboard': (context) => const NetworkAwareWidget(
+                child: DashboardScreen(),
+              ),
+              '/home': (context) => const NetworkAwareWidget(
+                child: HomeScreen(),
+              ),
+              '/add-report': (context) => const NetworkAwareWidget(
+                child: AddReportScreen(),
+              ),
+              '/profile': (context) => const NetworkAwareWidget(
+                child: ProfileScreen(),
+              ),
+              '/driving-mode': (context) => const NetworkAwareWidget(
+                child: DrivingModeScreen(),
+              ),
+              '/advanced-reports': (context) => const NetworkAwareWidget(
+                child: AdvancedReportsScreen(),
+              ),
+        '/security-monitor': (context) => const NetworkAwareWidget(
+          child: SecurityMonitorScreen(),
+        ),
+        '/security-settings': (context) => const NetworkAwareWidget(
+          child: SecuritySettingsScreen(),
+        ),
+        '/threat-management': (context) => const NetworkAwareWidget(
+          child: ThreatManagementScreen(),
+        ),
+        '/ai-prediction': (context) => NetworkAwareWidget(
+            child: const AIPredictionScreen(),
+          ),
+          '/smart-notifications': (context) => NetworkAwareWidget(
+            child: const SmartNotificationsScreen(),
+          ),
+          '/3d-maps': (context) => NetworkAwareWidget(
+            child: const Maps3DScreen(),
+          ),
             },
             builder: (context, child) {
               return Directionality(

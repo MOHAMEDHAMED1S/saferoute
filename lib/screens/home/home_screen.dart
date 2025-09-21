@@ -90,7 +90,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       );
       
       if (mounted) {
-        setState(() {});
+        setState(() {
+          // Update UI after location update
+        });
         _animateToCurrentLocation();
       }
     } catch (e) {
@@ -480,6 +482,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     borderRadius: 28,
                     padding: const EdgeInsets.all(16),
                     icon: Icons.list,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // AI Prediction Button
+                ScaleTransition(
+                  scale: _fabAnimation,
+                  child: LiquidGlassButton(
+                    text: '',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/ai-prediction');
+                    },
+                    type: LiquidGlassType.secondary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.psychology,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Smart Notifications Button
+                ScaleTransition(
+                  scale: _fabAnimation,
+                  child: LiquidGlassButton(
+                    text: '',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/smart-notifications');
+                    },
+                    type: LiquidGlassType.secondary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.notifications_active,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // 3D Maps Button
+                ScaleTransition(
+                  scale: _fabAnimation,
+                  child: LiquidGlassButton(
+                    text: '',
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/3d-maps');
+                    },
+                    type: LiquidGlassType.secondary,
+                    borderRadius: 28,
+                    padding: const EdgeInsets.all(16),
+                    icon: Icons.view_in_ar,
                   ),
                 ),
                 const SizedBox(height: 16),

@@ -9,7 +9,7 @@ class DashboardProvider extends ChangeNotifier {
     trustLevel: 'مساهم نشط',
   );
 
-  List<NearbyReport> _nearbyReports = [
+  final List<NearbyReport> _nearbyReports = [
     NearbyReport(
       id: '1',
       title: 'حادث - شارع التحرير',

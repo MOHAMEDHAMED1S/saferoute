@@ -3,13 +3,11 @@ import 'dart:async';
 import '../models/notification_model.dart';
 import '../models/report_model.dart';
 import '../services/notification_service.dart';
-import '../services/firestore_service.dart';
 
 class NotificationsProvider extends ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
-  final FirestoreService _firestoreService = FirestoreService();
 
-  List<NotificationModel> _notifications = [];
+  final List<NotificationModel> _notifications = [];
   List<NotificationModel> _unreadNotifications = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -125,14 +123,13 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       if (!_notificationsEnabled) return;
 
-      NotificationModel notification = NotificationModel.createConfirmation(
-        userId: userId,
-        reportId: reportId,
-        isConfirmed: true,
-        pointsEarned: pointsEarned,
-      );
-
       // TODO: Save notification to Firestore
+      // NotificationModel notification = NotificationModel.createConfirmation(
+      //   userId: userId,
+      //   reportId: reportId,
+      //   isConfirmed: true,
+      //   pointsEarned: pointsEarned,
+      // );
       // await _firestoreService.addNotification(notification);
 
       // Show local notification
@@ -249,7 +246,7 @@ class NotificationsProvider extends ChangeNotifier {
       // TODO: Implement playAlertSound method in NotificationService
       // await _notificationService.playAlertSound();
     } catch (e) {
-      print('Error playing alert sound: $e');
+      debugPrint('Error playing alert sound: $e');
     }
   }
 

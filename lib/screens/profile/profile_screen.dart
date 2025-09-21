@@ -161,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withAlpha(51),
                               border: Border.all(color: Colors.white, width: 3),
                             ),
                             child: Icon(
@@ -185,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             user.email,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withAlpha(204),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withAlpha(204),
           ),
         ),
       ],
@@ -432,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+            color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20, color: LiquidGlassTheme.getGradientByName('primary').colors.first),
@@ -474,7 +474,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.1),
+                    color: LiquidGlassTheme.getTextColor('secondary')?.withAlpha(25),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -612,7 +612,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 26),
@@ -645,9 +645,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+        color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.3)),
+        border: Border.all(color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(76)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -729,7 +729,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: _getReportColor(report.type).withOpacity(0.1),
+                    color: _getReportColor(report.type).withAlpha(25),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -760,7 +760,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(report.status).withOpacity(0.1),
+                    color: _getStatusColor(report.status).withAlpha(25),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

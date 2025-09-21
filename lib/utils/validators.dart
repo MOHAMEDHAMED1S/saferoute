@@ -17,8 +17,28 @@ class Validators {
       return 'كلمة المرور مطلوبة';
     }
     
-    if (value.length < 6) {
-      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    if (value.length < 8) {
+      return 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
+    }
+    
+    // Check for uppercase letter
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل';
+    }
+    
+    // Check for lowercase letter
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'كلمة المرور يجب أن تحتوي على حرف صغير واحد على الأقل';
+    }
+    
+    // Check for number
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل';
+    }
+    
+    // Check for special character
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+      return 'كلمة المرور يجب أن تحتوي على رمز خاص واحد على الأقل';
     }
     
     return null;

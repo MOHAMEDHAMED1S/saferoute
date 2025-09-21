@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
 
 /// تصميم Liquid Glass المستوحى من iOS 26 - White Background + Glass Elements
-class LiquidGlassTheme {
+class LiquidGlassTheme extends InheritedWidget {
+  const LiquidGlassTheme({
+    Key? key,
+    required Widget child,
+  }) : super(key: key, child: child);
+
+  static LiquidGlassTheme of(BuildContext context) {
+    final LiquidGlassTheme? result = context.dependOnInheritedWidgetOfExactType<LiquidGlassTheme>();
+    return result ?? const LiquidGlassTheme(child: SizedBox.shrink());
+  }
+
+  @override
+  bool updateShouldNotify(LiquidGlassTheme oldWidget) => false;
+
+  // Static theme properties
   // الخلفية الرئيسية - أبيض كامل
   static const Color backgroundColor = Color(0xFFFFFFFF);
   
@@ -225,6 +239,8 @@ class LiquidGlassTheme {
   static const Color borderColor = borderLight;         // رمادي خفيف للحدود
   static const Color successColor = Color(0xFF10B981);  // أخضر حيوي
   static const Color errorColor = Color(0xFFEF4444);    // أحمر حيوي
+  static const Color glassColor = primaryGlass;         // لون الزجاج الافتراضي
+  static const Color surfaceColor = primaryGlass;       // لون السطح للحوارات والبطاقات
   
   // النصوص على الخلفيات الملونة
   static const Color whiteTextColor = Color(0xFFFFFFFF);      // أبيض كامل - جميع النصوص على الخلفيات الملونة
@@ -1023,6 +1039,15 @@ class LiquidGlassTheme {
         return communityButtonGradient;
       case 'myStatsButton':
         return myStatsButtonGradient;
+      case 'secondary':
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF64748B), // رمادي أزرق
+            Color(0xFF475569), // رمادي أزرق داكن
+          ],
+        );
       default:
         return highlightGradient;
     }

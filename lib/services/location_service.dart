@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../models/user_model.dart';
 
 class LocationService {
@@ -51,8 +50,10 @@ class LocationService {
       await checkAndRequestPermissions();
       
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
       );
       
       _currentPosition = position;
@@ -241,11 +242,6 @@ class LocationService {
     }
   }
 
-  // Dispose resources
-  void dispose() {
-    stopLocationTracking();
-  }
-
   // Format coordinates for display
   String formatCoordinates(double latitude, double longitude) {
     return '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}';
@@ -264,5 +260,11 @@ class LocationService {
     } catch (e) {
       return false;
     }
+  }
+  
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = null;
+    _isTracking = false;
   }
 }

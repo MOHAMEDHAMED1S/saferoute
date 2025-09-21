@@ -1,24 +1,19 @@
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import '../models/report_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../services/location_service.dart';
-import '../services/notification_service.dart';
 
 class ReportsProvider with ChangeNotifier {
   final FirestoreService _firestoreService;
   final LocationService _locationService;
-  final NotificationService _notificationService;
 
   ReportsProvider({
     required FirestoreService firestoreService,
     required LocationService locationService,
-    required NotificationService notificationService,
   }) : _firestoreService = firestoreService,
-       _locationService = locationService,
-       _notificationService = notificationService;
+       _locationService = locationService;
 
   List<ReportModel> _reports = [];
   List<ReportModel> _nearbyReports = [];
@@ -92,7 +87,7 @@ class ReportsProvider with ChangeNotifier {
       final position = await _locationService.getCurrentLocation();
       _currentLocation = _locationService.positionToLocationData(position);
     } catch (e) {
-      print('Could not get current location: $e');
+      debugPrint('Could not get current location: $e');
     }
   }
 
@@ -173,7 +168,7 @@ class ReportsProvider with ChangeNotifier {
       );
 
       // Save to Firestore
-      String reportId = await _firestoreService.createReport(report);
+      await _firestoreService.createReport(report);
       
       // Send notifications to nearby users
       await _sendReportNotifications(report);
@@ -290,23 +285,23 @@ class ReportsProvider with ChangeNotifier {
       nearbyUsers = nearbyUsers.where((user) => user.id != report.createdBy).toList();
 
       // Send notifications
-      for (UserModel user in nearbyUsers) {
-        double distance = _locationService.calculateDistance(
-          startLatitude: user.location?.lat ?? 0,
-          startLongitude: user.location?.lng ?? 0,
-          endLatitude: report.location.lat,
-          endLongitude: report.location.lng,
-        ) / 1000; // Convert to kilometers
-
-        // TODO: Implement sendReportNotification method in NotificationService
-        // await _notificationService.sendReportNotification(
-        //   report: report,
-        //   targetUserId: user.id,
-        //   distanceInMeters: (distance * 1000).round(),
-        // );
-      }
+      // TODO: Implement sendReportNotification method in NotificationService
+      // for (UserModel user in nearbyUsers) {
+      //   double distance = _locationService.calculateDistance(
+      //     startLatitude: user.location?.lat ?? 0,
+      //     startLongitude: user.location?.lng ?? 0,
+      //     endLatitude: report.location.lat,
+      //     endLongitude: report.location.lng,
+      //   ) / 1000; // Convert to kilometers
+      //
+      //   await _notificationService.sendReportNotification(
+      //     report: report,
+      //     targetUserId: user.id,
+      //     distanceInMeters: (distance * 1000).round(),
+      //   );
+      // }
     } catch (e) {
-      print('Error sending report notifications: $e');
+      debugPrint('Error sending report notifications: $e');
     }
   }
 

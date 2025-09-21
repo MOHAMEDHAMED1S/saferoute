@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import '../services/location_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
-  final LocationService _locationService = LocationService();
 
   User? _firebaseUser;
   UserModel? _userModel;
@@ -250,7 +247,7 @@ class AuthProvider extends ChangeNotifier {
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
-      print('Error updating user location: $e');
+      debugPrint('Error updating user location: $e');
     }
   }
 
@@ -280,7 +277,7 @@ class AuthProvider extends ChangeNotifier {
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
-      print('Error adding points: $e');
+      debugPrint('Error adding points: $e');
     }
   }
 
@@ -293,7 +290,7 @@ class AuthProvider extends ChangeNotifier {
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
-      print('Error updating trust score: $e');
+      debugPrint('Error updating trust score: $e');
     }
   }
 
@@ -308,7 +305,7 @@ class AuthProvider extends ChangeNotifier {
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
-      print('Error incrementing total reports: $e');
+      debugPrint('Error incrementing total reports: $e');
     }
   }
 

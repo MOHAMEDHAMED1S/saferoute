@@ -277,7 +277,7 @@ class EmergencyAlert {
 
   String get distanceText {
     if (distanceInMeters < 1000) {
-      return '${distanceInMeters}م';
+      return '$distanceInMetersم';
     } else {
       return '${(distanceInMeters / 1000).toStringAsFixed(1)}كم';
     }
