@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../home/home_screen.dart';
+import '../maps/basic_map_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/add_report_screen.dart';
 import '../community/community_screen.dart';
@@ -28,7 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   final List<Widget> _screens = [
     const DashboardHomeWidget(),
-    const HomeScreen(),
+    const BasicMapScreen(),
     const AddReportScreen(),
     const CommunityScreen(),
     const ProfileScreen(),

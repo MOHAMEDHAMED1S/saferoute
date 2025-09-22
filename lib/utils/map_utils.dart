@@ -48,13 +48,13 @@ class MapUtils {
       'myLocationButtonEnabled': false,
       'zoomControlsEnabled': !kIsWeb,
       'mapToolbarEnabled': false,
-      'compassEnabled': true,
+      'compassEnabled': !kIsWeb, // Disable compass on web for better performance
       'trafficEnabled': false,
-      'buildingsEnabled': !kIsWeb, // Disable on web for performance
+      'buildingsEnabled': true, // Enable buildings for better Android performance
       'indoorViewEnabled': false,
-      'liteModeEnabled': false,
-      'tiltGesturesEnabled': true,
-      'rotateGesturesEnabled': true,
+      'liteModeEnabled': false, // Disable lite mode for Android compatibility
+      'tiltGesturesEnabled': true, // Enable tilt for Android
+      'rotateGesturesEnabled': true, // Enable rotation for Android
       'scrollGesturesEnabled': true,
       'zoomGesturesEnabled': true,
       'minMaxZoomPreference': MinMaxZoomPreference(minZoom, maxZoom),
