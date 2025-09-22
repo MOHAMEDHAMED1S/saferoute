@@ -32,13 +32,19 @@ class NetworkManager {
   }
 
   Future<void> _checkInitialConnectivity() async {
+    // Start with unknown status to allow app to load
+    _currentStatus = NetworkStatus.unknown;
+    _statusController.add(_currentStatus);
+    
+    // Check connectivity after a short delay to allow app initialization
+    await Future.delayed(const Duration(milliseconds: 500));
     await _checkConnectivity();
   }
 
   Future<void> _checkConnectivity() async {
     try {
       final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
+          .timeout(const Duration(seconds: 5));
       
       final newStatus = result.isNotEmpty && result[0].rawAddress.isNotEmpty
           ? NetworkStatus.connected
@@ -53,7 +59,9 @@ class NetworkManager {
         }
       }
     } catch (e) {
-      if (_currentStatus != NetworkStatus.disconnected) {
+      // Only set to disconnected if we were previously connected
+      // This prevents showing offline screen on app startup
+      if (_currentStatus == NetworkStatus.connected) {
         _currentStatus = NetworkStatus.disconnected;
         _statusController.add(_currentStatus);
       }
@@ -305,6 +313,7 @@ class _NetworkAwareWidgetState extends State<NetworkAwareWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Only show offline widget if explicitly disconnected (not unknown)
     if (_status == NetworkStatus.disconnected) {
       return widget.offlineBuilder?.call(context) ?? _buildOfflineWidget();
     }
@@ -342,8 +351,8 @@ class _NetworkAwareWidgetState extends State<NetworkAwareWidget> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                NetworkManager()._checkConnectivity();
+              onPressed: () async {
+                await NetworkManager()._checkConnectivity();
               },
               child: const Text('إعادة المحاولة'),
             ),
