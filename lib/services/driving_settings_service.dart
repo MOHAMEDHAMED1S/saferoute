@@ -339,6 +339,27 @@ class DrivingSettingsService {
     await updateSettings(newSettings);
   }
   
+  Future<void> updateUIVisibilitySettings({
+    bool? showFloatingActions,
+    bool? showARNavigation,
+    bool? showPerformanceMonitor,
+    bool? showAIChat,
+    bool? showVoiceAssistant,
+    bool? showNavigationInfo,
+    bool? showBottomControls,
+  }) async {
+    final newSettings = _currentSettings.copyWith(
+      showFloatingActions: showFloatingActions,
+      showARNavigation: showARNavigation,
+      showPerformanceMonitor: showPerformanceMonitor,
+      showAIChat: showAIChat,
+      showVoiceAssistant: showVoiceAssistant,
+      showNavigationInfo: showNavigationInfo,
+      showBottomControls: showBottomControls,
+    );
+    await updateSettings(newSettings);
+  }
+  
   // Auto-adaptation based on conditions
   Future<void> adaptToConditions({
     bool? isNight,

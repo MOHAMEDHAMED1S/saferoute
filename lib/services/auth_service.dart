@@ -264,10 +264,12 @@ class AuthService {
         return 'لا يوجد مستخدم بهذا البريد الإلكتروني';
       case 'wrong-password':
         return 'كلمة المرور غير صحيحة';
+      case 'invalid-login-credentials':
+        return 'بيانات تسجيل الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور';
       case 'email-already-in-use':
-        return 'البريد الإلكتروني مستخدم بالفعل';
+        return 'البريد الإلكتروني مستخدم بالفعل. يمكنك تسجيل الدخول أو استخدام بريد إلكتروني آخر';
       case 'weak-password':
-        return 'كلمة المرور ضعيفة جداً';
+        return 'كلمة المرور ضعيفة جداً. يجب أن تحتوي على 6 أحرف على الأقل';
       case 'invalid-email':
         return 'البريد الإلكتروني غير صحيح';
       case 'user-disabled':
@@ -278,8 +280,14 @@ class AuthService {
         return 'هذه العملية غير مسموحة';
       case 'requires-recent-login':
         return 'يتطلب تسجيل دخول حديث لإتمام هذه العملية';
+      case 'network-request-failed':
+        return 'فشل في الاتصال بالشبكة. تأكد من اتصالك بالإنترنت';
+      case 'invalid-credential':
+        return 'بيانات الاعتماد غير صحيحة';
+      case 'account-exists-with-different-credential':
+        return 'يوجد حساب بهذا البريد الإلكتروني بطريقة تسجيل دخول مختلفة';
       default:
-        return 'حدث خطأ في المصادقة: ${e.message}';
+        return 'حدث خطأ في المصادقة: ${e.message ?? e.code}';
     }
   }
 
@@ -308,4 +316,15 @@ class AuthService {
 
   // Check if email is verified
   bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
+
+  // Check if email exists (for better UX before registration)
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+      return signInMethods.isNotEmpty;
+    } catch (e) {
+      // If there's an error, assume email doesn't exist to allow registration attempt
+      return false;
+    }
+  }
 }

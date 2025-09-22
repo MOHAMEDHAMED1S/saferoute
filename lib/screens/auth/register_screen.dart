@@ -27,6 +27,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
   bool _acceptTerms = false;
+  bool _emailExists = false;
+  bool _checkingEmail = false;
 
   @override
   void dispose() {
@@ -36,6 +38,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkEmailExists() async {
+    if (_emailController.text.trim().isEmpty) return;
+    
+    setState(() {
+      _checkingEmail = true;
+    });
+    
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      bool exists = await authProvider.checkEmailExists(_emailController.text.trim());
+      
+      if (mounted) {
+        setState(() {
+          _emailExists = exists;
+          _checkingEmail = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _emailExists = false;
+          _checkingEmail = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -64,16 +93,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
         phone: _phoneController.text.trim(),
       );
 
-      if (mounted && success && authProvider.isLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/home');
+      if (mounted) {
+        if (success && authProvider.isLoggedIn) {
+          Navigator.of(context).pushReplacementNamed('/dashboard');
+        } else {
+          String errorMessage = authProvider.errorMessage ?? 'فشل في إنشاء الحساب';
+          
+          // Show more helpful error dialog for registration issues
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('خطأ في إنشاء الحساب'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(errorMessage),
+                    SizedBox(height: 16),
+                    if (errorMessage.contains('البريد الإلكتروني مستخدم بالفعل') || 
+                        errorMessage.contains('EMAIL_EXISTS'))
+                      Text(
+                        'يبدو أن لديك حساب بالفعل بهذا البريد الإلكتروني. يمكنك تسجيل الدخول بدلاً من ذلك.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    if (errorMessage.contains('كلمة المرور ضعيفة'))
+                      Text(
+                        'تأكد من أن كلمة المرور تحتوي على 6 أحرف على الأقل.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('حسناً'),
+                  ),
+                  if (errorMessage.contains('البريد الإلكتروني مستخدم بالفعل') || 
+                      errorMessage.contains('EMAIL_EXISTS'))
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop(); // Go back to login
+                      },
+                      child: Text('تسجيل الدخول'),
+                    ),
+                ],
+              );
+            },
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في إنشاء الحساب: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
-          ),
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('خطأ في إنشاء الحساب'),
+              content: Text('خطأ في إنشاء الحساب: ${e.toString()}'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('حسناً'),
+                ),
+              ],
+            );
+          },
         );
       }
     } finally {
@@ -142,7 +228,85 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   validator: Validators.validateEmail,
                   prefixIcon: Icons.email_outlined,
+                  onChanged: (value) {
+                    // Check email existence after user stops typing for 1 second
+                    Future.delayed(Duration(seconds: 1), () {
+                      if (_emailController.text.trim() == value.trim() && 
+                          value.trim().isNotEmpty && 
+                          value.contains('@')) {
+                        _checkEmailExists();
+                      }
+                    });
+                  },
                 ),
+                // Email exists warning
+                if (_checkingEmail)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'جاري التحقق من البريد الإلكتروني...',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_emailExists && !_checkingEmail)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'البريد الإلكتروني مستخدم بالفعل',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange[800],
+                                  ),
+                                ),
+                                Text(
+                                  'يمكنك تسجيل الدخول بدلاً من إنشاء حساب جديد',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Go back to login
+                            },
+                            child: Text(
+                              'تسجيل الدخول',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 // Phone Field
                 CustomTextField(
@@ -158,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passwordController,
                   label: 'كلمة المرور',
                   obscureText: !_isPasswordVisible,
-                  validator: Validators.validatePassword,
+                  validator: Validators.validateStrongPassword,
                   prefixIcon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(

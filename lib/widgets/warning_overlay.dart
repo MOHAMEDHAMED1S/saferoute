@@ -110,21 +110,57 @@ class _WarningOverlayState extends State<WarningOverlay>
   Widget build(BuildContext context) {
     if (_warnings.isEmpty) return const SizedBox.shrink();
     
+    // Show only the most critical warning to reduce clutter
+    final mostCriticalWarning = _warnings.reduce((a, b) => 
+        a.severity.index > b.severity.index ? a : b);
+    
     return SlideTransition(
       position: _slideAnimation,
       child: Container(
-        margin: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ..._warnings.take(3).map((warning) => _buildWarningCard(warning)),
-            if (_warnings.length > 3) _buildMoreWarningsIndicator(),
-          ],
-        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        child: _buildCompactWarningCard(mostCriticalWarning),
       ),
     );
   }
   
+  Widget _buildCompactWarningCard(DrivingWarning warning) {
+    final warningService = WarningService();
+    final color = warningService.getWarningColor(warning.type);
+    final icon = warningService.getWarningIcon(warning.type);
+    final severityColor = warningService.getSeverityColor(warning.severity);
+    
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            severityColor.withAlpha(204),
+            severityColor.withAlpha(153),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(51),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: warning.severity == WarningSeverity.critical
+          ? AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: _buildCompactWarningContent(warning, color, icon),
+                );
+              },
+            )
+          : _buildCompactWarningContent(warning, color, icon),
+    );
+  }
+
   Widget _buildWarningCard(DrivingWarning warning) {
     final warningService = WarningService();
     final color = warningService.getWarningColor(warning.type);
@@ -164,6 +200,58 @@ class _WarningOverlayState extends State<WarningOverlay>
     );
   }
   
+  Widget _buildCompactWarningContent(DrivingWarning warning, Color color, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // Warning icon
+          Icon(
+            icon,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          
+          // Warning message
+          Expanded(
+            child: Text(
+              warning.message,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          
+          // Distance
+          Text(
+            _formatDistance(warning.distance),
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.white70,
+            ),
+          ),
+          
+          const SizedBox(width: 8),
+          
+          // Dismiss button
+          GestureDetector(
+            onTap: () => _dismissWarning(warning.id),
+            child: const Icon(
+              Icons.close,
+              size: 16,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWarningContent(DrivingWarning warning, Color color, IconData icon) {
     return Padding(
       padding: const EdgeInsets.all(12),

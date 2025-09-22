@@ -47,15 +47,46 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (success && authProvider.isLoggedIn) {
-          Navigator.of(context).pushReplacementNamed('/home');
+          Navigator.of(context).pushReplacementNamed('/dashboard');
         } else {
           String errorMessage = authProvider.errorMessage ?? 'فشل في تسجيل الدخول';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
-              duration: const Duration(seconds: 4),
-            ),
+          
+          // Show more helpful error dialog for authentication issues
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text('خطأ في تسجيل الدخول'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(errorMessage),
+                    SizedBox(height: 16),
+                    if (errorMessage.contains('بيانات تسجيل الدخول غير صحيحة') || 
+                        errorMessage.contains('INVALID_LOGIN_CREDENTIALS'))
+                      Text(
+                        'تأكد من:\n• صحة البريد الإلكتروني\n• صحة كلمة المرور\n• أن الحساب موجود بالفعل',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('حسناً'),
+                  ),
+                  if (errorMessage.contains('بيانات تسجيل الدخول غير صحيحة'))
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushNamed('/register');
+                      },
+                      child: Text('إنشاء حساب جديد'),
+                    ),
+                ],
+              );
+            },
           );
         }
       }
@@ -89,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (success && authProvider.isLoggedIn) {
-          Navigator.of(context).pushReplacementNamed('/home');
+          Navigator.of(context).pushReplacementNamed('/dashboard');
         } else {
           String errorMessage = authProvider.errorMessage ?? 'فشل في تسجيل الدخول بـ Google';
           ScaffoldMessenger.of(context).showSnackBar(

@@ -99,7 +99,7 @@ class AuthProvider extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      _setError('خطأ في تسجيل الدخول: ${e.toString()}');
+      _setError(e.toString());
       return false;
     } finally {
       _setLoading(false);
@@ -131,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
       
       return false;
     } catch (e) {
-      _setError('خطأ في إنشاء الحساب: ${e.toString()}');
+      _setError(e.toString());
       return false;
     } finally {
       _setLoading(false);
@@ -339,6 +339,15 @@ class AuthProvider extends ChangeNotifier {
       await _loadUserData(_firebaseUser!.uid);
     } catch (e) {
       _setError('خطأ في تحديث البيانات: ${e.toString()}');
+    }
+  }
+
+  // Check if email exists
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      return await _authService.checkEmailExists(email);
+    } catch (e) {
+      return false;
     }
   }
 

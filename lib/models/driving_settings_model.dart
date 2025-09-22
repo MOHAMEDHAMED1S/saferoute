@@ -101,6 +101,15 @@ class DrivingSettings {
   final bool weatherAdaptation;
   final bool timeBasedOptimization;
   
+  // UI Element visibility preferences
+  final bool showFloatingActions;
+  final bool showARNavigation;
+  final bool showPerformanceMonitor;
+  final bool showAIChat;
+  final bool showVoiceAssistant;
+  final bool showNavigationInfo;
+  final bool showBottomControls;
+  
   const DrivingSettings({
     this.mode = DrivingMode.normal,
     this.speedUnit = SpeedUnit.kmh,
@@ -161,6 +170,15 @@ class DrivingSettings {
     this.predictiveRouting = true,
     this.weatherAdaptation = true,
     this.timeBasedOptimization = true,
+    
+    // UI Element visibility defaults
+    this.showFloatingActions = true,
+    this.showARNavigation = true,
+    this.showPerformanceMonitor = true,
+    this.showAIChat = true,
+    this.showVoiceAssistant = true,
+    this.showNavigationInfo = true,
+    this.showBottomControls = true,
   });
   
   // Create settings for specific driving modes
@@ -266,6 +284,14 @@ class DrivingSettings {
     bool? predictiveRouting,
     bool? weatherAdaptation,
     bool? timeBasedOptimization,
+    // UI visibility
+    bool? showFloatingActions,
+    bool? showARNavigation,
+    bool? showPerformanceMonitor,
+    bool? showAIChat,
+    bool? showVoiceAssistant,
+    bool? showNavigationInfo,
+    bool? showBottomControls,
   }) {
     return DrivingSettings(
       mode: mode ?? this.mode,
@@ -313,6 +339,13 @@ class DrivingSettings {
       predictiveRouting: predictiveRouting ?? this.predictiveRouting,
       weatherAdaptation: weatherAdaptation ?? this.weatherAdaptation,
       timeBasedOptimization: timeBasedOptimization ?? this.timeBasedOptimization,
+      showFloatingActions: showFloatingActions ?? this.showFloatingActions,
+      showARNavigation: showARNavigation ?? this.showARNavigation,
+      showPerformanceMonitor: showPerformanceMonitor ?? this.showPerformanceMonitor,
+      showAIChat: showAIChat ?? this.showAIChat,
+      showVoiceAssistant: showVoiceAssistant ?? this.showVoiceAssistant,
+      showNavigationInfo: showNavigationInfo ?? this.showNavigationInfo,
+      showBottomControls: showBottomControls ?? this.showBottomControls,
     );
   }
   

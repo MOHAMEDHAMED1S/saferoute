@@ -19,6 +19,8 @@ import '../../services/voice_assistant_service.dart';
 import '../../services/adaptive_interface_service.dart';
 import 'driving_settings_screen.dart';
 import '../../theme/liquid_glass_theme.dart';
+import '../../services/driving_settings_service.dart';
+import '../../models/driving_settings_model.dart';
 
 import '../../widgets/adaptive_interface_widget.dart';
 import '../../widgets/ai_chat_widget.dart';
@@ -71,6 +73,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   late AdaptiveInterfaceService _adaptiveInterface;
   late AIAssistantService _aiAssistantService;
   
+  // Settings
+  late DrivingSettingsService _settingsService;
+  DrivingSettings _settings = const DrivingSettings();
+  StreamSubscription<DrivingSettings>? _settingsSubscription;
+  
   // Navigation data
   String _destination = 'المنزل';
   final String _remainingTime = '15 دقيقة';
@@ -101,6 +108,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     _detectTimeOfDay();
     _initializeAdaptiveInterface();
     _initializeAIAssistant();
+    _initializeSettings();
   }
 
   void _initializeAnimations() {
@@ -108,6 +116,20 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+    
+    _warningAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    
+    _speedAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _speedAnimationController, curve: Curves.easeOut),
+    );
+    _warningAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _warningAnimationController, curve: Curves.elasticOut),
+    );
+    
+    _speedAnimationController.forward();
   }
   
   void _showVoiceInstruction(String instruction) {
@@ -129,19 +151,6 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         duration: const Duration(seconds: 3),
       ),
     );
-    _warningAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-    
-    _speedAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _speedAnimationController, curve: Curves.easeOut),
-    );
-    _warningAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _warningAnimationController, curve: Curves.elasticOut),
-    );
-    
-    _speedAnimationController.forward();
   }
 
   
@@ -239,6 +248,16 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   Future<void> _initializeAIAssistant() async {
     _aiAssistantService = AIAssistantService.instance;
     await _aiAssistantService.initialize();
+  }
+  
+  void _initializeSettings() {
+    _settingsService = DrivingSettingsService();
+    _settingsSubscription = _settingsService.settingsStream.listen((settings) {
+      setState(() {
+        _settings = settings;
+      });
+    });
+    _settingsService.initialize();
   }
   
   void _initializeSafetySystem() {
@@ -595,6 +614,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     _voiceListeningSubscription?.cancel();
     _voiceAssistant.dispose();
     _adaptiveInterface.dispose();
+    _settingsSubscription?.cancel();
     super.dispose();
   }
 
@@ -626,20 +646,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
               ),
             ),
             
-          // Warning overlay
-          Positioned(
-            top: 120,
-            left: 0,
-            right: 0,
-            child: WarningOverlay(
-              isDarkMode: _isDarkMode,
-              onDismissAll: () {
-                _warningService.dismissAllWarnings();
-              },
-            ),
-          ),
+          // Top Status Bar - Compact version
+          _buildTopStatusBar(),
           
-          // Safety overlay
+          // Safety overlay - Emergency notifications
           SafetyOverlay(
             safetyService: _safetyService,
             onEmergencyCancel: () {
@@ -650,69 +660,30 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             },
           ),
           
-          // Top Status Bar
-          _buildTopStatusBar(),
+          // Warning overlay - Positioned below status bar
+          Positioned(
+            top: 140,
+            left: 16,
+            right: 16,
+            child: WarningOverlay(
+              isDarkMode: _isDarkMode,
+              onDismissAll: () {
+                _warningService.dismissAllWarnings();
+              },
+            ),
+          ),
           
-          // Weather and adaptive info
-          _buildWeatherInfo(),
-          
-          // Warning Overlay
-          if (_activeWarnings.isNotEmpty) _buildWarningOverlay(),
-          
-          // Navigation Info
-          _buildNavigationInfo(),
+          // Navigation Info - Only when navigating
+          if (_isNavigating && _settings.showNavigationInfo) _buildNavigationInfo(),
           
           // Navigation controls and info
           if (_isNavigating) ..._buildNavigationUI(),
           
-          // AR Navigation Widget
-            ARNavigationWidget(
-              isActive: _isARModeActive,
-              onToggle: () {
-                setState(() {
-                  _isARModeActive = !_isARModeActive;
-                });
-              },
-              onCalibrate: () {
-                // Handle AR calibration
-              },
-            ),
-            
-            // Performance Monitor Widget
-            Positioned(
-              bottom: _isChatExpanded ? 320 : 240,
-              left: 20,
-              right: 20,
-              child: PerformanceMonitorWidget(
-                isExpanded: _isPerformanceMonitorExpanded,
-                onToggle: () {
-                  setState(() {
-                    _isPerformanceMonitorExpanded = !_isPerformanceMonitorExpanded;
-                  });
-                },
-              ),
-            ),
-            
-            // AI Chat Widget
-            Positioned(
-              bottom: 160,
-              left: 20,
-              right: 20,
-              child: AIChatWidget(
-                isExpanded: _isChatExpanded,
-                onToggleExpand: () {
-                  setState(() {
-                    _isChatExpanded = !_isChatExpanded;
-                  });
-                },
-              ),
-            ),
-            
-            // Bottom controls
-            _buildBottomControls(),
-            
-            // Voice assistant button
-            _buildVoiceAssistantButton(),
+          // Bottom controls - Always visible
+          if (_settings.showBottomControls) _buildBottomControls(),
+          
+          // Floating action buttons - Right side
+          _buildFloatingActions(),
           ],
         ),
       ),
@@ -722,90 +693,88 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   Widget _buildTopStatusBar() {
     return SafeArea(
       child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isDarkMode
                 ? [Colors.black.withAlpha(204), Colors.grey[900]!.withAlpha(204)]
                 : [Colors.white.withAlpha(229), Colors.grey[100]!.withAlpha(229)],
           ),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha(25),
-              blurRadius: 10,
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Driving Mode Icon
+            // Compact driving mode indicator
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: LiquidGlassTheme.primaryColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.drive_eta,
                 color: Colors.white,
-                size: 20,
+                size: 16,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             
-            // Title
+            // Compact title
             Text(
-              'وضع القيادة',
+              'قيادة',
               style: TextStyle(
                 color: _isDarkMode ? Colors.white : Colors.black87,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
             
             const Spacer(),
             
-            // Sound Icon
-            Icon(
-              Icons.volume_up,
-              color: _isDarkMode ? Colors.white70 : Colors.grey[600],
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            
-            // Location Icon
-            Icon(
-              Icons.location_on,
-              color: _isDarkMode ? Colors.white70 : Colors.grey[600],
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            
-            // Speed Display
-            AnimatedBuilder(
-              animation: _speedAnimation,
-              builder: (context, child) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _currentSpeed > 80
-                        ? Colors.red.withAlpha(51)
-                        : Colors.green.withAlpha(51),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    '${(_currentSpeed * _speedAnimation.value).round()} كم/س',
-                    style: TextStyle(
-                      color: _currentSpeed > 80 ? Colors.red : Colors.green,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              },
+            // Status indicators row
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Location status
+                Icon(
+                  Icons.gps_fixed,
+                  color: Colors.green,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                
+                // Speed Display - Compact
+                AnimatedBuilder(
+                  animation: _speedAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _currentSpeed > 80
+                            ? Colors.red.withAlpha(51)
+                            : Colors.green.withAlpha(51),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${(_currentSpeed * _speedAnimation.value).round()}',
+                        style: TextStyle(
+                          color: _currentSpeed > 80 ? Colors.red : Colors.green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -1000,52 +969,32 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   Widget _buildBottomControls() {
     return Positioned(
-      bottom: 80, // Moved up to make room for voice button
-      left: 20,
-      right: 20,
-      child: _isNavigating ? _buildNavigationControls() : _buildDefaultControls(),
-    );
-  }
-  
-  Widget _buildVoiceAssistantButton() {
-    return Positioned(
-      bottom: 20,
-      right: 20,
-      child: GestureDetector(
-        onTap: _toggleVoiceListening,
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: _isVoiceListening 
-                ? LinearGradient(
-                    colors: [Colors.red.shade400, Colors.red.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : LinearGradient(
-                    colors: [Colors.blue.shade400, Colors.blue.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-            boxShadow: [
-              BoxShadow(
-                color: (_isVoiceListening ? Colors.red : Colors.blue).withAlpha(76),
-                blurRadius: 15,
-                spreadRadius: 2,
-              ),
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.transparent,
+              _isDarkMode ? Colors.black.withAlpha(230) : Colors.white.withAlpha(230),
+              _isDarkMode ? Colors.black : Colors.white,
             ],
           ),
-          child: Icon(
-            _isVoiceListening ? Icons.mic : Icons.mic_none,
-            color: Colors.white,
-            size: 28,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _isNavigating ? _buildNavigationControls() : _buildDefaultControls(),
           ),
         ),
       ),
     );
   }
+  
+
   
   void _toggleVoiceListening() async {
     if (_isVoiceListening) {
@@ -1055,67 +1004,305 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     }
   }
   
+  Widget _buildFloatingActions() {
+    if (!_settings.showFloatingActions) return const SizedBox.shrink();
+    
+    return Positioned(
+      right: 16,
+      bottom: 100,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // AR Navigation Toggle
+          if (!_isNavigating && _settings.showARNavigation) ...[
+            FloatingActionButton(
+              heroTag: "ar_toggle",
+              mini: true,
+              backgroundColor: _isARModeActive 
+                  ? LiquidGlassTheme.primaryColor 
+                  : Colors.grey[600],
+              onPressed: () {
+                setState(() {
+                  _isARModeActive = !_isARModeActive;
+                });
+              },
+              child: const Icon(
+                Icons.view_in_ar,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          
+          // Performance Monitor Toggle
+          if (_settings.showPerformanceMonitor)
+          FloatingActionButton(
+            heroTag: "performance_toggle",
+            mini: true,
+            backgroundColor: _isPerformanceMonitorExpanded 
+                ? LiquidGlassTheme.primaryColor 
+                : Colors.grey[600],
+            onPressed: () {
+              setState(() {
+                _isPerformanceMonitorExpanded = !_isPerformanceMonitorExpanded;
+              });
+            },
+            child: const Icon(
+              Icons.speed,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // AI Chat Toggle
+          if (_settings.showAIChat)
+          FloatingActionButton(
+            heroTag: "chat_toggle",
+            mini: true,
+            backgroundColor: _isChatExpanded 
+                ? LiquidGlassTheme.primaryColor 
+                : Colors.grey[600],
+            onPressed: () {
+              setState(() {
+                _isChatExpanded = !_isChatExpanded;
+              });
+            },
+            child: const Icon(
+              Icons.chat,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Voice Assistant Button
+          if (_settings.showVoiceAssistant)
+          FloatingActionButton(
+            heroTag: "voice_assistant",
+            backgroundColor: _isVoiceListening 
+                ? Colors.red.shade600
+                : LiquidGlassTheme.primaryColor,
+            onPressed: _toggleVoiceListening,
+            child: Icon(
+              _isVoiceListening ? Icons.mic : Icons.mic_none,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   Widget _buildDefaultControls() {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: _buildControlButton(
-            'ملاحة',
-            Icons.navigation,
-            LiquidGlassTheme.primaryColor,
-            () => _showDestinationDialog(),
+        // Search bar like Google Maps
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: _isDarkMode ? Colors.grey[800] : Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showDestinationDialog(),
+              borderRadius: BorderRadius.circular(25),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search,
+                      color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'إلى أين تريد الذهاب؟',
+                        style: TextStyle(
+                          color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.mic,
+                      color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                      size: 24,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildControlButton(
-            'إبلاغ',
-            Icons.report,
-            Colors.orange,
-            () => _showReportDialog(),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildControlButton(
-            'إعدادات',
-            Icons.settings,
-            Colors.grey,
-            () => _showSettingsDialog(),
-          ),
+        // Action buttons row
+        Row(
+          children: [
+            Expanded(
+              child: _buildModernControlButton(
+                'إبلاغ سريع',
+                Icons.report_problem,
+                Colors.orange,
+                () => _showReportDialog(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildModernControlButton(
+                'طرق آمنة',
+                Icons.route,
+                Colors.green,
+                () => _showSafeRoutesDialog(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildModernControlButton(
+                'إعدادات',
+                Icons.settings,
+                Colors.grey,
+                () => _showSettingsDialog(),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
   
   Widget _buildNavigationControls() {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: _buildControlButton(
-            'طريق بديل',
-            Icons.alt_route,
-            Colors.blue,
-            () => _showAlternativeRoute(),
+        // Navigation info card
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _isDarkMode ? Colors.grey[800] : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Navigation icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: LiquidGlassTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.navigation,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Navigation details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _destination,
+                      style: TextStyle(
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          _remainingTime,
+                          style: TextStyle(
+                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '•',
+                          style: TextStyle(
+                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _remainingDistance,
+                          style: TextStyle(
+                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Stop button
+              IconButton(
+                onPressed: () => _stopNavigation(),
+                icon: Icon(
+                  Icons.close,
+                  color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildControlButton(
-            'إبلاغ',
-            Icons.report,
-            Colors.orange,
-            () => _showReportDialog(),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildControlButton(
-            'إيقاف',
-            Icons.stop,
-            Colors.red,
-            () => _stopNavigation(),
-          ),
+        // Control buttons
+        Row(
+          children: [
+            Expanded(
+              child: _buildModernControlButton(
+                'طريق بديل',
+                Icons.alt_route,
+                Colors.blue,
+                () => _showAlternativeRoute(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildModernControlButton(
+                'إبلاغ',
+                Icons.report_problem,
+                Colors.orange,
+                () => _showReportDialog(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildModernControlButton(
+                'خيارات',
+                Icons.more_horiz,
+                Colors.grey,
+                () => _showNavigationOptions(),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1354,6 +1541,68 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     );
   }
 
+  Widget _buildModernControlButton(
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: _isDarkMode ? Colors.grey[800] : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(51),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showDestinationDialog() {
     showDialog(
       context: context,
@@ -1553,5 +1802,187 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         ),
       ),
     );
+  }
+
+  void _showSafeRoutesDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('الطرق الآمنة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withAlpha(51),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.route, color: Colors.green),
+              ),
+              title: const Text('الطريق الأسرع'),
+              subtitle: const Text('15 دقيقة • 8.5 كم'),
+              onTap: () {
+                Navigator.pop(context);
+                _selectRoute('fastest');
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withAlpha(51),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.security, color: Colors.blue),
+              ),
+              title: const Text('الطريق الأكثر أماناً'),
+              subtitle: const Text('18 دقيقة • 9.2 كم'),
+              onTap: () {
+                Navigator.pop(context);
+                _selectRoute('safest');
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withAlpha(51),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.eco, color: Colors.orange),
+              ),
+              title: const Text('الطريق الاقتصادي'),
+              subtitle: const Text('20 دقيقة • 7.8 كم'),
+              onTap: () {
+                Navigator.pop(context);
+                _selectRoute('eco');
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNavigationOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: _isDarkMode ? Colors.grey[900] : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text(
+                      'خيارات الملاحة',
+                      style: TextStyle(
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildNavigationOption(
+                      'تجنب الطرق السريعة',
+                      Icons.no_crash,
+                      () => _toggleAvoidHighways(),
+                    ),
+                    _buildNavigationOption(
+                      'تجنب الرسوم',
+                      Icons.money_off,
+                      () => _toggleAvoidTolls(),
+                    ),
+                    _buildNavigationOption(
+                      'تجنب العبارات',
+                      Icons.directions_boat_outlined,
+                      () => _toggleAvoidFerries(),
+                    ),
+                    _buildNavigationOption(
+                      'الوضع الليلي',
+                      Icons.dark_mode,
+                      () => _toggleDarkMode(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavigationOption(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: _isDarkMode ? Colors.white : Colors.black87,
+        ),
+      ),
+      onTap: onTap,
+      trailing: Icon(
+        Icons.chevron_right,
+        color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+      ),
+    );
+  }
+
+  void _selectRoute(String routeType) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('تم اختيار الطريق: $routeType'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _toggleAvoidHighways() {
+    Navigator.pop(context);
+  }
+
+  void _toggleAvoidTolls() {
+    Navigator.pop(context);
+  }
+
+  void _toggleAvoidFerries() {
+    Navigator.pop(context);
+  }
+
+  void _toggleDarkMode() {
+    setState(() {
+      _isDarkMode = !_isDarkMode;
+    });
+    Navigator.pop(context);
   }
 }

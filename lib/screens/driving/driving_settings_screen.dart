@@ -26,7 +26,7 @@ class _DrivingSettingsScreenState extends State<DrivingSettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _settingsService = DrivingSettingsService();
     _initializeSettings();
   }
@@ -94,6 +94,7 @@ class _DrivingSettingsScreenState extends State<DrivingSettingsScreen>
                 _buildVoiceTab(),
                 _buildNavigationTab(),
                 _buildAdvancedTab(),
+                _buildUIElementsTab(),
               ],
             ),
           ),
@@ -247,6 +248,7 @@ class _DrivingSettingsScreenState extends State<DrivingSettingsScreen>
           Tab(text: 'الصوت'),
           Tab(text: 'الملاحة'),
           Tab(text: 'متقدم'),
+          Tab(text: 'العناصر'),
         ],
       ),
     );
@@ -871,5 +873,38 @@ class _DrivingSettingsScreenState extends State<DrivingSettingsScreen>
         }
         break;
     }
+  }
+  
+  Widget _buildUIElementsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionCard(
+          'العناصر العائمة',
+          [
+            _buildSwitchTile('إظهار الأزرار العائمة', _settings.showFloatingActions, 
+              (value) => _settingsService.updateUIVisibilitySettings(showFloatingActions: value)),
+            _buildSwitchTile('زر الواقع المعزز', _settings.showARNavigation, 
+              (value) => _settingsService.updateUIVisibilitySettings(showARNavigation: value)),
+            _buildSwitchTile('مراقب الأداء', _settings.showPerformanceMonitor, 
+              (value) => _settingsService.updateUIVisibilitySettings(showPerformanceMonitor: value)),
+            _buildSwitchTile('المساعد الذكي', _settings.showAIChat, 
+              (value) => _settingsService.updateUIVisibilitySettings(showAIChat: value)),
+            _buildSwitchTile('المساعد الصوتي', _settings.showVoiceAssistant, 
+              (value) => _settingsService.updateUIVisibilitySettings(showVoiceAssistant: value)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildSectionCard(
+          'عناصر الواجهة',
+          [
+            _buildSwitchTile('معلومات الملاحة', _settings.showNavigationInfo, 
+              (value) => _settingsService.updateUIVisibilitySettings(showNavigationInfo: value)),
+            _buildSwitchTile('أزرار التحكم السفلية', _settings.showBottomControls, 
+              (value) => _settingsService.updateUIVisibilitySettings(showBottomControls: value)),
+          ],
+        ),
+      ],
+    );
   }
 }
