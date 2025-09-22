@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../widgets/glass_container.dart';
-
+import '../../providers/app_settings_provider.dart';
 import '../../widgets/language_settings_widget.dart';
 import '../language/language_settings_screen.dart';
 import '../ar/ar_settings_screen.dart';
@@ -24,8 +25,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   late Animation<Offset> _slideAnimation;
   
   // State
-  bool _isDarkMode = false;
-
   bool _isLocationEnabled = true;
   bool _isLanguageSettingsExpanded = false;
   
@@ -298,15 +297,17 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               const Divider(color: Colors.white24),
               
-              _buildSwitchCard(
-                'الوضع الليلي',
-                'تفعيل المظهر الداكن',
-                Icons.dark_mode,
-                _isDarkMode,
-                (value) {
-                  setState(() {
-                    _isDarkMode = value;
-                  });
+              Consumer<AppSettingsProvider>(
+                builder: (context, settings, child) {
+                  return _buildSwitchCard(
+                    'الوضع الليلي',
+                    'تفعيل المظهر الداكن',
+                    Icons.dark_mode,
+                    settings.isDarkMode,
+                    (value) {
+                      settings.toggleDarkMode();
+                    },
+                  );
                 },
               ),
               const Divider(color: Colors.white24),

@@ -80,14 +80,13 @@ class DashboardProvider extends ChangeNotifier {
     try {
       // Simulate API calls
       await Future.delayed(const Duration(seconds: 1));
-      
+
       // In a real app, you would fetch data from your backend/Firebase
       await _loadStats();
       await _loadNearbyReports();
       await _loadWeather();
       await _loadDailyTip();
       await _checkEmergencyAlerts();
-      
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
@@ -130,9 +129,9 @@ class DashboardProvider extends ChangeNotifier {
       'لا تستخدم الهاتف أثناء القيادة',
       'استخدم الإشارات عند تغيير المسار',
     ];
-    
+
     final randomTip = tips[DateTime.now().day % tips.length];
-    
+
     _dailyTip = SafetyTip(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'نصيحة اليوم',
@@ -143,20 +142,47 @@ class DashboardProvider extends ChangeNotifier {
   }
 
   Future<void> _checkEmergencyAlerts() async {
-    // In a real app, check for emergency alerts based on user location
-    // For demo purposes, we'll randomly show an alert
-    if (DateTime.now().minute % 10 == 0) {
-      _currentAlert = EmergencyAlert(
-        id: 'alert_${DateTime.now().millisecondsSinceEpoch}',
-        message: 'حذر! حادث على بعد 300 متر',
-        location: 'شارع التحرير',
-        distanceInMeters: 300,
-        timestamp: DateTime.now(),
-        severity: AlertSeverity.high,
-      );
-    } else {
-      _currentAlert = null;
+    // Show emergency alert only if there are multiple nearby reports
+    // or high-risk situations
+
+    if (_nearbyReports.length >= 3) {
+      // Check for multiple reports of the same type
+      final reportTypes = <ReportType, int>{};
+      for (final report in _nearbyReports) {
+        reportTypes[report.type] = (reportTypes[report.type] ?? 0) + 1;
+      }
+      // Show alert if there are multiple reports of dangerous types
+      final dangerousTypes = [ReportType.accident];
+      for (final type in dangerousTypes) {
+        if ((reportTypes[type] ?? 0) >= 2) {
+          _currentAlert = EmergencyAlert(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            message: 'تم رصد عدة بلاغات خطيرة في المنطقة المحيطة',
+            severity: AlertSeverity.high,
+            timestamp: DateTime.now(),
+            location: 'المنطقة المحيطة',
+            distanceInMeters: 0,
+          );
+          return;
+        }
+      }
+
+      // Show alert for high traffic congestion
+      if ((reportTypes[ReportType.traffic] ?? 0) >= 2) {
+        _currentAlert = EmergencyAlert(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          message: 'ازدحام مروري شديد في عدة مناطق قريبة',
+          severity: AlertSeverity.medium,
+          timestamp: DateTime.now(),
+          location: 'المنطقة المحيطة',
+          distanceInMeters: 0,
+        );
+        return;
+      }
     }
+
+    // No emergency alert needed
+    _currentAlert = null;
   }
 
   void dismissAlert() {

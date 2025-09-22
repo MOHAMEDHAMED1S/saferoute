@@ -27,8 +27,10 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
   ReportType? _selectedType;
   bool _isSubmitting = false;
   int _currentStep = 0; // 0: نوع البلاغ، 1: التفاصيل، 2: المراجعة
+  double _selectedDistance = 100; // المسافة بالمتر
 
   final List<String> _stepTitles = ['اختر نوع البلاغ', 'أضف التفاصيل', 'راجع البلاغ'];
+  final List<double> _distanceOptions = [50, 100, 200, 500, 1000]; // خيارات المسافة بالمتر
 
   @override
   void initState() {
@@ -444,6 +446,22 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           
           const SizedBox(height: 24),
           
+          // تحديد المسافة
+          Text(
+            'مسافة تأثير البلاغ',
+            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'حدد المسافة التي يؤثر فيها هذا البلاغ على السائقين',
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          
+          _buildDistanceSelector(),
+          
+          const SizedBox(height: 24),
+          
           // معلومات الموقع
           LiquidGlassContainer(
             type: LiquidGlassType.primary,
@@ -570,6 +588,17 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     const SizedBox(width: 4),
                     Text(
                       'الموقع الحالي',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(
+                      Icons.straighten,
+                      size: 16,
+                      color: LiquidGlassTheme.getTextColor('secondary'),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_selectedDistance.toInt()} متر',
                       style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
                     ),
                   ],
@@ -814,6 +843,95 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
         return 'طريق مغلق';
       default:
         return 'بلاغ';
+    }
+  }
+
+  Widget _buildDistanceSelector() {
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
+      borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'المسافة: ${_selectedDistance.toInt()} متر',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _getDistanceDescription(_selectedDistance),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                    fontSize: 12,
+                    color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _distanceOptions.map((distance) {
+              final isSelected = _selectedDistance == distance;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedDistance = distance;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? LiquidGlassTheme.getGradientByName('primary').colors.first
+                        : LiquidGlassTheme.backgroundColor?.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? LiquidGlassTheme.getGradientByName('primary').colors.first
+                          : LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3) ?? Colors.grey,
+                    ),
+                  ),
+                  child: Text(
+                    '${distance.toInt()} م',
+                    style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                      fontSize: 12,
+                      color: isSelected
+                          ? Colors.white
+                          : LiquidGlassTheme.getTextColor('primary'),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getDistanceDescription(double distance) {
+    if (distance <= 50) {
+      return 'قريب جداً';
+    } else if (distance <= 100) {
+      return 'قريب';
+    } else if (distance <= 200) {
+      return 'متوسط';
+    } else if (distance <= 500) {
+      return 'بعيد';
+    } else {
+      return 'بعيد جداً';
     }
   }
 }

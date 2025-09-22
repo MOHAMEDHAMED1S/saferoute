@@ -1,44 +1,16 @@
 import 'dart:convert';
 
-enum DrivingMode {
-  normal,
-  eco,
-  sport,
-  comfort,
-  night,
-  rain,
-  highway
-}
+enum DrivingMode { normal, eco, sport, comfort, night, rain, highway }
 
-enum SpeedUnit {
-  kmh,
-  mph
-}
+enum SpeedUnit { kmh, mph }
 
-enum DistanceUnit {
-  km,
-  miles
-}
+enum DistanceUnit { km, miles }
 
-enum VoiceGender {
-  male,
-  female
-}
+enum VoiceGender { male, female }
 
-enum MapStyle {
-  standard,
-  satellite,
-  hybrid,
-  terrain,
-  dark,
-  retro
-}
+enum MapStyle { standard, satellite, hybrid, terrain, dark, retro }
 
-enum NavigationStyle {
-  minimal,
-  detailed,
-  voiceOnly
-}
+enum NavigationStyle { minimal, detailed, voiceOnly }
 
 class DrivingSettings {
   final DrivingMode mode;
@@ -47,7 +19,7 @@ class DrivingSettings {
   final VoiceGender voiceGender;
   final MapStyle mapStyle;
   final NavigationStyle navigationStyle;
-  
+
   // Display preferences
   final bool showSpeedometer;
   final bool showCompass;
@@ -56,7 +28,7 @@ class DrivingSettings {
   final bool showPOI;
   final bool nightModeAuto;
   final double brightness;
-  
+
   // Safety preferences
   final bool speedWarningsEnabled;
   final bool fatigueDetectionEnabled;
@@ -64,14 +36,14 @@ class DrivingSettings {
   final bool emergencyDetectionEnabled;
   final int speedWarningThreshold; // km/h over limit
   final int fatigueCheckInterval; // minutes
-  
+
   // Voice preferences
   final bool voiceEnabled;
   final bool voiceProactiveAnnouncements;
   final double voiceVolume;
   final double voiceSpeed;
   final String voiceLanguage;
-  
+
   // Navigation preferences
   final bool avoidTolls;
   final bool avoidHighways;
@@ -79,7 +51,7 @@ class DrivingSettings {
   final bool preferFastestRoute;
   final bool showAlternativeRoutes;
   final int routeRecalculationSensitivity; // 1-5
-  
+
   // Warning preferences
   final bool showAccidentWarnings;
   final bool showTrafficWarnings;
@@ -87,20 +59,20 @@ class DrivingSettings {
   final bool showPoliceWarnings;
   final bool showRoadworkWarnings;
   final int warningDistance; // meters
-  
+
   // Privacy preferences
   final bool shareLocationData;
   final bool shareTrafficData;
   final bool shareIncidentReports;
   final bool anonymousMode;
-  
+
   // Advanced preferences
   final bool adaptiveInterface;
   final bool learningMode;
   final bool predictiveRouting;
   final bool weatherAdaptation;
   final bool timeBasedOptimization;
-  
+
   // UI Element visibility preferences
   final bool showFloatingActions;
   final bool showARNavigation;
@@ -109,7 +81,7 @@ class DrivingSettings {
   final bool showVoiceAssistant;
   final bool showNavigationInfo;
   final bool showBottomControls;
-  
+
   const DrivingSettings({
     this.mode = DrivingMode.normal,
     this.speedUnit = SpeedUnit.kmh,
@@ -117,7 +89,7 @@ class DrivingSettings {
     this.voiceGender = VoiceGender.female,
     this.mapStyle = MapStyle.standard,
     this.navigationStyle = NavigationStyle.detailed,
-    
+
     // Display defaults
     this.showSpeedometer = true,
     this.showCompass = true,
@@ -126,7 +98,7 @@ class DrivingSettings {
     this.showPOI = false,
     this.nightModeAuto = true,
     this.brightness = 0.8,
-    
+
     // Safety defaults
     this.speedWarningsEnabled = true,
     this.fatigueDetectionEnabled = true,
@@ -134,14 +106,14 @@ class DrivingSettings {
     this.emergencyDetectionEnabled = true,
     this.speedWarningThreshold = 10,
     this.fatigueCheckInterval = 30,
-    
+
     // Voice defaults
     this.voiceEnabled = true,
     this.voiceProactiveAnnouncements = true,
     this.voiceVolume = 0.8,
     this.voiceSpeed = 0.8,
     this.voiceLanguage = 'ar-SA',
-    
+
     // Navigation defaults
     this.avoidTolls = false,
     this.avoidHighways = false,
@@ -149,7 +121,7 @@ class DrivingSettings {
     this.preferFastestRoute = true,
     this.showAlternativeRoutes = true,
     this.routeRecalculationSensitivity = 3,
-    
+
     // Warning defaults
     this.showAccidentWarnings = true,
     this.showTrafficWarnings = true,
@@ -157,20 +129,20 @@ class DrivingSettings {
     this.showPoliceWarnings = true,
     this.showRoadworkWarnings = true,
     this.warningDistance = 1000,
-    
+
     // Privacy defaults
     this.shareLocationData = true,
     this.shareTrafficData = true,
     this.shareIncidentReports = true,
     this.anonymousMode = false,
-    
+
     // Advanced defaults
     this.adaptiveInterface = true,
     this.learningMode = true,
     this.predictiveRouting = true,
     this.weatherAdaptation = true,
     this.timeBasedOptimization = true,
-    
+
     // UI Element visibility defaults
     this.showFloatingActions = true,
     this.showARNavigation = true,
@@ -180,7 +152,7 @@ class DrivingSettings {
     this.showNavigationInfo = true,
     this.showBottomControls = true,
   });
-  
+
   // Create settings for specific driving modes
   factory DrivingSettings.forMode(DrivingMode mode) {
     switch (mode) {
@@ -237,7 +209,7 @@ class DrivingSettings {
         return const DrivingSettings();
     }
   }
-  
+
   DrivingSettings copyWith({
     DrivingMode? mode,
     SpeedUnit? speedUnit,
@@ -308,13 +280,17 @@ class DrivingSettings {
       nightModeAuto: nightModeAuto ?? this.nightModeAuto,
       brightness: brightness ?? this.brightness,
       speedWarningsEnabled: speedWarningsEnabled ?? this.speedWarningsEnabled,
-      fatigueDetectionEnabled: fatigueDetectionEnabled ?? this.fatigueDetectionEnabled,
+      fatigueDetectionEnabled:
+          fatigueDetectionEnabled ?? this.fatigueDetectionEnabled,
       laneAssistEnabled: laneAssistEnabled ?? this.laneAssistEnabled,
-      emergencyDetectionEnabled: emergencyDetectionEnabled ?? this.emergencyDetectionEnabled,
-      speedWarningThreshold: speedWarningThreshold ?? this.speedWarningThreshold,
+      emergencyDetectionEnabled:
+          emergencyDetectionEnabled ?? this.emergencyDetectionEnabled,
+      speedWarningThreshold:
+          speedWarningThreshold ?? this.speedWarningThreshold,
       fatigueCheckInterval: fatigueCheckInterval ?? this.fatigueCheckInterval,
       voiceEnabled: voiceEnabled ?? this.voiceEnabled,
-      voiceProactiveAnnouncements: voiceProactiveAnnouncements ?? this.voiceProactiveAnnouncements,
+      voiceProactiveAnnouncements:
+          voiceProactiveAnnouncements ?? this.voiceProactiveAnnouncements,
       voiceVolume: voiceVolume ?? this.voiceVolume,
       voiceSpeed: voiceSpeed ?? this.voiceSpeed,
       voiceLanguage: voiceLanguage ?? this.voiceLanguage,
@@ -322,11 +298,14 @@ class DrivingSettings {
       avoidHighways: avoidHighways ?? this.avoidHighways,
       avoidFerries: avoidFerries ?? this.avoidFerries,
       preferFastestRoute: preferFastestRoute ?? this.preferFastestRoute,
-      showAlternativeRoutes: showAlternativeRoutes ?? this.showAlternativeRoutes,
-      routeRecalculationSensitivity: routeRecalculationSensitivity ?? this.routeRecalculationSensitivity,
+      showAlternativeRoutes:
+          showAlternativeRoutes ?? this.showAlternativeRoutes,
+      routeRecalculationSensitivity:
+          routeRecalculationSensitivity ?? this.routeRecalculationSensitivity,
       showAccidentWarnings: showAccidentWarnings ?? this.showAccidentWarnings,
       showTrafficWarnings: showTrafficWarnings ?? this.showTrafficWarnings,
-      showSpeedCameraWarnings: showSpeedCameraWarnings ?? this.showSpeedCameraWarnings,
+      showSpeedCameraWarnings:
+          showSpeedCameraWarnings ?? this.showSpeedCameraWarnings,
       showPoliceWarnings: showPoliceWarnings ?? this.showPoliceWarnings,
       showRoadworkWarnings: showRoadworkWarnings ?? this.showRoadworkWarnings,
       warningDistance: warningDistance ?? this.warningDistance,
@@ -338,17 +317,19 @@ class DrivingSettings {
       learningMode: learningMode ?? this.learningMode,
       predictiveRouting: predictiveRouting ?? this.predictiveRouting,
       weatherAdaptation: weatherAdaptation ?? this.weatherAdaptation,
-      timeBasedOptimization: timeBasedOptimization ?? this.timeBasedOptimization,
+      timeBasedOptimization:
+          timeBasedOptimization ?? this.timeBasedOptimization,
       showFloatingActions: showFloatingActions ?? this.showFloatingActions,
       showARNavigation: showARNavigation ?? this.showARNavigation,
-      showPerformanceMonitor: showPerformanceMonitor ?? this.showPerformanceMonitor,
+      showPerformanceMonitor:
+          showPerformanceMonitor ?? this.showPerformanceMonitor,
       showAIChat: showAIChat ?? this.showAIChat,
       showVoiceAssistant: showVoiceAssistant ?? this.showVoiceAssistant,
       showNavigationInfo: showNavigationInfo ?? this.showNavigationInfo,
       showBottomControls: showBottomControls ?? this.showBottomControls,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'mode': mode.name,
@@ -398,7 +379,7 @@ class DrivingSettings {
       'timeBasedOptimization': timeBasedOptimization,
     };
   }
-  
+
   factory DrivingSettings.fromJson(Map<String, dynamic> json) {
     return DrivingSettings(
       mode: DrivingMode.values.firstWhere(
@@ -466,13 +447,13 @@ class DrivingSettings {
       timeBasedOptimization: json['timeBasedOptimization'] ?? true,
     );
   }
-  
+
   String toJsonString() => jsonEncode(toJson());
-  
+
   factory DrivingSettings.fromJsonString(String jsonString) {
     return DrivingSettings.fromJson(jsonDecode(jsonString));
   }
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -523,7 +504,7 @@ class DrivingSettings {
         other.weatherAdaptation == weatherAdaptation &&
         other.timeBasedOptimization == timeBasedOptimization;
   }
-  
+
   @override
   int get hashCode {
     return Object.hashAll([
@@ -574,7 +555,7 @@ class DrivingSettings {
       timeBasedOptimization,
     ]);
   }
-  
+
   // Helper methods
   String get modeDisplayName {
     switch (mode) {
@@ -594,7 +575,7 @@ class DrivingSettings {
         return 'طريق سريع';
     }
   }
-  
+
   String get speedUnitSymbol {
     switch (speedUnit) {
       case SpeedUnit.kmh:
@@ -603,7 +584,7 @@ class DrivingSettings {
         return 'ميل/س';
     }
   }
-  
+
   String get distanceUnitSymbol {
     switch (distanceUnit) {
       case DistanceUnit.km:

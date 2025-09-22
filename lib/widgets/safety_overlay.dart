@@ -181,19 +181,26 @@ class _SafetyOverlayState extends State<SafetyOverlay>
     switch (event.type) {
       case EmergencyType.crashDetected:
         _startEmergencyCountdown(event.autoCallDelay);
+        _emergencyController.forward();
         break;
       case EmergencyType.cancelled:
+        _emergencyCountdown = 0;
+        _emergencyCountdownTimer?.cancel();
         _hideEmergencyEvent();
-        break;
+        return; // Don't call forward() for cancelled events
       case EmergencyType.callMade:
         _emergencyCountdown = 0;
+        _emergencyCountdownTimer?.cancel();
         break;
       case EmergencyType.manualTrigger:
         _startEmergencyCountdown(event.autoCallDelay);
+        _emergencyController.forward();
         break;
     }
 
-    _emergencyController.forward();
+    if (event.type != EmergencyType.cancelled) {
+      _emergencyController.forward();
+    }
   }
 
   void _startEmergencyCountdown(int seconds) {

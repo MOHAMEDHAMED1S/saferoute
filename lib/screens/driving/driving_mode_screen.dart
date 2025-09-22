@@ -46,7 +46,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
-  
+
   // Warning system
   final WarningService _warningService = WarningService();
   late NavigationService _navigationService;
@@ -54,30 +54,30 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   StreamSubscription<List<DrivingWarning>>? _warningsSubscription;
   StreamSubscription<NavigationState>? _navigationSubscription;
   StreamSubscription<String>? _voiceInstructionSubscription;
-  
+
   // Safety system
   late SafetyService _safetyService;
   StreamSubscription<SpeedWarning>? _speedWarningSubscription;
   StreamSubscription<FatigueWarning>? _fatigueWarningSubscription;
   StreamSubscription<EmergencyEvent>? _emergencySubscription;
   final SafetySettings _safetySettings = const SafetySettings();
-  
+
   // Voice assistant
   late VoiceAssistantService _voiceAssistant;
   StreamSubscription<String>? _voiceCommandSubscription;
   StreamSubscription<String>? _voiceResponseSubscription;
   StreamSubscription<bool>? _voiceListeningSubscription;
   bool _isVoiceListening = false;
-  
+
   // Adaptive interface
   late AdaptiveInterfaceService _adaptiveInterface;
   late AIAssistantService _aiAssistantService;
-  
+
   // Settings
   late DrivingSettingsService _settingsService;
   DrivingSettings _settings = const DrivingSettings();
   StreamSubscription<DrivingSettings>? _settingsSubscription;
-  
+
   // Navigation data
   String _destination = 'المنزل';
   final String _remainingTime = '15 دقيقة';
@@ -87,10 +87,16 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   NavigationState _navigationState = NavigationState.idle();
   bool _isNavigating = false;
 
+  // Destination search
+  final TextEditingController _destinationController = TextEditingController();
+  bool _isSearching = false;
+  List<Map<String, dynamic>> _searchSuggestions = [];
+  LatLng? _selectedDestination;
+
   bool _isChatExpanded = false;
   bool _isARModeActive = false;
   bool _isPerformanceMonitorExpanded = false;
-  
+
   // Animation controllers
   late AnimationController _speedAnimationController;
   late AnimationController _warningAnimationController;
@@ -116,22 +122,25 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _warningAnimationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     _speedAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _speedAnimationController, curve: Curves.easeOut),
     );
     _warningAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _warningAnimationController, curve: Curves.elasticOut),
+      CurvedAnimation(
+        parent: _warningAnimationController,
+        curve: Curves.elasticOut,
+      ),
     );
-    
+
     _speedAnimationController.forward();
   }
-  
+
   void _showVoiceInstruction(String instruction) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -153,7 +162,6 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     );
   }
 
-  
   void _showAlternativeRoutes() {
     showModalBottomSheet(
       context: context,
@@ -164,10 +172,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
           children: [
             const Text(
               'الطرق البديلة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -195,7 +200,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   void _switchToAlternativeRoute(String routeName) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -207,20 +212,22 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   void _initializeWarningSystem() {
     _navigationService = NavigationService();
-    
+
     _warningService.initialize();
     _navigationService.initialize();
-    
+
     _warningsSubscription = _warningService.warningsStream.listen((warnings) {
       setState(() {
         _activeWarnings = warnings;
       });
-      
+
       // Update map markers with warnings
       _updateWarningMarkers(warnings);
     });
-    
-    _navigationSubscription = _navigationService.navigationStateStream.listen((state) {
+
+    _navigationSubscription = _navigationService.navigationStateStream.listen((
+      state,
+    ) {
       if (mounted) {
         setState(() {
           _navigationState = state;
@@ -228,28 +235,29 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         });
       }
     });
-    
-    _voiceInstructionSubscription = _navigationService.voiceInstructionStream.listen((instruction) {
-      _showVoiceInstruction(instruction);
-    });
-    
+
+    _voiceInstructionSubscription = _navigationService.voiceInstructionStream
+        .listen((instruction) {
+          _showVoiceInstruction(instruction);
+        });
+
     // Initialize safety system
     _initializeSafetySystem();
-    
+
     // Initialize voice assistant
     _initializeVoiceAssistant();
   }
-  
+
   void _initializeAdaptiveInterface() async {
     _adaptiveInterface = AdaptiveInterfaceService();
     await _adaptiveInterface.initialize();
   }
-  
+
   Future<void> _initializeAIAssistant() async {
     _aiAssistantService = AIAssistantService.instance;
     await _aiAssistantService.initialize();
   }
-  
+
   void _initializeSettings() {
     _settingsService = DrivingSettingsService();
     _settingsSubscription = _settingsService.settingsStream.listen((settings) {
@@ -259,64 +267,65 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     });
     _settingsService.initialize();
   }
-  
+
   void _initializeSafetySystem() {
     _safetyService = SafetyService();
     _safetyService.initialize(_safetySettings);
-    
+
     // Subscribe to safety warnings
     _speedWarningSubscription = _safetyService.speedWarnings.listen((warning) {
       // Speed warnings are handled by SafetyOverlay
     });
-    
-    _fatigueWarningSubscription = _safetyService.fatigueWarnings.listen((warning) {
+
+    _fatigueWarningSubscription = _safetyService.fatigueWarnings.listen((
+      warning,
+    ) {
       // Fatigue warnings are handled by SafetyOverlay
     });
-    
+
     _emergencySubscription = _safetyService.emergencyEvents.listen((event) {
       if (event.type == EmergencyType.crashDetected) {
         // Additional crash handling if needed
       }
     });
   }
-  
+
   void _initializeVoiceAssistant() async {
     _voiceAssistant = VoiceAssistantService();
-    
+
     try {
       await _voiceAssistant.initialize(
         warningService: _warningService,
         navigationService: _navigationService,
         safetyService: _safetyService,
       );
-      
+
       // Subscribe to voice events
       _voiceCommandSubscription = _voiceAssistant.commands.listen((command) {
         // Handle voice commands
       });
-      
+
       _voiceResponseSubscription = _voiceAssistant.responses.listen((response) {
         // Handle voice responses
       });
-      
-      _voiceListeningSubscription = _voiceAssistant.isListening.listen((listening) {
+
+      _voiceListeningSubscription = _voiceAssistant.isListening.listen((
+        listening,
+      ) {
         if (mounted) {
           setState(() {
             _isVoiceListening = listening;
           });
         }
       });
-      
     } catch (e) {
       debugPrint('Voice assistant initialization failed: $e');
     }
   }
-  
 
-  
   void _updateWarningMarkers(List<DrivingWarning> warnings) {
     Set<Marker> warningMarkers = {};
-    
+
     for (DrivingWarning warning in warnings) {
       warningMarkers.add(
         Marker(
@@ -331,13 +340,15 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         ),
       );
     }
-    
+
     setState(() {
-      _markers = _markers.where((marker) => !marker.markerId.value.startsWith('warning_')).toSet();
+      _markers = _markers
+          .where((marker) => !marker.markerId.value.startsWith('warning_'))
+          .toSet();
       _markers.addAll(warningMarkers);
     });
   }
-  
+
   void _showWarningDetails(DrivingWarning warning) {
     showDialog(
       context: context,
@@ -380,7 +391,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   String _getSeverityText(WarningSeverity severity) {
     switch (severity) {
       case WarningSeverity.critical:
@@ -407,18 +418,18 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      
+
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception('خدمات الموقع غير مفعلة');
       }
-      
+
       _currentPosition = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
-      
+
       if (mounted) {
         setState(() {
           // Update UI after location update
@@ -439,7 +450,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   Future<void> _loadReports() async {
     try {
-      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      final reportsProvider = Provider.of<ReportsProvider>(
+        context,
+        listen: false,
+      );
       await reportsProvider.initialize();
       _updateMapMarkers();
     } catch (e) {
@@ -448,11 +462,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   }
 
   void _updateMapMarkers() {
-    final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+    final reportsProvider = Provider.of<ReportsProvider>(
+      context,
+      listen: false,
+    );
     final reports = reportsProvider.nearbyReports;
-    
+
     Set<Marker> newMarkers = {};
-    
+
     for (ReportModel report in reports) {
       newMarkers.add(
         Marker(
@@ -466,7 +483,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         ),
       );
     }
-    
+
     if (mounted) {
       setState(() {
         _markers = newMarkers;
@@ -479,9 +496,13 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       case 'accident':
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
       case 'traffic':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueYellow,
+        );
       case 'roadwork':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueOrange,
+        );
       default:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
     }
@@ -568,7 +589,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             message: 'حادث خلال 800م في المسار الأيسر',
             distance: 800,
             severity: WarningSeverity.high,
-            location: LatLng(_currentPosition?.latitude ?? 0, _currentPosition?.longitude ?? 0),
+            location: LatLng(
+              _currentPosition?.latitude ?? 0,
+              _currentPosition?.longitude ?? 0,
+            ),
             timestamp: DateTime.now(),
             isActive: true,
           ),
@@ -578,13 +602,12 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     }
   }
 
-
-
-
-
   void _animateToCurrentLocation() async {
     if (_mapController != null && _currentPosition != null) {
-      final latLng = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      final latLng = LatLng(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+      );
       final cameraUpdate = MapUtils.safeCameraUpdate(latLng);
       await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
     }
@@ -595,8 +618,394 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     _animateToCurrentLocation();
   }
 
+  // Destination search methods
+  void _startDestinationSearch() {
+    setState(() {
+      _isSearching = true;
+    });
+  }
+
+  void _cancelDestinationSearch() {
+    setState(() {
+      _isSearching = false;
+      _destinationController.clear();
+      _searchSuggestions.clear();
+    });
+  }
+
+  void _onDestinationSearchChanged(String query) {
+    if (query.isEmpty) {
+      _clearSearchSuggestions();
+      return;
+    }
+
+    // Simulate search suggestions (in real app, use Google Places API)
+    setState(() {
+      _searchSuggestions =
+          [
+                {
+                  'name': 'مول العرب',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7136,
+                  'lng': 46.6753,
+                },
+                {
+                  'name': 'مطار الملك خالد الدولي',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.9576,
+                  'lng': 46.6988,
+                },
+                {
+                  'name': 'برج المملكة',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7119,
+                  'lng': 46.6758,
+                },
+                {
+                  'name': 'جامعة الملك سعود',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7277,
+                  'lng': 46.6219,
+                },
+              ]
+              .where(
+                (place) =>
+                    place['name'].toString().contains(query) ||
+                    place['address'].toString().contains(query),
+              )
+              .toList();
+    });
+  }
+
+  void _clearSearchSuggestions() {
+    setState(() {
+      _searchSuggestions.clear();
+    });
+  }
+
+  void _selectDestination(Map<String, dynamic> destination) {
+    setState(() {
+      _destination = destination['name'];
+      _selectedDestination = LatLng(destination['lat'], destination['lng']);
+      _isSearching = false;
+      _destinationController.clear();
+      _searchSuggestions.clear();
+    });
+
+    // Start navigation to selected destination
+    _startNavigationToDestination();
+  }
+
+  void _startNavigationToDestination() {
+    if (_selectedDestination != null) {
+      setState(() {
+        _isNavigating = true;
+      });
+
+      // Start navigation service
+      _navigationService.startNavigation(destination: _selectedDestination!);
+
+      // Show confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('بدء التنقل إلى $_destination'),
+          backgroundColor: LiquidGlassTheme.primaryColor,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // Helper methods for navigation
+  String _formatDistance(int distanceInMeters) {
+    if (distanceInMeters < 1000) {
+      return '${distanceInMeters}م';
+    } else {
+      final km = (distanceInMeters / 1000).toStringAsFixed(1);
+      return '${km}كم';
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours > 0) {
+      return '${hours}س ${minutes}د';
+    } else {
+      return '${minutes}د';
+    }
+  }
+
+  // Build real-time reports overlay
+  Widget _buildReportsOverlay() {
+    return Consumer<ReportsProvider>(
+      builder: (context, reportsProvider, child) {
+        final nearbyReports = reportsProvider.nearbyReports
+            .where((report) => report.status == ReportStatus.active)
+            .take(3)
+            .toList();
+
+        if (nearbyReports.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          top: 200,
+          left: 16,
+          right: 16,
+          child: Column(
+            children: nearbyReports
+                .map((report) => _buildReportCard(report))
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  // Build individual report card
+  Widget _buildReportCard(ReportModel report) {
+    final distance = _calculateDistanceToReport(report);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _getReportColor(report.type).withOpacity(0.9),
+            _getReportColor(report.type).withOpacity(0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Report icon
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getReportIcon(report.type),
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Report info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  report.typeNameArabic,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (report.description.isNotEmpty)
+                  Text(
+                    report.description,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+
+          // Distance and trust score
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                distance,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.thumb_up,
+                    color: Colors.white.withOpacity(0.8),
+                    size: 12,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '${(report.trustScore * 100).round()}%',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Action buttons
+          const SizedBox(width: 8),
+          Column(
+            children: [
+              GestureDetector(
+                onTap: () => _confirmReport(report, true),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
+                ),
+              ),
+              const SizedBox(height: 4),
+              GestureDetector(
+                onTap: () => _confirmReport(report, false),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods for reports
+  String _calculateDistanceToReport(ReportModel report) {
+    if (_currentPosition == null) return '---';
+
+    final distance = Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      report.location.lat,
+      report.location.lng,
+    );
+
+    if (distance < 1000) {
+      return '${distance.round()}م';
+    } else {
+      return '${(distance / 1000).toStringAsFixed(1)}كم';
+    }
+  }
+
+  Color _getReportColor(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return Colors.red;
+      case ReportType.jam:
+        return Colors.orange;
+      case ReportType.carBreakdown:
+        return Colors.purple;
+      case ReportType.bump:
+        return Colors.yellow;
+      case ReportType.closedRoad:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getReportIcon(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return Icons.car_crash;
+      case ReportType.jam:
+        return Icons.traffic;
+      case ReportType.carBreakdown:
+        return Icons.car_repair;
+      case ReportType.bump:
+        return Icons.warning;
+      case ReportType.closedRoad:
+        return Icons.block;
+    }
+  }
+
+  void _confirmReport(ReportModel report, bool isTrue) async {
+    final reportsProvider = Provider.of<ReportsProvider>(
+      context,
+      listen: false,
+    );
+    final success = await reportsProvider.voteOnReport(
+      reportId: report.id,
+      userId: 'current_user_id', // Replace with actual user ID
+      isTrue: isTrue,
+    );
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isTrue ? 'تم تأكيد البلاغ' : 'تم رفض البلاغ'),
+          backgroundColor: isTrue ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  IconData _getManeuverIcon(String maneuver) {
+    switch (maneuver.toLowerCase()) {
+      case 'turn-left':
+        return Icons.turn_left;
+      case 'turn-right':
+        return Icons.turn_right;
+      case 'turn-slight-left':
+        return Icons.turn_slight_left;
+      case 'turn-slight-right':
+        return Icons.turn_slight_right;
+      case 'turn-sharp-left':
+        return Icons.turn_sharp_left;
+      case 'turn-sharp-right':
+        return Icons.turn_sharp_right;
+      case 'uturn-left':
+      case 'uturn-right':
+        return Icons.u_turn_left;
+      case 'merge':
+        return Icons.merge;
+      case 'fork-left':
+      case 'fork-right':
+        return Icons.call_split;
+      case 'roundabout-left':
+      case 'roundabout-right':
+        return Icons.roundabout_left;
+      case 'arrive':
+        return Icons.location_on;
+      case 'straight':
+      default:
+        return Icons.straight;
+    }
+  }
+
   @override
   void dispose() {
+    _destinationController.dispose();
     _speedAnimationController.dispose();
     _warningAnimationController.dispose();
     _positionStream?.cancel();
@@ -621,69 +1030,78 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _isDarkMode ? Colors.black : LiquidGlassTheme.backgroundColor,
+      backgroundColor: _isDarkMode
+          ? Colors.black
+          : LiquidGlassTheme.backgroundColor,
       body: AdaptiveInterfaceWidget(
         enableAdaptation: true,
         child: Stack(
           children: [
-          // Map
-          MapWidget(
-            onMapCreated: _onMapCreated,
-            currentPosition: _currentPosition,
-            markers: _markers,
-            onMarkerTapped: (report) {},
-          ),
-          
-          // Route polyline overlay
-          if (_polylines.isNotEmpty)
-            GoogleMap(
-              polylines: _polylines,
-              initialCameraPosition: CameraPosition(
-                target: _currentPosition != null
-                    ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-                    : MapUtils.defaultLocation,
-                zoom: 15,
-              ),
+            // Map
+            MapWidget(
+              onMapCreated: _onMapCreated,
+              currentPosition: _currentPosition,
+              markers: _markers,
+              onMarkerTapped: (report) {},
             ),
-            
-          // Top Status Bar - Compact version
-          _buildTopStatusBar(),
-          
-          // Safety overlay - Emergency notifications
-          SafetyOverlay(
-            safetyService: _safetyService,
-            onEmergencyCancel: () {
-              // Handle emergency cancellation
-            },
-            onUserInteraction: () {
-              _safetyService.recordUserInteraction();
-            },
-          ),
-          
-          // Warning overlay - Positioned below status bar
-          Positioned(
-            top: 140,
-            left: 16,
-            right: 16,
-            child: WarningOverlay(
-              isDarkMode: _isDarkMode,
-              onDismissAll: () {
-                _warningService.dismissAllWarnings();
+
+            // Route polyline overlay
+            if (_polylines.isNotEmpty)
+              GoogleMap(
+                polylines: _polylines,
+                initialCameraPosition: CameraPosition(
+                  target: _currentPosition != null
+                      ? LatLng(
+                          _currentPosition!.latitude,
+                          _currentPosition!.longitude,
+                        )
+                      : MapUtils.defaultLocation,
+                  zoom: 15,
+                ),
+              ),
+
+            // Top Status Bar or Search Bar
+            _isSearching ? _buildDestinationSearchBar() : _buildTopStatusBar(),
+
+            // Safety overlay - Emergency notifications
+            SafetyOverlay(
+              safetyService: _safetyService,
+              onEmergencyCancel: () {
+                // Handle emergency cancellation
+              },
+              onUserInteraction: () {
+                _safetyService.recordUserInteraction();
               },
             ),
-          ),
-          
-          // Navigation Info - Only when navigating
-          if (_isNavigating && _settings.showNavigationInfo) _buildNavigationInfo(),
-          
-          // Navigation controls and info
-          if (_isNavigating) ..._buildNavigationUI(),
-          
-          // Bottom controls - Always visible
-          if (_settings.showBottomControls) _buildBottomControls(),
-          
-          // Floating action buttons - Right side
-          _buildFloatingActions(),
+
+            // Warning overlay - Positioned below status bar
+            Positioned(
+              top: 140,
+              left: 16,
+              right: 16,
+              child: WarningOverlay(
+                isDarkMode: _isDarkMode,
+                onDismissAll: () {
+                  _warningService.dismissAllWarnings();
+                },
+              ),
+            ),
+
+            // Real-time reports overlay - Positioned below warning overlay
+            if (_settings.showTraffic) _buildReportsOverlay(),
+
+            // Navigation Info - Only when navigating
+            if (_isNavigating && _settings.showNavigationInfo)
+              _buildNavigationInfo(),
+
+            // Navigation controls and info
+            if (_isNavigating) ..._buildNavigationUI(),
+
+            // Bottom controls - Always visible
+            if (_settings.showBottomControls) _buildBottomControls(),
+
+            // Floating action buttons - Right side
+            _buildFloatingActions(),
           ],
         ),
       ),
@@ -698,8 +1116,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isDarkMode
-                ? [Colors.black.withAlpha(204), Colors.grey[900]!.withAlpha(204)]
-                : [Colors.white.withAlpha(229), Colors.grey[100]!.withAlpha(229)],
+                ? [
+                    Colors.black.withAlpha(204),
+                    Colors.grey[900]!.withAlpha(204),
+                  ]
+                : [
+                    Colors.white.withAlpha(229),
+                    Colors.grey[100]!.withAlpha(229),
+                  ],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -719,44 +1143,75 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 color: LiquidGlassTheme.primaryColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.drive_eta,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: const Icon(Icons.drive_eta, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 8),
-            
-            // Compact title
-            Text(
-              'قيادة',
-              style: TextStyle(
-                color: _isDarkMode ? Colors.white : Colors.black87,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+
+            // Compact title with search button
+            GestureDetector(
+              onTap: () => _startDestinationSearch(),
+              child: Row(
+                children: [
+                  Text(
+                    'قيادة',
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.search,
+                    color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                    size: 16,
+                  ),
+                ],
               ),
             ),
-            
+
             const Spacer(),
-            
+
             // Status indicators row
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Location status
-                Icon(
-                  Icons.gps_fixed,
-                  color: Colors.green,
-                  size: 16,
+                // Current location button
+                GestureDetector(
+                  onTap: () {
+                    _initializeLocation();
+                    _animateToCurrentLocation();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _currentPosition != null 
+                          ? Colors.green.withAlpha(51)
+                          : Colors.orange.withAlpha(51),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _currentPosition != null 
+                          ? Icons.gps_fixed 
+                          : Icons.gps_not_fixed,
+                      color: _currentPosition != null 
+                          ? Colors.green 
+                          : Colors.orange,
+                      size: 16,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                
+
                 // Speed Display - Compact
                 AnimatedBuilder(
                   animation: _speedAnimation,
                   builder: (context, child) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _currentSpeed > 80
                             ? Colors.red.withAlpha(51)
@@ -778,6 +1233,139 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDestinationSearchBar() {
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: _isDarkMode
+                    ? [
+                        Colors.black.withAlpha(229),
+                        Colors.grey[900]!.withAlpha(229),
+                      ]
+                    : [
+                        Colors.white.withAlpha(242),
+                        Colors.grey[50]!.withAlpha(242),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () => _cancelDestinationSearch(),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: _isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _destinationController,
+                    autofocus: true,
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      fontSize: 16,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'إلى أين تريد الذهاب؟',
+                      hintStyle: TextStyle(
+                        color: _isDarkMode ? Colors.white54 : Colors.grey[500],
+                      ),
+                      border: InputBorder.none,
+                      prefixIcon: Icon(
+                        Icons.location_on,
+                        color: LiquidGlassTheme.primaryColor,
+                      ),
+                    ),
+                    onChanged: _onDestinationSearchChanged,
+                  ),
+                ),
+                if (_destinationController.text.isNotEmpty)
+                  IconButton(
+                    onPressed: () {
+                      _destinationController.clear();
+                      _clearSearchSuggestions();
+                    },
+                    icon: Icon(
+                      Icons.clear,
+                      color: _isDarkMode ? Colors.white54 : Colors.grey[500],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Search suggestions
+          if (_searchSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: _isDarkMode
+                      ? [
+                          Colors.black.withAlpha(229),
+                          Colors.grey[900]!.withAlpha(229),
+                        ]
+                      : [
+                          Colors.white.withAlpha(242),
+                          Colors.grey[50]!.withAlpha(242),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _searchSuggestions.length,
+                itemBuilder: (context, index) {
+                  final suggestion = _searchSuggestions[index];
+                  return ListTile(
+                    leading: Icon(
+                      Icons.location_on,
+                      color: LiquidGlassTheme.primaryColor,
+                    ),
+                    title: Text(
+                      suggestion['name'],
+                      style: TextStyle(
+                        color: _isDarkMode ? Colors.white : Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      suggestion['address'],
+                      style: TextStyle(
+                        color: _isDarkMode ? Colors.white54 : Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                    onTap: () => _selectDestination(suggestion),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -812,11 +1400,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
               ),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.warning,
-                    color: Colors.white,
-                    size: 24,
-                  ),
+                  const Icon(Icons.warning, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -851,6 +1435,17 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   }
 
   Widget _buildNavigationInfo() {
+    final route = _navigationState.route;
+    if (route == null) {
+      return const SizedBox.shrink();
+    }
+
+    final remainingTime = _formatDuration(route.estimatedTimeRemaining);
+    final remainingDistance = _formatDistance(route.remainingDistance);
+    final destinationName =
+        (_navigationState.destinationName ?? _selectedDestination ?? 'الوجهة')
+            .toString();
+
     return Positioned(
       bottom: 120,
       left: 16,
@@ -860,8 +1455,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isDarkMode
-                ? [Colors.black.withAlpha(229), Colors.grey[900]!.withAlpha(229)]
-                : [Colors.white.withAlpha(242), Colors.grey[50]!.withAlpha(242)],
+                ? [
+                    Colors.black.withAlpha(229),
+                    Colors.grey[900]!.withAlpha(229),
+                  ]
+                : [
+                    Colors.white.withAlpha(242),
+                    Colors.grey[50]!.withAlpha(242),
+                  ],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -900,25 +1501,24 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  Icons.flag,
-                  color: Colors.green,
-                  size: 20,
-                ),
+                Icon(Icons.flag, color: Colors.green, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  _destination,
-                  style: TextStyle(
-                    color: _isDarkMode ? Colors.white : Colors.black87,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    destinationName,
+                    style: TextStyle(
+                      color: _isDarkMode ? Colors.white : Colors.black87,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Time and Distance
             Row(
               children: [
@@ -929,7 +1529,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '$_remainingTime متبقية',
+                  '$remainingTime متبقية',
                   style: TextStyle(
                     color: _isDarkMode ? Colors.white : Colors.black87,
                     fontSize: 16,
@@ -952,7 +1552,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _remainingDistance,
+                  remainingDistance,
                   style: TextStyle(
                     color: _isDarkMode ? Colors.white : Colors.black87,
                     fontSize: 16,
@@ -979,7 +1579,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              _isDarkMode ? Colors.black.withAlpha(230) : Colors.white.withAlpha(230),
+              _isDarkMode
+                  ? Colors.black.withAlpha(230)
+                  : Colors.white.withAlpha(230),
               _isDarkMode ? Colors.black : Colors.white,
             ],
           ),
@@ -987,15 +1589,15 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: _isNavigating ? _buildNavigationControls() : _buildDefaultControls(),
+            child: _isNavigating
+                ? _buildNavigationControls()
+                : _buildDefaultControls(),
           ),
         ),
       ),
     );
   }
-  
 
-  
   void _toggleVoiceListening() async {
     if (_isVoiceListening) {
       await _voiceAssistant.stopListening();
@@ -1003,10 +1605,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       await _voiceAssistant.startListening();
     }
   }
-  
+
   Widget _buildFloatingActions() {
     if (!_settings.showFloatingActions) return const SizedBox.shrink();
-    
+
     return Positioned(
       right: 16,
       bottom: 100,
@@ -1018,8 +1620,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             FloatingActionButton(
               heroTag: "ar_toggle",
               mini: true,
-              backgroundColor: _isARModeActive 
-                  ? LiquidGlassTheme.primaryColor 
+              backgroundColor: _isARModeActive
+                  ? LiquidGlassTheme.primaryColor
                   : Colors.grey[600],
               onPressed: () {
                 setState(() {
@@ -1034,68 +1636,61 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             ),
             const SizedBox(height: 8),
           ],
-          
+
           // Performance Monitor Toggle
           if (_settings.showPerformanceMonitor)
-          FloatingActionButton(
-            heroTag: "performance_toggle",
-            mini: true,
-            backgroundColor: _isPerformanceMonitorExpanded 
-                ? LiquidGlassTheme.primaryColor 
-                : Colors.grey[600],
-            onPressed: () {
-              setState(() {
-                _isPerformanceMonitorExpanded = !_isPerformanceMonitorExpanded;
-              });
-            },
-            child: const Icon(
-              Icons.speed,
-              color: Colors.white,
-              size: 20,
+            FloatingActionButton(
+              heroTag: "performance_toggle",
+              mini: true,
+              backgroundColor: _isPerformanceMonitorExpanded
+                  ? LiquidGlassTheme.primaryColor
+                  : Colors.grey[600],
+              onPressed: () {
+                setState(() {
+                  _isPerformanceMonitorExpanded =
+                      !_isPerformanceMonitorExpanded;
+                });
+              },
+              child: const Icon(Icons.speed, color: Colors.white, size: 20),
             ),
-          ),
           const SizedBox(height: 8),
-          
+
           // AI Chat Toggle
           if (_settings.showAIChat)
-          FloatingActionButton(
-            heroTag: "chat_toggle",
-            mini: true,
-            backgroundColor: _isChatExpanded 
-                ? LiquidGlassTheme.primaryColor 
-                : Colors.grey[600],
-            onPressed: () {
-              setState(() {
-                _isChatExpanded = !_isChatExpanded;
-              });
-            },
-            child: const Icon(
-              Icons.chat,
-              color: Colors.white,
-              size: 20,
+            FloatingActionButton(
+              heroTag: "chat_toggle",
+              mini: true,
+              backgroundColor: _isChatExpanded
+                  ? LiquidGlassTheme.primaryColor
+                  : Colors.grey[600],
+              onPressed: () {
+                setState(() {
+                  _isChatExpanded = !_isChatExpanded;
+                });
+              },
+              child: const Icon(Icons.chat, color: Colors.white, size: 20),
             ),
-          ),
           const SizedBox(height: 8),
-          
+
           // Voice Assistant Button
           if (_settings.showVoiceAssistant)
-          FloatingActionButton(
-            heroTag: "voice_assistant",
-            backgroundColor: _isVoiceListening 
-                ? Colors.red.shade600
-                : LiquidGlassTheme.primaryColor,
-            onPressed: _toggleVoiceListening,
-            child: Icon(
-              _isVoiceListening ? Icons.mic : Icons.mic_none,
-              color: Colors.white,
-              size: 24,
+            FloatingActionButton(
+              heroTag: "voice_assistant",
+              backgroundColor: _isVoiceListening
+                  ? Colors.red.shade600
+                  : LiquidGlassTheme.primaryColor,
+              onPressed: _toggleVoiceListening,
+              child: Icon(
+                _isVoiceListening ? Icons.mic : Icons.mic_none,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
-          ),
         ],
       ),
     );
   }
-  
+
   Widget _buildDefaultControls() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1120,7 +1715,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
               onTap: () => _showDestinationDialog(),
               borderRadius: BorderRadius.circular(25),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Row(
                   children: [
                     Icon(
@@ -1133,7 +1731,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                       child: Text(
                         'إلى أين تريد الذهاب؟',
                         style: TextStyle(
-                          color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                          color: _isDarkMode
+                              ? Colors.white70
+                              : Colors.grey[600],
                           fontSize: 16,
                         ),
                       ),
@@ -1160,7 +1760,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 () => _showReportDialog(),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildModernControlButton(
                 'طرق آمنة',
@@ -1169,7 +1769,16 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 () => _showSafeRoutesDialog(),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildModernControlButton(
+                'طوارئ',
+                Icons.emergency,
+                Colors.red,
+                () => _showEmergencyDialog(),
+              ),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildModernControlButton(
                 'إعدادات',
@@ -1183,7 +1792,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ],
     );
   }
-  
+
   Widget _buildNavigationControls() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1238,7 +1847,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                         Text(
                           _remainingTime,
                           style: TextStyle(
-                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                            color: _isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
@@ -1246,14 +1857,18 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                         Text(
                           '•',
                           style: TextStyle(
-                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                            color: _isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _remainingDistance,
                           style: TextStyle(
-                            color: _isDarkMode ? Colors.white70 : Colors.grey[600],
+                            color: _isDarkMode
+                                ? Colors.white70
+                                : Colors.grey[600],
                             fontSize: 14,
                           ),
                         ),
@@ -1307,17 +1922,12 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ],
     );
   }
-  
+
   List<Widget> _buildNavigationUI() {
     return [
       // Route information card
-      Positioned(
-        top: 180,
-        left: 16,
-        right: 16,
-        child: _buildRouteInfoCard(),
-      ),
-      
+      Positioned(top: 180, left: 16, right: 16, child: _buildRouteInfoCard()),
+
       // Next instruction card
       if (_navigationState.route?.instructions.isNotEmpty == true)
         Positioned(
@@ -1328,7 +1938,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         ),
     ];
   }
-  
+
   Widget _buildRouteInfoCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1415,8 +2025,17 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   Widget _buildNextInstructionCard() {
+    final route = _navigationState.route;
+    if (route == null || route.instructions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final nextInstruction = route.instructions.first;
+    final distanceText = _formatDistance(nextInstruction.distance);
+    final maneuverIcon = _getManeuverIcon(nextInstruction.maneuver);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1444,38 +2063,32 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
               color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(
-              Icons.turn_right,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(maneuverIcon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'انعطف يميناً',
-                  style: TextStyle(
+                  nextInstruction.text,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                Text(
-                  'شارع الملك فهد',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+                if (nextInstruction.streetName != null)
+                  Text(
+                    nextInstruction.streetName!,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
-                ),
               ],
             ),
           ),
-          const Text(
-            '200م',
-            style: TextStyle(
+          Text(
+            distanceText,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -1495,10 +2108,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            color.withAlpha(204),
-            color.withAlpha(153),
-          ],
+          colors: [color.withAlpha(204), color.withAlpha(153)],
         ),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
@@ -1519,11 +2129,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                Icon(icon, color: Colors.white, size: 20),
                 const SizedBox(height: 4),
                 Text(
                   text,
@@ -1576,11 +2182,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                     color: color.withAlpha(51),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 18,
-                  ),
+                  child: Icon(icon, color: color, size: 18),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -1646,7 +2248,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   void _showSearchDialog() {
     showDialog(
       context: context,
@@ -1674,13 +2276,13 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   void _startNavigation(String destination) {
     setState(() {
       _destination = destination;
       _isNavigating = true;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('بدء الملاحة إلى $destination'),
@@ -1688,12 +2290,12 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   void _stopNavigation() {
     setState(() {
       _isNavigating = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('تم إيقاف الملاحة'),
@@ -1701,7 +2303,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   void _showAlternativeRoute() {
     _showAlternativeRoutes();
   }
@@ -1731,15 +2333,173 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     );
   }
 
-  void _showSettingsDialog() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const DrivingSettingsScreen(),
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.red[50],
+        title: Row(
+          children: [
+            Icon(Icons.emergency, color: Colors.red, size: 28),
+            const SizedBox(width: 8),
+            const Text(
+              'أرقام الطوارئ',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildEmergencyContact(
+              'الإسعاف',
+              '997',
+              Icons.local_hospital,
+              Colors.red,
+            ),
+            const SizedBox(height: 12),
+            _buildEmergencyContact(
+              'الشرطة',
+              '999',
+              Icons.local_police,
+              Colors.blue,
+            ),
+            const SizedBox(height: 12),
+            _buildEmergencyContact(
+              'المطافئ',
+              '998',
+              Icons.local_fire_department,
+              Colors.orange,
+            ),
+            const SizedBox(height: 12),
+            _buildEmergencyContact(
+              'الدفاع المدني',
+              '911',
+              Icons.security,
+              Colors.green,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
-  
+
+  Widget _buildEmergencyContact(
+    String title,
+    String number,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _callEmergencyNumber(number),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        number,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.phone, color: color, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _callEmergencyNumber(String number) async {
+    Navigator.pop(context);
+
+    // Show confirmation dialog
+    final shouldCall = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الاتصال'),
+        content: Text('هل تريد الاتصال بالرقم $number؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('اتصال'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCall == true) {
+      // Here you would implement the actual phone call
+      // For now, we'll show a message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('جاري الاتصال بـ $number...'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showSettingsDialog() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DrivingSettingsScreen()),
+    );
+  }
+
   Widget _buildWeatherInfo() {
     return Positioned(
       top: 80,
@@ -1749,8 +2509,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: _isDarkMode
-                ? [Colors.black.withAlpha(204), Colors.grey[900]!.withAlpha(204)]
-                : [Colors.white.withAlpha(229), Colors.grey[100]!.withAlpha(229)],
+                ? [
+                    Colors.black.withAlpha(204),
+                    Colors.grey[900]!.withAlpha(204),
+                  ]
+                : [
+                    Colors.white.withAlpha(229),
+                    Colors.grey[100]!.withAlpha(229),
+                  ],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -1764,11 +2530,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.wb_sunny,
-              color: Colors.orange,
-              size: 16,
-            ),
+            Icon(Icons.wb_sunny, color: Colors.orange, size: 16),
             const SizedBox(width: 6),
             Text(
               '25°',
@@ -1938,7 +2700,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     );
   }
 
-  Widget _buildNavigationOption(String title, IconData icon, VoidCallback onTap) {
+  Widget _buildNavigationOption(
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(
         icon,
@@ -1946,9 +2712,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
       title: Text(
         title,
-        style: TextStyle(
-          color: _isDarkMode ? Colors.white : Colors.black87,
-        ),
+        style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black87),
       ),
       onTap: onTap,
       trailing: Icon(

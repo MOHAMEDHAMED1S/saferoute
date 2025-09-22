@@ -48,8 +48,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
-
 }
 
 class DashboardHomeWidget extends StatefulWidget {
@@ -76,9 +74,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
         child: Consumer<DashboardProvider>(
           builder: (context, dashboardProvider, child) {
             if (dashboardProvider.isLoading) {
-              return const Center(
-                child: LiquidGlassLoadingIndicator(),
-              );
+              return const Center(child: LiquidGlassLoadingIndicator());
             }
 
             return RefreshIndicator(
@@ -89,26 +85,26 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                   children: [
                     // Emergency Alert (if any)
                     if (dashboardProvider.currentAlert != null)
-                      _buildEmergencyAlert(context, dashboardProvider.currentAlert!),
-                    
+                      _buildEmergencyAlert(
+                        context,
+                        dashboardProvider.currentAlert!,
+                      ),
+
                     // Header Section
                     _buildHeader(context),
-                    
+
                     // Welcome Section
                     _buildWelcomeSection(dashboardProvider.weather),
-                    
+
                     // Statistics Cards
                     _buildStatisticsCards(dashboardProvider.stats),
-                    
-                    // Quick Actions
-                    _buildQuickActions(context),
-                    
+
                     // Around You Section
                     _buildAroundYouSection(dashboardProvider.nearbyReports),
-                    
+
                     // Safety Tip
                     _buildSafetyTip(dashboardProvider.dailyTip),
-                    
+
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -167,12 +163,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: LiquidGlassTheme.getGradientByName('danger').colors,
+                        colors: LiquidGlassTheme.getGradientByName(
+                          'danger',
+                        ).colors,
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: LiquidGlassTheme.getGradientByName('danger').colors.first.withAlpha(127),
+                          color: LiquidGlassTheme.getGradientByName(
+                            'danger',
+                          ).colors.first.withAlpha(127),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -212,7 +212,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     final now = DateTime.now();
     final timeFormat = DateFormat('HH:mm');
     final dateFormat = DateFormat('EEEE، d MMMM yyyy', 'ar');
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -227,7 +227,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(76),
+            color: LiquidGlassTheme.getGradientByName(
+              'primary',
+            ).colors.first.withAlpha(76),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -264,15 +266,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
                 const Spacer(),
                 LiquidGlassContainer(
                   type: LiquidGlassType.ultraLight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   borderRadius: BorderRadius.circular(24),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        weather.icon,
-                        style: const TextStyle(fontSize: 20),
-                      ),
+                      Text(weather.icon, style: const TextStyle(fontSize: 20)),
                       const SizedBox(width: 8),
                       Column(
                         children: [
@@ -301,7 +303,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
             const SizedBox(height: 20),
             Row(
               children: [
-                Icon(Icons.directions_car, color: LiquidGlassTheme.getIconColor('primary'), size: 24),
+                Icon(
+                  Icons.directions_car,
+                  color: LiquidGlassTheme.getIconColor('primary'),
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -315,93 +321,105 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
               ],
             ),
             const SizedBox(height: 20),
-            // زر وضع القيادة الجديد
-            Container(
-              width: double.infinity,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    LiquidGlassTheme.getGradientByName('primary').colors.first,
-                    LiquidGlassTheme.getGradientByName('primary').colors.last,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(102),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/driving-mode');
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(51),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            Icons.drive_eta,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text(
-                                '⚡ وضع القيادة',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'ملاحة ذكية مع تحذيرات فورية',
-                                style: TextStyle(
-                                  color: Colors.white.withAlpha(229),
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(51),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
+            // زر وضع القيادة المحسن
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 350;
+                return Container(
+                  width: double.infinity,
+                  height: isSmallScreen ? 70 : 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        LiquidGlassTheme.getGradientByName('primary').colors.first,
+                        LiquidGlassTheme.getGradientByName('primary').colors.last,
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: LiquidGlassTheme.getGradientByName(
+                          'primary',
+                        ).colors.first.withAlpha(102),
+                        blurRadius: isSmallScreen ? 15 : 20,
+                        offset: Offset(0, isSmallScreen ? 6 : 8),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/driving-mode');
+                      },
+                      borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
+                      child: Padding(
+                        padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(51),
+                                borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                              ),
+                              child: Icon(
+                                Icons.drive_eta,
+                                color: Colors.white,
+                                size: isSmallScreen ? 24 : 28,
+                              ),
+                            ),
+                            SizedBox(width: isSmallScreen ? 12 : 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '⚡ وضع القيادة',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: isSmallScreen ? 16 : 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: isSmallScreen ? 2 : 4),
+                                  Flexible(
+                                    child: Text(
+                                      'ملاحة ذكية مع تحذيرات فورية',
+                                      style: TextStyle(
+                                        color: Colors.white.withAlpha(229),
+                                        fontSize: isSmallScreen ? 12 : 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(51),
+                                borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
+                              ),
+                              child: Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.white,
+                                size: isSmallScreen ? 14 : 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -448,8 +466,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, String subtitle, 
-                       IconData icon, Gradient gradient) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    String subtitle,
+    IconData icon,
+    Gradient gradient,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: gradient,
@@ -511,596 +534,575 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.ultraLight,
+
+
+  Widget _buildDestinationSearch(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showDestinationSearchDialog(context),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.grey.shade50, Colors.grey.shade100],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade200, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.search_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                'إلى أين تريد الذهاب؟',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.my_location_rounded,
+                color: Colors.orange.shade600,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDestinationSearchDialog(BuildContext context) {
+    final TextEditingController searchController = TextEditingController();
+    final List<String> suggestions = [
+      'مول العرب',
+      'مطار القاهرة الدولي',
+      'جامعة القاهرة',
+      'ميدان التحرير',
+      'مدينة نصر',
+      'المعادي',
+      'الزمالك',
+      'مصر الجديدة',
+      'شارع التحرير',
+      'كوبري أكتوبر',
+    ];
+
+    List<String> filteredSuggestions = suggestions;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.transparent,
+          contentPadding: EdgeInsets.zero,
+          content: LiquidGlassContainer(
+            type: LiquidGlassType.primary,
+            padding: const EdgeInsets.all(20),
+            borderRadius: BorderRadius.circular(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'اختر وجهتك',
+                        style: LiquidGlassTheme.headerTextStyle.copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: LiquidGlassTheme.getIconColor('primary'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      filteredSuggestions = suggestions
+                          .where((suggestion) => suggestion.contains(value))
+                          .toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'ابحث عن مكان...',
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: LiquidGlassTheme.getIconColor('secondary'),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: LiquidGlassTheme.getIconColor('secondary'),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: LiquidGlassTheme.getIconColor('accent'),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredSuggestions.length,
+                    itemBuilder: (context, index) {
+                      final suggestion = filteredSuggestions[index];
+                      return ListTile(
+                        leading: Icon(
+                          Icons.location_on,
+                          color: LiquidGlassTheme.getIconColor('accent'),
+                        ),
+                        title: Text(
+                          suggestion,
+                          style: LiquidGlassTheme.bodyTextStyle,
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _navigateToDestination(context, suggestion);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDestination(BuildContext context, String destination) {
+    // Navigate to map with destination
+    Navigator.pushNamed(
+      context,
+      HomeScreen.routeName,
+      arguments: {'destination': destination},
+    );
+  }
+
+
+  Widget _buildAroundYouSection(List<NearbyReport> reports) {
+    return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withAlpha(240), Colors.white.withAlpha(220)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.blue.withAlpha(12),
+            blurRadius: 40,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange.shade400,
+                            Colors.orange.shade600,
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'ماذا يحدث حولك؟',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.grey.shade800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade400, Colors.blue.shade600],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withAlpha(76),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.map_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'خريطة',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // فلاتر ذكية محسنة
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildEnhancedFilterChip('الكل', true, Icons.apps_rounded),
+                  const SizedBox(width: 10),
+                  _buildEnhancedFilterChip(
+                    '500م',
+                    false,
+                    Icons.near_me_rounded,
+                  ),
+                  const SizedBox(width: 10),
+                  _buildEnhancedFilterChip(
+                    '1كم',
+                    false,
+                    Icons.location_searching_rounded,
+                  ),
+                  const SizedBox(width: 10),
+                  _buildEnhancedFilterChip(
+                    'حوادث',
+                    false,
+                    Icons.warning_rounded,
+                  ),
+                  const SizedBox(width: 10),
+                  _buildEnhancedFilterChip(
+                    'ازدحام',
+                    false,
+                    Icons.traffic_rounded,
+                  ),
+                  const SizedBox(width: 10),
+                  _buildEnhancedFilterChip(
+                    'صيانة',
+                    false,
+                    Icons.construction_rounded,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...reports.map(
+              (report) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildEnhancedReportCard(
+                  '${report.type.displayName} - ${report.title}',
+                  '${report.distance}م',
+                  report.timeAgo,
+                  report.type.icon,
+                  severity: 'متوسط',
+                  affectedCars: 5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedReportCard(
+    String title,
+    String distance,
+    String time,
+    IconData icon, {
+    required String severity,
+    required int affectedCars,
+  }) {
+    final severityColor = _getSeverityColor(severity);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, Colors.grey.shade50],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: severityColor.withAlpha(76), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: severityColor.withAlpha(29),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withAlpha(12),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'الإجراءات السريعة',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: LiquidGlassTheme.primaryTextColor,
-            ),
-          ),
-          const SizedBox(height: 16),
-          // الأزرار الرئيسية - أكبر حجماً
           Row(
             children: [
-              Expanded(
-                child: _buildActionButton(
-                  'إبلاغ سريع',
-                  Icons.report_problem,
-                  LiquidGlassTheme.getGradientByName('danger'),
-                  () {
-                    Navigator.pushNamed(context, AddReportScreen.routeName);
-                  },
-                  isLarge: true,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: severityColor.withAlpha(51),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon, color: severityColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildActionButton(
-                  'عرض الخريطة',
-                  Icons.map,
-                  LiquidGlassTheme.getGradientByName('info'),
-                  () {
-                    Navigator.pushNamed(context, HomeScreen.routeName);
-                  },
-                  isLarge: true,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.grey.shade800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  time,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // الأزرار الثانوية
           Row(
             children: [
-              Expanded(
-                child: _buildActionButton(
-                  'طرق آمنة',
-                  Icons.route,
-                  LiquidGlassTheme.getGradientByName('success'),
-                  () => Navigator.pushNamed(context, '/safe-routes'),
-                ),
+              Icon(
+                Icons.location_on_outlined,
+                color: Colors.grey.shade500,
+                size: 16,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildActionButton(
-                  'إعدادات سريعة',
-                  Icons.settings,
-                  LiquidGlassTheme.getGradientByName('secondary'),
-                  () => Navigator.pushNamed(context, '/quick-settings'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildActionButton(
-                  'المجتمع',
-                  Icons.people,
-                  LiquidGlassTheme.getGradientByName('accent'),
-                  () => Navigator.pushNamed(context, '/community'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(String title, IconData icon, Gradient gradient, VoidCallback onTap, {bool isLarge = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(isLarge ? 20 : 16),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withAlpha(76),
-              blurRadius: isLarge ? 12 : 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: LiquidGlassContainer(
-          type: LiquidGlassType.ultraLight,
-          isInteractive: true,
-          padding: EdgeInsets.all(isLarge ? 20 : 14),
-          borderRadius: BorderRadius.circular(isLarge ? 20 : 16),
-          child: Column(
-            children: [
-              Container(
-                padding: EdgeInsets.all(isLarge ? 14 : 10),
-                decoration: BoxDecoration(
-                  color: gradient.colors.first.withAlpha(51),
-                  borderRadius: BorderRadius.circular(isLarge ? 16 : 12),
-                ),
-                child: Icon(
-                  icon, 
-                  color: gradient.colors.first, 
-                  size: isLarge ? 28 : 22,
-                ),
-              ),
-              SizedBox(height: isLarge ? 14 : 10),
+              const SizedBox(width: 4),
               Text(
-                title,
-                style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                  fontSize: isLarge ? 14 : 11,
-                  fontWeight: FontWeight.w600,
-                  color: LiquidGlassTheme.primaryTextColor,
+                distance,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAroundYouSection(List<NearbyReport> reports) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.ultraLight,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+              const SizedBox(width: 16),
+              Icon(
+                Icons.directions_car_outlined,
+                color: Colors.grey.shade500,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
               Text(
-                'ماذا يحدث حولك؟',
-                style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: LiquidGlassTheme.getGradientByName('primary'),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.map, color: Colors.white, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      'خريطة',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                '$affectedCars سيارات متأثرة',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          // فلاتر ذكية
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('الكل', true),
-                const SizedBox(width: 8),
-                _buildFilterChip('500م', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('1كم', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('حوادث', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('ازدحام', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('صيانة', false),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...reports.map((report) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _buildReportCard(
-              '${report.type.displayName} - ${report.title}',
-              '${report.distance}م',
-              report.timeAgo,
-              report.type.icon,
-              LiquidGlassTheme.getGradientByName('primary'),
-              severity: 'متوسط',
-              affectedCars: 5,
-              distance: '${report.distance}م',
-            ),
-          )).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: isSelected 
-            ? LiquidGlassTheme.getGradientByName('primary')
-            : null,
-        color: isSelected 
-            ? null 
-            : LiquidGlassTheme.getTextColor('primary').withAlpha(25),
-        borderRadius: BorderRadius.circular(16),
-        border: isSelected 
-            ? null 
-            : Border.all(
-                color: LiquidGlassTheme.getTextColor('primary').withAlpha(51),
-                width: 1,
-              ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected 
-              ? Colors.white 
-              : LiquidGlassTheme.getTextColor('primary'),
-          fontSize: 12,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReportCard(String title, String location, String time, 
-                          IconData icon, Gradient gradient, {
-                          required String severity,
-                          required int affectedCars,
-                          required String distance}) {
-    Color severityColor = severity == 'عالي' 
-        ? LiquidGlassTheme.getGradientByName('danger').colors.first
-        : severity == 'متوسط'
-        ? LiquidGlassTheme.getGradientByName('warning').colors.first
-        : LiquidGlassTheme.getGradientByName('success').colors.first;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.first.withAlpha(51),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: LiquidGlassContainer(
-        type: LiquidGlassType.secondary,
-        isInteractive: true,
-        padding: const EdgeInsets.all(18),
-        borderRadius: BorderRadius.circular(18),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: gradient.colors.first.withAlpha(51),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: gradient.colors.first, size: 26),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            title,
-                            style: LiquidGlassTheme.headerTextStyle.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: LiquidGlassTheme.primaryTextColor,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: severityColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              severity,
-                              style: TextStyle(
-                                color: severityColor,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        location,
-                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                          fontSize: 13,
-                          color: LiquidGlassTheme.secondaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              size: 12,
-                              color: LiquidGlassTheme.secondaryTextColor,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              time,
-                              style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                                fontSize: 10,
-                                color: LiquidGlassTheme.secondaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.location_on,
-                              size: 12,
-                              color: LiquidGlassTheme.secondaryTextColor,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              distance,
-                              style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                                fontSize: 10,
-                                color: LiquidGlassTheme.secondaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.directions_car,
-                              size: 12,
-                              color: LiquidGlassTheme.secondaryTextColor,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$affectedCars سيارة',
-                              style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                                fontSize: 10,
-                                color: LiquidGlassTheme.secondaryTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade400, Colors.blue.shade600],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withAlpha(76),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
+                  child: const Text(
+                    'تفاصيل',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                  ),
+                  child: Text(
+                    'مشاركة',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedFilterChip(
+    String label,
+    bool isSelected,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [Colors.blue.shade400, Colors.blue.shade600],
+              )
+            : null,
+        color: isSelected ? null : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+        border: isSelected
+            ? null
+            : Border.all(color: Colors.grey.shade300, width: 1.5),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withAlpha(76),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(10),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
-            ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // إذا كان العرض صغير جداً، استخدم عمود بدلاً من صف
-                if (constraints.maxWidth < 250) {
-                  return Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildReportActionButton(
-                              'أؤكد',
-                              Icons.check_circle,
-                              LiquidGlassTheme.getGradientByName('success'),
-                              () {},
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: _buildReportActionButton(
-                              'تفاصيل',
-                              Icons.info,
-                              LiquidGlassTheme.getGradientByName('secondary'),
-                              () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      _buildReportActionButton(
-                        'طريق بديل',
-                        Icons.alt_route,
-                        LiquidGlassTheme.getGradientByName('primary'),
-                        () {},
-                      ),
-                    ],
-                  );
-                }
-                // العرض الطبيعي
-                else {
-                  return Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: _buildReportActionButton(
-                          'أؤكد',
-                          Icons.check_circle,
-                          LiquidGlassTheme.getGradientByName('success'),
-                          () {},
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        flex: 3,
-                        child: _buildReportActionButton(
-                          'طريق بديل',
-                          Icons.alt_route,
-                          LiquidGlassTheme.getGradientByName('primary'),
-                          () {},
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        flex: 2,
-                        child: _buildReportActionButton(
-                          'تفاصيل',
-                          Icons.info,
-                          LiquidGlassTheme.getGradientByName('secondary'),
-                          () {},
-                        ),
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
-          ],
-        ),
       ),
-    );
-  }
-
-  Widget _buildReportActionButton(String text, IconData icon, Gradient gradient, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withAlpha(76),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: LiquidGlassContainer(
-          type: LiquidGlassType.ultraLight,
-          isInteractive: true,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          borderRadius: BorderRadius.circular(12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // إذا كان العرض صغير جداً، اعرض الأيقونة فقط
-              if (constraints.maxWidth < 60) {
-                return Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 12,
-                );
-              }
-              // إذا كان العرض متوسط، اعرض الأيقونة والنص مع تقليل الحجم
-              else if (constraints.maxWidth < 80) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 10,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      text,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                );
-              }
-              // العرض الطبيعي
-              else {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSafetyTip(SafetyTip tip) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.secondary,
-      isInteractive: true,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(18),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          LiquidGlassContainer(
-            type: LiquidGlassType.primary,
-            padding: const EdgeInsets.all(12),
-            borderRadius: BorderRadius.circular(14),
-            child: Icon(
-              Icons.lightbulb,
-              color: LiquidGlassTheme.getTextColor('primary'),
-              size: 26,
-            ),
+          Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.grey.shade600,
+            size: 16,
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tip.title,
-                  style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  tip.content,
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                fontSize: 14,
-              ),
-                ),
-              ],
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey.shade700,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ],
@@ -1108,85 +1110,68 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> {
     );
   }
 
-  Widget _buildEmergencyAlert(BuildContext context, EmergencyAlert alert) {
-    Color alertColor;
-    IconData alertIcon;
-    
-    switch (alert.severity) {
-      case AlertSeverity.low:
-        alertColor = LiquidGlassTheme.getGradientByName('warning').colors.first;
-        alertIcon = Icons.info;
-        break;
-      case AlertSeverity.medium:
-        alertColor = LiquidGlassTheme.getGradientByName('warning').colors.last;
-        alertIcon = Icons.warning;
-        break;
-      case AlertSeverity.high:
-        alertColor = LiquidGlassTheme.getGradientByName('danger').colors.first;
-        alertIcon = Icons.error;
-        break;
-      case AlertSeverity.critical:
-        alertColor = LiquidGlassTheme.getGradientByName('danger').colors.last;
-        alertIcon = Icons.dangerous;
-        break;
+  Color _getSeverityColor(String severity) {
+    switch (severity) {
+      case 'عالي':
+        return LiquidGlassTheme.getGradientByName('danger').colors.first;
+      case 'متوسط':
+        return LiquidGlassTheme.getGradientByName('warning').colors.first;
+      case 'منخفض':
+      default:
+        return LiquidGlassTheme.getGradientByName('success').colors.first;
     }
+  }
 
-    return LiquidGlassContainer(
-      type: LiquidGlassType.primary,
-      isInteractive: true,
+  Widget _buildEmergencyAlert(BuildContext context, dynamic alert) {
+    return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade100,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
-          LiquidGlassContainer(
-            type: LiquidGlassType.secondary,
-            padding: const EdgeInsets.all(12),
-            borderRadius: BorderRadius.circular(14),
-            child: Icon(
-              alertIcon,
-              color: LiquidGlassTheme.getTextColor('primary'),
-              size: 28,
+          Icon(Icons.warning, color: Colors.red.shade700, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              alert?.message ?? 'تنبيه طارئ!',
+              style: TextStyle(
+                color: Colors.red.shade900,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
-          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSafetyTip(dynamic tip) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield, color: Colors.green.shade700, size: 28),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'تنبيه طوارئ',
-                  style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  alert.message,
-                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+            child: Text(
+              tip != null && tip is SafetyTip
+                  ? tip.content
+                  : 'تأكد من ربط حزام الأمان دائماً!',
+              style: TextStyle(
+                color: Colors.green.shade900,
+                fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${alert.location} • ${alert.distanceText}',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                fontSize: 13,
-              ),
-                ),
-              ],
             ),
-          ),
-          LiquidGlassButton(
-            text: '',
-            onPressed: () {
-              // إخفاء التنبيه
-            },
-            type: LiquidGlassType.secondary,
-            borderRadius: 12,
-            padding: const EdgeInsets.all(8),
-            icon: Icons.close,
           ),
         ],
       ),
