@@ -29,6 +29,15 @@ class FirestoreService {
     }
   }
 
+  // Create user
+  Future<void> createUser(UserModel user) async {
+    try {
+      await _usersCollection.doc(user.id).set(user.toFirestore());
+    } catch (e) {
+      throw 'خطأ في إنشاء بيانات المستخدم: ${e.toString()}';
+    }
+  }
+
   // Update user
   Future<void> updateUser(UserModel user) async {
     try {

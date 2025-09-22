@@ -71,9 +71,35 @@ class AuthProvider extends ChangeNotifier {
   // Load user data from Firestore
   Future<void> _loadUserData(String userId) async {
     try {
+      print('AuthProvider: تحميل بيانات المستخدم من Firestore للمعرف: $userId');
       _userModel = await _firestoreService.getUser(userId);
+      
+      if (_userModel != null) {
+        print('AuthProvider: تم تحميل بيانات المستخدم بنجاح: ${_userModel!.name}');
+      } else {
+        print('AuthProvider: لم يتم العثور على بيانات المستخدم في Firestore، سيتم إنشاء مستند جديد');
+        
+        // Create user document if it doesn't exist
+        if (_firebaseUser != null) {
+          await _createUserDocumentFromFirebaseUser(_firebaseUser!);
+          // Try to load again after creating
+          _userModel = await _firestoreService.getUser(userId);
+          
+          if (_userModel != null) {
+            print('AuthProvider: تم إنشاء وتحميل بيانات المستخدم بنجاح: ${_userModel!.name}');
+          } else {
+            _setError('فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.');
+            return;
+          }
+        } else {
+          _setError('لم يتم العثور على بيانات المستخدم. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.');
+          return;
+        }
+      }
+      
       _clearError();
     } catch (e) {
+      print('AuthProvider: خطأ في تحميل بيانات المستخدم: $e');
       _setError('خطأ في تحميل بيانات المستخدم: ${e.toString()}');
     }
   }
@@ -87,18 +113,25 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
       
+      print('AuthProvider: بدء عملية تسجيل الدخول');
+      
       UserCredential? userCredential = await _authService.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       
       if (userCredential?.user != null) {
-        await _loadUserData(userCredential!.user!.uid);
+        print('AuthProvider: تم الحصول على UserCredential، تحميل بيانات المستخدم');
+        _firebaseUser = userCredential!.user!;
+        await _loadUserData(userCredential.user!.uid);
+        print('AuthProvider: تم تسجيل الدخول بنجاح');
         return true;
       }
       
+      print('AuthProvider: لم يتم الحصول على UserCredential');
       return false;
     } catch (e) {
+      print('AuthProvider: خطأ في تسجيل الدخول: $e');
       _setError(e.toString());
       return false;
     } finally {
@@ -291,6 +324,32 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Error updating trust score: $e');
+    }
+  }
+
+  // Create user document from Firebase User
+  Future<void> _createUserDocumentFromFirebaseUser(User firebaseUser) async {
+    try {
+      UserModel user = UserModel(
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName ?? 'مستخدم',
+        email: firebaseUser.email ?? '',
+        phone: firebaseUser.phoneNumber ?? '',
+        photoUrl: firebaseUser.photoURL,
+        points: 0,
+        trustScore: 1.0,
+        totalReports: 0,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+        isDriverMode: false,
+        location: null,
+      );
+      
+      await _firestoreService.createUser(user);
+      print('AuthProvider: تم إنشاء مستند المستخدم في Firestore بنجاح');
+    } catch (e) {
+      print('AuthProvider: خطأ في إنشاء مستند المستخدم: $e');
+      throw 'فشل في إنشاء بيانات المستخدم: ${e.toString()}';
     }
   }
 

@@ -58,14 +58,34 @@ class _CommunityScreenState extends State<CommunityScreen>
                       // Welcome section
                       Row(
                         children: [
-                          LiquidGlassContainer(
-                            type: LiquidGlassType.primary,
-                            padding: const EdgeInsets.all(12),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Icon(
-                              Icons.people,
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
                               color: Colors.white,
-                              size: 28,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.asset(
+                                'assets/images/logo.jpg',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Icon(
+                                      Icons.people,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),

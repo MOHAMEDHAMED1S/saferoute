@@ -102,6 +102,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   late AnimationController _warningAnimationController;
   late Animation<double> _speedAnimation;
   late Animation<double> _warningAnimation;
+  
+  // Warning timer
+  Timer? _warningTimer;
 
   @override
   void initState() {
@@ -217,12 +220,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     _navigationService.initialize();
 
     _warningsSubscription = _warningService.warningsStream.listen((warnings) {
-      setState(() {
-        _activeWarnings = warnings;
-      });
+      if (mounted) {
+        setState(() {
+          _activeWarnings = warnings;
+        });
 
-      // Update map markers with warnings
-      _updateWarningMarkers(warnings);
+        // Update map markers with warnings
+        _updateWarningMarkers(warnings);
+      }
     });
 
     _navigationSubscription = _navigationService.navigationStateStream.listen((
@@ -261,9 +266,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   void _initializeSettings() {
     _settingsService = DrivingSettingsService();
     _settingsSubscription = _settingsService.settingsStream.listen((settings) {
-      setState(() {
-        _settings = settings;
-      });
+      if (mounted) {
+        setState(() {
+          _settings = settings;
+        });
+      }
     });
     _settingsService.initialize();
   }
@@ -341,12 +348,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       );
     }
 
-    setState(() {
-      _markers = _markers
-          .where((marker) => !marker.markerId.value.startsWith('warning_'))
-          .toSet();
-      _markers.addAll(warningMarkers);
-    });
+    if (mounted) {
+      setState(() {
+        _markers = _markers
+            .where((marker) => !marker.markerId.value.startsWith('warning_'))
+            .toSet();
+        _markers.addAll(warningMarkers);
+      });
+    }
   }
 
   void _showWarningDetails(DrivingWarning warning) {
@@ -573,12 +582,15 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   }
 
   void _startWarningSystem() {
-    Timer.periodic(const Duration(seconds: 30), (timer) {
+    _warningTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _checkForWarnings();
     });
   }
 
   void _checkForWarnings() {
+    // Check if widget is still mounted before calling setState
+    if (!mounted) return;
+    
     // Simulate warning detection
     if (_activeWarnings.isEmpty) {
       setState(() {
@@ -1005,6 +1017,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   @override
   void dispose() {
+    _warningTimer?.cancel();
     _destinationController.dispose();
     _speedAnimationController.dispose();
     _warningAnimationController.dispose();

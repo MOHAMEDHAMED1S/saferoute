@@ -30,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
+    _loadUserReports();
   }
 
   @override
@@ -48,6 +49,14 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  void _loadUserReports() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.userId != null) {
+      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      reportsProvider.loadUserReports(authProvider.userId!);
+    }
+  }
+
   Future<void> _updateProfile() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
@@ -57,12 +66,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     if (success) {
-      setState(() {
-        _isEditing = false;
-      });
-      _showSuccessSnackBar('تم تحديث الملف الشخصي بنجاح');
+      if (mounted) {
+        setState(() {
+          _isEditing = false;
+        });
+        _showSuccessSnackBar('تم تحديث الملف الشخصي بنجاح');
+      }
     } else {
-      _showErrorSnackBar(authProvider.errorMessage ?? 'خطأ في تحديث الملف الشخصي');
+      if (mounted) {
+        _showErrorSnackBar(authProvider.errorMessage ?? 'خطأ في تحديث الملف الشخصي');
+      }
     }
   }
 
@@ -294,7 +307,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                         if (!_isEditing)
                           GestureDetector(
-                            onTap: () => setState(() => _isEditing = true),
+                            onTap: () {
+                              if (mounted) {
+                                setState(() => _isEditing = true);
+                              }
+                            },
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -332,10 +349,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: LiquidGlassButton(
                               text: 'إلغاء',
                               onPressed: () {
-                                setState(() {
-                                  _isEditing = false;
-                                  _loadUserData();
-                                });
+                                if (mounted) {
+                                  setState(() {
+                                    _isEditing = false;
+                                    _loadUserData();
+                                  });
+                                }
                               },
                               type: LiquidGlassType.secondary,
                               borderRadius: 12,
@@ -517,7 +536,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.1),
+                      color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(

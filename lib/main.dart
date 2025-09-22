@@ -12,9 +12,10 @@ import 'providers/dashboard_provider.dart';
 import 'services/firestore_service.dart';
 import 'services/location_service.dart';
 import 'services/notification_service.dart';
+import 'screens/splash/splash_screen.dart';
+import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/reports/add_report_screen.dart';
 import 'screens/reports/advanced_reports_screen.dart';
@@ -93,23 +94,8 @@ class SafeRouteApp extends StatelessWidget {
               extensions: [CustomColors.dark],
             ),
             themeMode: ThemeMode.system,
-            home: NetworkAwareWidget(
-              child: FutureBuilder(
-                future: authProvider.initialize(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-                  
-                  return authProvider.isAuthenticated 
-                      ? const DashboardScreen() 
-                      : const LoginScreen();
-                },
-              ),
+            home: const NetworkAwareWidget(
+              child: SplashScreen(),
             ),
             routes: {
               '/login': (context) => const NetworkAwareWidget(

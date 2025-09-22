@@ -36,10 +36,14 @@ class AuthService {
     required String password,
   }) async {
     try {
+      print('محاولة تسجيل الدخول للبريد الإلكتروني: $email');
+      
       UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      print('تم تسجيل الدخول بنجاح للمستخدم: ${result.user?.uid}');
       
       // Update last login
       if (result.user != null) {
@@ -48,8 +52,10 @@ class AuthService {
       
       return result;
     } on FirebaseAuthException catch (e) {
+      print('خطأ Firebase Auth: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
+      print('خطأ غير متوقع في تسجيل الدخول: $e');
       throw 'حدث خطأ غير متوقع: ${e.toString()}';
     }
   }
@@ -267,6 +273,7 @@ class AuthService {
       case 'invalid-login-credentials':
         return 'بيانات تسجيل الدخول غير صحيحة. تأكد من البريد الإلكتروني وكلمة المرور';
       case 'email-already-in-use':
+      case 'EMAIL_EXISTS': // Handle both Firebase error codes for email exists
         return 'البريد الإلكتروني مستخدم بالفعل. يمكنك تسجيل الدخول أو استخدام بريد إلكتروني آخر';
       case 'weak-password':
         return 'كلمة المرور ضعيفة جداً. يجب أن تحتوي على 6 أحرف على الأقل';
@@ -287,6 +294,10 @@ class AuthService {
       case 'account-exists-with-different-credential':
         return 'يوجد حساب بهذا البريد الإلكتروني بطريقة تسجيل دخول مختلفة';
       default:
+        // Check if the error message contains EMAIL_EXISTS
+        if (e.message?.contains('EMAIL_EXISTS') == true) {
+          return 'البريد الإلكتروني مستخدم بالفعل. يمكنك تسجيل الدخول أو استخدام بريد إلكتروني آخر';
+        }
         return 'حدث خطأ في المصادقة: ${e.message ?? e.code}';
     }
   }
