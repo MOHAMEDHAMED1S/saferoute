@@ -66,7 +66,10 @@ class DashboardProvider extends ChangeNotifier {
 
   // Getters
   DashboardStats get stats => _stats;
+  List<NearbyReport> _filteredReports = [];
+
   List<NearbyReport> get nearbyReports => _nearbyReports;
+  List<NearbyReport> get filteredReports => _filteredReports;
   WeatherInfo get weather => _weather;
   SafetyTip get dailyTip => _dailyTip;
   EmergencyAlert? get currentAlert => _currentAlert;
@@ -87,12 +90,39 @@ class DashboardProvider extends ChangeNotifier {
       await _loadWeather();
       await _loadDailyTip();
       await _checkEmergencyAlerts();
+      _filteredReports = List.from(_nearbyReports); // Initialize filtered reports
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void filterReports(String filter) {
+    switch (filter) {
+      case 'الكل':
+        _filteredReports = List.from(_nearbyReports);
+        break;
+      case '500م':
+        _filteredReports = _nearbyReports.where((report) => report.distance.contains('م') && double.parse(report.distance.replaceAll('م', '')) <= 500).toList();
+        break;
+      case '1كم':
+        _filteredReports = _nearbyReports.where((report) => report.distance.contains('كم') && double.parse(report.distance.replaceAll('كم', '')) <= 1).toList();
+        break;
+      case 'حوادث':
+        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.accident).toList();
+        break;
+      case 'ازدحام':
+        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.traffic).toList();
+        break;
+      case 'صيانة':
+        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.maintenance).toList();
+        break;
+      default:
+        _filteredReports = List.from(_nearbyReports);
+    }
+    notifyListeners();
   }
 
   Future<void> _loadStats() async {

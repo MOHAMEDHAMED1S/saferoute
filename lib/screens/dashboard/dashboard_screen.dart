@@ -35,6 +35,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     const ProfileScreen(),
   ];
 
+  // String _selectedFilter = 'الكل'; // New state variable for selected filter
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +91,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
   late Animation<double> _scaleAnimation;
   late Animation<double> _pulseAnimation;
 
+  String _selectedFilter = 'الكل'; // New state variable for selected filter
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +132,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
     _cardAnimationController.dispose();
     _pulseAnimationController.dispose();
     super.dispose();
+  }
+
+  void _switchToMap() {
+    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+    if (dashboardState != null) {
+      dashboardState.setState(() {
+        dashboardState._currentIndex = 1;
+      });
+    }
   }
 
   @override
@@ -185,7 +198,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
 
                   // Around You Section
                   SliverToBoxAdapter(
-                    child: _buildAroundYouSection(dashboardProvider.nearbyReports),
+                    child: _buildAroundYouSection(
+                      context,
+                      dashboardProvider,
+                      _selectedFilter,
+                      (filter) {
+                        setState(() {
+                          _selectedFilter = filter;
+                          dashboardProvider.filterReports(filter);
+                        });
+                      },
+                    ),
                   ),
 
                   // Safety Tip
@@ -774,7 +797,7 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
     );
   }
 
-  Widget _buildAroundYouSection(List<NearbyReport> reports) {
+  Widget _buildAroundYouSection(BuildContext context, DashboardProvider dashboardProvider, String selectedFilter, Function(String) onFilterSelected) {
     return Container(
       margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -823,35 +846,38 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade400, Colors.blue.shade600],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                GestureDetector(
+                  onTap: _switchToMap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade400, Colors.blue.shade600],
                       ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.map_rounded, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'خريطة',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blue.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.map_rounded, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'خريطة',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -863,24 +889,61 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildEnhancedFilterChip('الكل', true, Icons.apps_rounded),
-                  const SizedBox(width: 10),
-                  _buildEnhancedFilterChip('500م', false, Icons.near_me_rounded),
-                  const SizedBox(width: 10),
-                  _buildEnhancedFilterChip('1كم', false, Icons.location_searching_rounded),
-                  const SizedBox(width: 10),
-                  _buildEnhancedFilterChip('حوادث', false, Icons.warning_rounded),
-                  const SizedBox(width: 10),
-                  _buildEnhancedFilterChip('ازدحام', false, Icons.traffic_rounded),
-                  const SizedBox(width: 10),
-                  _buildEnhancedFilterChip('صيانة', false, Icons.construction_rounded),
+                  _buildEnhancedFilterChip(
+                    label: 'الكل',
+                    icon: Icons.filter_list,
+                    isSelected: selectedFilter == 'الكل',
+                    onTap: () {
+                      onFilterSelected('الكل');
+                    },
+                  ),
+                  _buildEnhancedFilterChip(
+                    label: '500م',
+                    icon: Icons.location_on,
+                    isSelected: selectedFilter == '500م',
+                    onTap: () {
+                      onFilterSelected('500م');
+                    },
+                  ),
+                  _buildEnhancedFilterChip(
+                    label: '1كم',
+                    icon: Icons.location_on,
+                    isSelected: selectedFilter == '1كم',
+                    onTap: () {
+                      onFilterSelected('1كم');
+                    },
+                  ),
+                  _buildEnhancedFilterChip(
+                    label: 'حوادث',
+                    icon: Icons.car_crash,
+                    isSelected: selectedFilter == 'حوادث',
+                    onTap: () {
+                      onFilterSelected('حوادث');
+                    },
+                  ),
+                  _buildEnhancedFilterChip(
+                    label: 'ازدحام',
+                    icon: Icons.traffic,
+                    isSelected: selectedFilter == 'ازدحام',
+                    onTap: () {
+                      onFilterSelected('ازدحام');
+                    },
+                  ),
+                  _buildEnhancedFilterChip(
+                    label: 'صيانة',
+                    icon: Icons.build,
+                    isSelected: selectedFilter == 'صيانة',
+                    onTap: () {
+                      onFilterSelected('صيانة');
+                    },
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
             
             // Reports list
-            ...reports.map(
+            ...dashboardProvider.filteredReports.map(
               (report) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildEnhancedReportCard(
@@ -898,51 +961,58 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
       ),
     );
   }
-
-  Widget _buildEnhancedFilterChip(String label, bool isSelected, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: isSelected
-            ? LinearGradient(colors: [Colors.blue.shade400, Colors.blue.shade600])
-            : null,
-        color: isSelected ? null : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected ? null : Border.all(color: Colors.grey.shade300, width: 1.5),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.grey.shade600,
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.grey.shade700,
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+Widget _buildEnhancedFilterChip({
+    required String label,
+    required bool isSelected,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(colors: [Colors.blue.shade400, Colors.blue.shade600])
+              : null,
+          color: isSelected ? null : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected ? null : Border.all(color: Colors.grey.shade300, width: 1.5),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey.shade600,
+              size: 16,
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -957,179 +1027,364 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
   }) {
     final severityColor = _getSeverityColor(severity);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.white, Colors.grey.shade50],
+    return GestureDetector(
+      onTap: () {
+        // عرض التفاصيل
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                'تفاصيل البلاغ',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, color: Colors.grey.shade600, size: 16),
+                      const SizedBox(width: 5),
+                      Text('المسافة: $distance'),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.grey.shade600, size: 16),
+                      const SizedBox(width: 5),
+                      Text('الوقت: $time'),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.grey.shade600, size: 16),
+                      const SizedBox(width: 5),
+                      Text('مستوى الخطورة: $severity'),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(Icons.directions_car, color: Colors.grey.shade600, size: 16),
+                      const SizedBox(width: 5),
+                      Text('السيارات المتأثرة: $affectedCars'),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('إغلاق'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, Colors.grey.shade50],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: severityColor.withOpacity(0.2), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: severityColor.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: severityColor.withOpacity(0.2), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: severityColor.withOpacity(0.15),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [severityColor, severityColor.withOpacity(0.8)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: severityColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.grey.shade800,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time, color: Colors.grey.shade500, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          time,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: severityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  severity,
-                  style: TextStyle(
-                    color: severityColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, color: Colors.grey.shade500, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                distance,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 20),
-              Icon(Icons.directions_car_outlined, color: Colors.grey.shade500, size: 16),
-              const SizedBox(width: 4),
-              Text(
-                '$affectedCars سيارات متأثرة',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue.shade400, Colors.blue.shade600],
+                      colors: [severityColor, severityColor.withOpacity(0.8)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
+                        color: severityColor.withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: const Text(
-                    'عرض التفاصيل',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Icon(icon, color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: Colors.grey.shade800,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time, color: Colors.grey.shade500, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            time,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                    color: severityColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'مشاركة',
-                    textAlign: TextAlign.center,
+                    severity,
                     style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      color: severityColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.location_on_outlined, color: Colors.grey.shade500, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  distance,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Icon(Icons.directions_car_outlined, color: Colors.grey.shade500, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  '$affectedCars سيارات متأثرة',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      // عرض التفاصيل
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: Text(
+                              'تفاصيل البلاغ',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, color: Colors.grey.shade600, size: 16),
+                                    const SizedBox(width: 5),
+                                    Text('المسافة: $distance'),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    Icon(Icons.access_time, color: Colors.grey.shade600, size: 16),
+                                    const SizedBox(width: 5),
+                                    Text('الوقت: $time'),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    Icon(Icons.warning, color: Colors.grey.shade600, size: 16),
+                                    const SizedBox(width: 5),
+                                    Text('مستوى الخطورة: $severity'),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Row(
+                                  children: [
+                                    Icon(Icons.directions_car, color: Colors.grey.shade600, size: 16),
+                                    const SizedBox(width: 5),
+                                    Text('السيارات المتأثرة: $affectedCars'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('إغلاق'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'عرض التفاصيل',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      // مشاركة البلاغ
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            title: const Text('مشاركة البلاغ'),
+                            content: const Text('سيتم مشاركة هذا البلاغ مع الآخرين'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('إلغاء'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('تم مشاركة البلاغ بنجاح'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                },
+                                child: const Text('مشاركة'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                      ),
+                      child: Text(
+                        'مشاركة',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1262,4 +1517,68 @@ Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
       ),
     );
   }
-}
+
+  // Widget لإضافة floating action button محسن
+  Widget _buildEnhancedFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: () {
+        // إضافة بلاغ جديد
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text('إضافة بلاغ جديد'),
+              content: const Text('هل تريد إضافة بلاغ مرور جديد؟'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('إلغاء'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // انتقال لصفحة إضافة البلاغ
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'إضافة',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      backgroundColor: Colors.blue.shade600,
+      elevation: 8,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade400, Colors.blue.shade600],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.4),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.add,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+    );
+  }}

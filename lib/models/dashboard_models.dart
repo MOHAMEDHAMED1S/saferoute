@@ -93,6 +93,7 @@ enum ReportType {
   traffic,
   roadwork,
   weather,
+  maintenance,
   other,
 }
 
@@ -109,6 +110,8 @@ extension ReportTypeExtension on ReportType {
         return 'أعمال طريق';
       case ReportType.weather:
         return 'طقس';
+      case ReportType.maintenance:
+        return 'صيانة';
       case ReportType.other:
         return 'أخرى';
     }
@@ -126,6 +129,8 @@ extension ReportTypeExtension on ReportType {
         return Icons.construction;
       case ReportType.weather:
         return Icons.cloud;
+      case ReportType.maintenance:
+        return Icons.build;
       case ReportType.other:
         return Icons.error;
     }
@@ -143,6 +148,8 @@ extension ReportTypeExtension on ReportType {
         return Colors.amber;
       case ReportType.weather:
         return Colors.grey;
+      case ReportType.maintenance:
+        return Colors.brown;
       case ReportType.other:
         return Colors.purple;
     }
