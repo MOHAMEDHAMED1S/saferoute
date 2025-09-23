@@ -15,6 +15,7 @@ class _CommunityScreenState extends State<CommunityScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
+  bool _showFabMenu = false;
 
   @override
   void initState() {
@@ -55,29 +56,23 @@ class _CommunityScreenState extends State<CommunityScreen>
                   ),
                   child: Column(
                     children: [
-                      // Welcome section
+                      // Welcome section with avatar + notifications
                       Row(
                         children: [
                           Container(
                             width: 60,
                             height: 60,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
                               color: Colors.white,
                             ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
+                            child: ClipOval(
                               child: Image.asset(
                                 'assets/images/logo.jpg',
-                                width: 60,
-                                height: 60,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
-                                    decoration: BoxDecoration(
-                                      color: LiquidGlassTheme.getGradientByName('primary').colors.first,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
+                                    color: LiquidGlassTheme.getGradientByName('primary').colors.first,
                                     child: const Icon(
                                       Icons.people,
                                       color: Colors.white,
@@ -96,7 +91,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                 Consumer<AuthProvider>(
                                   builder: (context, authProvider, child) {
                                     return Text(
-                                      'مرحباً، ${authProvider.userModel?.name ?? 'المستخدم'}',
+                                      'مرحباً، ${authProvider.userModel?.name ?? 'المستخدم'} 👋',
                                       style: LiquidGlassTheme.primaryTextStyle.copyWith(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -114,6 +109,13 @@ class _CommunityScreenState extends State<CommunityScreen>
                               ],
                             ),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.notifications),
+                            color: Colors.white,
+                            onPressed: () {
+                              // إشعارات
+                            },
+                          )
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -165,7 +167,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 ),
               ],
             ),
-            _buildFloatingReportButton(),
+            _buildFloatingReportMenu(),
           ],
         ),
       ),
@@ -202,6 +204,7 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
+  // ===== Stats Section =====
   Widget _buildStatsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +225,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 title: 'البلاغات',
                 value: '24',
                 subtitle: 'هذا الشهر',
-                color: Colors.white,
+                color: Colors.redAccent,
               ),
             ),
             const SizedBox(width: 16),
@@ -232,7 +235,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 title: 'النقاط',
                 value: '1,250',
                 subtitle: 'المجموع',
-                color: LiquidGlassTheme.accentColor,
+                color: Colors.amber,
               ),
             ),
             const SizedBox(width: 16),
@@ -242,7 +245,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 title: 'الترتيب',
                 value: '#12',
                 subtitle: 'هذا الأسبوع',
-                color: LiquidGlassTheme.successColor,
+                color: Colors.green,
               ),
             ),
           ],
@@ -266,12 +269,16 @@ class _CommunityScreenState extends State<CommunityScreen>
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [color.withAlpha((255 * 0.7).toInt()), color],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            child: Icon(icon, color: color, size: 26),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(height: 12),
           Text(
@@ -279,7 +286,6 @@ class _CommunityScreenState extends State<CommunityScreen>
             style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: LiquidGlassTheme.primaryTextColor,
             ),
           ),
           const SizedBox(height: 8),
@@ -288,7 +294,6 @@ class _CommunityScreenState extends State<CommunityScreen>
             style: LiquidGlassTheme.headerTextStyle.copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: LiquidGlassTheme.primaryTextColor,
             ),
             textAlign: TextAlign.center,
           ),
@@ -299,19 +304,19 @@ class _CommunityScreenState extends State<CommunityScreen>
               fontSize: 11,
               color: LiquidGlassTheme.secondaryTextColor,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
+  // ===== Recent Activities Section =====
   Widget _buildRecentActivitiesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'النشاطات الحديثة',
+          'النشاط الحديثة',
           style: LiquidGlassTheme.headerTextStyle.copyWith(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -323,7 +328,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           title: 'بلاغ جديد',
           description: 'تم إرسال بلاغ حادث مروري',
           time: 'منذ 5 دقائق',
-          color: LiquidGlassTheme.primaryColor,
+          color: Colors.redAccent,
         ),
         const SizedBox(height: 12),
         _buildActivityCard(
@@ -331,7 +336,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           title: 'نقاط جديدة',
           description: 'حصلت على 50 نقطة',
           time: 'منذ ساعة',
-          color: LiquidGlassTheme.accentColor,
+          color: Colors.amber,
         ),
         const SizedBox(height: 12),
         _buildActivityCard(
@@ -339,7 +344,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           title: 'تأكيد بلاغ',
           description: 'تم تأكيد بلاغك من قبل المجتمع',
           time: 'منذ 3 ساعات',
-          color: LiquidGlassTheme.successColor,
+          color: Colors.green,
         ),
       ],
     );
@@ -360,11 +365,13 @@ class _CommunityScreenState extends State<CommunityScreen>
       margin: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
-          LiquidGlassContainer(
-            type: LiquidGlassType.primary,
+          Container(
             padding: const EdgeInsets.all(10),
-            borderRadius: BorderRadius.circular(12),
-            child: Icon(icon, color: LiquidGlassTheme.getIconColor('primary'), size: 22),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withAlpha((255 * 0.15).toInt()),
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -401,6 +408,7 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
+  // ===== Achievements Section =====
   Widget _buildAchievementsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,89 +421,91 @@ class _CommunityScreenState extends State<CommunityScreen>
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-               child: _buildAchievementCard(
-                 icon: Icons.emoji_events,
-                 title: 'مبلغ نشط',
-                 description: '10 بلاغات',
-                 isUnlocked: true,
-               ),
-             ),
-             const SizedBox(width: 16),
-             Expanded(
-               child: _buildAchievementCard(
-                 icon: Icons.star,
-                 title: 'نجم المجتمع',
-                 description: '100 نقطة',
-                 isUnlocked: true,
-               ),
-             ),
-             const SizedBox(width: 16),
-             Expanded(
-               child: _buildAchievementCard(
-                 icon: Icons.track_changes,
-                 title: 'هدف الشهر',
-                 description: '50 بلاغ',
-                 isUnlocked: false,
-               ),
-             ),
-          ],
+        SizedBox(
+          height: 150,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              _buildAchievementCard(
+                icon: Icons.emoji_events,
+                title: 'مبلغ نشط',
+                description: '10 بلاغات',
+                isUnlocked: true,
+              ),
+              const SizedBox(width: 16),
+              _buildAchievementCard(
+                icon: Icons.star,
+                title: 'نجم المجتمع',
+                description: '100 نقطة',
+                isUnlocked: true,
+              ),
+              const SizedBox(width: 16),
+              _buildAchievementCard(
+                icon: Icons.track_changes,
+                title: 'هدف الشهر',
+                description: '50 بلاغ',
+                isUnlocked: false,
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _buildAchievementCard({
-     required IconData icon,
-     required String title,
-     required String description,
-     required bool isUnlocked,
-   }) {
-     return LiquidGlassContainer(
-       type: LiquidGlassType.ultraLight,
-       isInteractive: true,
-       padding: const EdgeInsets.all(18),
-       borderRadius: BorderRadius.circular(16),
-       child: Column(
-         children: [
-           LiquidGlassContainer(
-             type: LiquidGlassType.primary,
-             padding: const EdgeInsets.all(10),
-             borderRadius: BorderRadius.circular(12),
-             child: Icon(
-               icon,
-               size: 22,
-               color: isUnlocked 
-                   ? LiquidGlassTheme.getIconColor('primary')
-                   : Colors.grey,
-             ),
-           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isUnlocked ? LiquidGlassTheme.primaryTextColor : Colors.grey,
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool isUnlocked,
+  }) {
+    return SizedBox(
+      width: 140,
+      child: LiquidGlassContainer(
+        type: LiquidGlassType.ultraLight,
+        isInteractive: true,
+        padding: const EdgeInsets.all(18),
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isUnlocked ? Colors.blueAccent.withAlpha((255 * 0.15).toInt()) : Colors.grey.withAlpha((255 * 0.15).toInt()),
+              ),
+              child: Icon(
+                icon,
+                size: 26,
+                color: isUnlocked ? Colors.blueAccent : Colors.grey,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: LiquidGlassTheme.bodyTextStyle.copyWith(
-              fontSize: 11,
-              color: isUnlocked ? LiquidGlassTheme.secondaryTextColor : Colors.grey,
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isUnlocked ? LiquidGlassTheme.primaryTextColor : Colors.grey,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                fontSize: 11,
+                color: isUnlocked ? LiquidGlassTheme.secondaryTextColor : Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // ===== Leaderboard Section =====
   Widget _buildLeaderboardSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,76 +518,36 @@ class _CommunityScreenState extends State<CommunityScreen>
           ),
         ),
         const SizedBox(height: 16),
-        _buildLeaderboardItem(
-           rank: 1,
-           name: 'أحمد محمد',
-           points: 2450,
-           isCurrentUser: false,
-         ),
-         const SizedBox(height: 12),
-         _buildLeaderboardItem(
-           rank: 2,
-           name: 'فاطمة علي',
-           points: 2100,
-           isCurrentUser: false,
-         ),
-         const SizedBox(height: 12),
-         _buildLeaderboardItem(
-           rank: 3,
-           name: 'محمد سالم',
-           points: 1890,
-           isCurrentUser: false,
-         ),
-         const SizedBox(height: 12),
-         _buildLeaderboardItem(
-           rank: 12,
-           name: 'أنت',
-           points: 1250,
-           isCurrentUser: true,
-         ),
+        _buildLeaderboardItem(rank: 1, name: 'أحمد محمد', points: 2450, isCurrentUser: false),
+        const SizedBox(height: 12),
+        _buildLeaderboardItem(rank: 2, name: 'فاطمة علي', points: 2100, isCurrentUser: false),
+        const SizedBox(height: 12),
+        _buildLeaderboardItem(rank: 3, name: 'محمد سالم', points: 1890, isCurrentUser: false),
+        const SizedBox(height: 12),
+        _buildLeaderboardItem(rank: 12, name: 'أنت', points: 1250, isCurrentUser: true),
       ],
     );
   }
 
   Widget _buildLeaderboardItem({
-     required int rank,
-     required String name,
-     required int points,
-     required bool isCurrentUser,
-   }) {
-     return LiquidGlassContainer(
-       type: LiquidGlassType.secondary,
-       isInteractive: true,
-       padding: const EdgeInsets.all(18),
-       borderRadius: BorderRadius.circular(16),
-       margin: const EdgeInsets.only(bottom: 2),
-       child: Row(
-         children: [
-           LiquidGlassContainer(
-             type: LiquidGlassType.primary,
-             padding: const EdgeInsets.all(10),
-             borderRadius: BorderRadius.circular(12),
-             child: Text(
-               '#$rank',
-               style: LiquidGlassTheme.headerTextStyle.copyWith(
-                 fontSize: 14,
-                 fontWeight: FontWeight.bold,
-                 color: LiquidGlassTheme.getIconColor('primary'),
-               ),
-             ),
-           ),
-           const SizedBox(width: 16),
-           LiquidGlassContainer(
-             type: LiquidGlassType.primary,
-             padding: const EdgeInsets.all(10),
-             borderRadius: BorderRadius.circular(12),
-             child: Icon(
-               Icons.person,
-               color: LiquidGlassTheme.getIconColor('primary'),
-               size: 20,
-             ),
-           ),
-           const SizedBox(width: 16),
+    required int rank,
+    required String name,
+    required int points,
+    required bool isCurrentUser,
+  }) {
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      padding: const EdgeInsets.all(18),
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.blueAccent.withAlpha((255 * 0.15).toInt()),
+            child: const Icon(Icons.person, color: Colors.blueAccent),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +556,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                   name,
                   style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.w600,
+                    color: isCurrentUser ? Colors.blueAccent : null,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -600,38 +571,74 @@ class _CommunityScreenState extends State<CommunityScreen>
             ),
           ),
           if (rank <= 3)
-             LiquidGlassContainer(
-               type: LiquidGlassType.primary,
-               padding: const EdgeInsets.all(8),
-               borderRadius: BorderRadius.circular(12),
-               child: Icon(
-                 Icons.emoji_events,
-                 color: rank == 1 
-                     ? Colors.amber
-                     : rank == 2 
-                         ? Colors.grey[600]
-                         : Colors.orange,
-                 size: 18,
-               ),
-             ),
+            Icon(
+              Icons.emoji_events,
+              color: rank == 1 ? Colors.amber : rank == 2 ? Colors.grey : Colors.orange,
+              size: 22,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildFloatingReportButton() {
+  // ===== Floating Report Button with Menu =====
+  Widget _buildFloatingReportMenu() {
     return Positioned(
       bottom: 20,
       right: 20,
-      child: LiquidGlassButton(
-        text: 'إبلاغ',
-        icon: Icons.report_problem,
-        onPressed: () {
-          // Navigate to report screen
-        },
-        type: LiquidGlassType.primary,
-        borderRadius: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (_showFabMenu) ...[
+            _buildFabOption(Icons.warning, "حادث", Colors.redAccent),
+            const SizedBox(height: 8),
+            _buildFabOption(Icons.traffic, "ازدحام", Colors.orange),
+            const SizedBox(height: 8),
+            _buildFabOption(Icons.speed, "مطب", Colors.green),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton(
+            backgroundColor: Colors.blueAccent,
+            onPressed: () {
+              setState(() {
+                _showFabMenu = !_showFabMenu;
+              });
+            },
+            child: Icon(_showFabMenu ? Icons.close : Icons.add),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFabOption(IconData icon, String label, Color color) {
+    return GestureDetector(
+      onTap: () {
+        // تنفيذ الإجراء
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: color.withAlpha((255 * 0.9).toInt()),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ),
+          FloatingActionButton(
+            heroTag: label,
+            mini: true,
+            backgroundColor: color,
+            onPressed: () {},
+            child: Icon(icon, size: 20),
+          ),
+        ],
       ),
     );
   }
