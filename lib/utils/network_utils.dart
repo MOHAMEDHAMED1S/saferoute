@@ -1,8 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+// API Error handling utilities
+class NetworkUtils {
+  static const String _tokenKey = 'auth_token';
+  
+  // Get authentication token from local storage
+  static Future<String?> getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+  
+  // Save authentication token to local storage
+  static Future<void> saveAuthToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+  }
+  
+  // Handle API errors (English version)
+  static void handleApiErrorEnglish(DioException error) {
+    // Log error
+    debugPrint('API Error: ${error.message}');
+    
+    // Handle different error types
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        // Handle timeout errors
+        break;
+      case DioExceptionType.badResponse:
+        // Handle bad response errors
+        break;
+      default:
+        // Handle other errors
+        break;
+    }
+  }
+  
+  // حذف توكن التوثيق من التخزين المحلي
+  static Future<void> clearAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
+  
+  // معالجة أخطاء API
+  static void handleApiError(dynamic error) {
+    String errorMessage = 'حدث خطأ غير معروف';
+    
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          errorMessage = 'انتهت مهلة الاتصال بالخادم';
+          break;
+        case DioExceptionType.badResponse:
+          final statusCode = error.response?.statusCode;
+          if (statusCode == 401) {
+            errorMessage = 'غير مصرح لك بالوصول';
+            // يمكن تنفيذ عملية تسجيل الخروج هنا
+          } else if (statusCode == 404) {
+            errorMessage = 'الخدمة غير متوفرة';
+          } else if (statusCode == 500) {
+            errorMessage = 'خطأ في الخادم';
+          } else {
+            errorMessage = error.response?.data?['message'] ?? 'حدث خطأ في الاستجابة';
+          }
+          break;
+        case DioExceptionType.cancel:
+          errorMessage = 'تم إلغاء الطلب';
+          break;
+        case DioExceptionType.connectionError:
+          errorMessage = 'فشل الاتصال بالإنترنت';
+          break;
+        default:
+          errorMessage = 'حدث خطأ غير معروف';
+          break;
+      }
+    }
+    
+    debugPrint('API Error: $errorMessage');
+  }
+}
 
 // Network connectivity manager
 class NetworkManager {
@@ -645,7 +730,7 @@ enum NetworkQuality {
 }
 
 // Network utilities
-class NetworkUtils {
+class NetworkUtilsFormat {
   static String formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
