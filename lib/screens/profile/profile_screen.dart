@@ -5,7 +5,7 @@ import '../../providers/reports_provider.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 import '../settings/notifications_settings_screen.dart';
-import '../settings/privacy_settings_screen.dart';
+
 import '../settings/help_support_screen.dart';
 
 import '../../models/report_model.dart';
@@ -402,14 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       );
                     }),
-                    _buildSettingsTile(Icons.privacy_tip, 'الخصوصية', 'إعدادات الخصوصية والأمان', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PrivacySettingsScreen(),
-                        ),
-                      );
-                    }),
+                    
                     _buildSettingsTile(Icons.help, 'المساعدة', 'الحصول على المساعدة والدعم', () {
                       Navigator.push(
                         context,

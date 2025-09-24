@@ -16,6 +16,47 @@ class _CommunityScreenState extends State<CommunityScreen>
   late TabController _tabController;
   int _selectedTab = 0;
   bool _showFabMenu = false;
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _chatScrollController = ScrollController();
+
+  // قائمة الرسائل التجريبية
+  List<ChatMessage> _messages = [
+    ChatMessage(
+      id: '1',
+      userName: 'أحمد محمد',
+      message: 'مرحباً جميعاً، هل يوجد ازدحام في شارع فلسطين؟',
+      time: DateTime.now().subtract(Duration(minutes: 30)),
+      isCurrentUser: false,
+    ),
+    ChatMessage(
+      id: '2',
+      userName: 'فاطمة علي',
+      message: 'نعم، يوجد ازدحام شديد بسبب حادث مروري',
+      time: DateTime.now().subtract(Duration(minutes: 25)),
+      isCurrentUser: false,
+    ),
+    ChatMessage(
+      id: '3',
+      userName: 'محمد سالم',
+      message: 'الطريق البديل عبر شارع الجامعة أفضل',
+      time: DateTime.now().subtract(Duration(minutes: 20)),
+      isCurrentUser: false,
+    ),
+    ChatMessage(
+      id: '4',
+      userName: 'أنت',
+      message: 'شكراً لكم على التنبيه، سأسلك طريق بديل',
+      time: DateTime.now().subtract(Duration(minutes: 15)),
+      isCurrentUser: true,
+    ),
+    ChatMessage(
+      id: '5',
+      userName: 'سارة أحمد',
+      message: 'الآن الطريق أصبح أفضل، تم حل المشكلة',
+      time: DateTime.now().subtract(Duration(minutes: 5)),
+      isCurrentUser: false,
+    ),
+  ];
 
   @override
   void initState() {
@@ -26,12 +67,45 @@ class _CommunityScreenState extends State<CommunityScreen>
         _selectedTab = _tabController.index;
       });
     });
+    _scrollToBottom();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _messageController.dispose();
+    _chatScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_chatScrollController.hasClients) {
+        _chatScrollController.animateTo(
+          _chatScrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _sendMessage() {
+    if (_messageController.text.trim().isNotEmpty) {
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            userName: 'أنت',
+            message: _messageController.text.trim(),
+            time: DateTime.now(),
+            isCurrentUser: true,
+          ),
+        );
+      });
+      _messageController.clear();
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -143,8 +217,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                           ),
                           tabs: const [
                             Tab(
-                              icon: Icon(Icons.timeline, size: 20),
-                              text: 'النشاطات',
+                              icon: Icon(Icons.chat, size: 20),
+                              text: 'مجتمع التواصل',
                             ),
                             Tab(
                               icon: Icon(Icons.leaderboard, size: 20),
@@ -160,7 +234,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildActivityTab(),
+                      _buildChatTab(),
                       _buildLeaderboardTab(),
                     ],
                   ),
@@ -174,18 +248,305 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
-  Widget _buildActivityTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // قسم مجتمع التواصل (الشات مباشرة)
+  Widget _buildChatTab() {
+    return Column(
+      children: [
+        // Chat info bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withAlpha((255 * 0.8).toInt()),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '127 متصل',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'شات مجتمع الطريق الآمن',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Chat messages area
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ListView.builder(
+              controller: _chatScrollController,
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                return _buildMessageBubble(_messages[index]);
+              },
+            ),
+          ),
+        ),
+        
+        // Message input
+        _buildMessageInput(),
+      ],
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: message.isCurrentUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          _buildStatsSection(),
-          const SizedBox(height: 24),
-          _buildRecentActivitiesSection(),
-          const SizedBox(height: 24),
-          _buildAchievementsSection(),
-          const SizedBox(height: 100),
+          if (!message.isCurrentUser) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
+              child: Text(
+                message.userName.substring(0, 1),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: message.isCurrentUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (!message.isCurrentUser)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4, left: 12),
+                    child: Text(
+                      message.userName,
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        fontSize: 12,
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                LiquidGlassContainer(
+                  type: message.isCurrentUser
+                      ? LiquidGlassType.secondary
+                      : LiquidGlassType.ultraLight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: message.isCurrentUser
+                        ? const Radius.circular(16)
+                        : const Radius.circular(4),
+                    bottomRight: message.isCurrentUser
+                        ? const Radius.circular(4)
+                        : const Radius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        message.message,
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          fontSize: 14,
+                          color: message.isCurrentUser
+                              ? Colors.white
+                              : LiquidGlassTheme.primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatTime(message.time),
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          fontSize: 10,
+                          color: message.isCurrentUser
+                              ? Colors.white60
+                              : LiquidGlassTheme.secondaryTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (message.isCurrentUser) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.blueAccent,
+              child: Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  return authProvider.userModel?.photoUrl != null
+                      ? ClipOval(
+                          child: Image.asset(
+                            authProvider.userModel!.photoUrl!,
+                            width: 32,
+                            height: 32,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 16, color: Colors.white);
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF2196F3), // أزرق فاتح
+            Color(0xFF00BCD4), // أزرق مخضر
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // أيقونة الموقع
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.location_on, color: Colors.white, size: 18),
+                onPressed: () {
+                  // مشاركة الموقع
+                },
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          
+          // أيقونة الإرفاق
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.attach_file, color: Colors.white, size: 18),
+                onPressed: () {
+                  // إرفاق ملف
+                },
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // مربع النص
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                controller: _messageController,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'اكتب رسالة...',
+                  hintStyle: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 16,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                textDirection: TextDirection.rtl,
+                onSubmitted: (_) => _sendMessage(),
+                maxLines: null,
+                minLines: 1,
+              ),
+            ),
+          ),
+          
+          // زر الإرسال
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Color(0xFF2196F3), size: 20),
+                onPressed: _sendMessage,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 8),
         ],
       ),
     );
@@ -204,308 +565,6 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
-  // ===== Stats Section =====
-  Widget _buildStatsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'إحصائياتك',
-          style: LiquidGlassTheme.headerTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.report,
-                title: 'البلاغات',
-                value: '24',
-                subtitle: 'هذا الشهر',
-                color: Colors.redAccent,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.star,
-                title: 'النقاط',
-                value: '1,250',
-                subtitle: 'المجموع',
-                color: Colors.amber,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildStatCard(
-                icon: Icons.trending_up,
-                title: 'الترتيب',
-                value: '#12',
-                subtitle: 'هذا الأسبوع',
-                color: Colors.green,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required String subtitle,
-    required Color color,
-  }) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.ultraLight,
-      isInteractive: true,
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [color.withAlpha((255 * 0.7).toInt()), color],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: LiquidGlassTheme.bodyTextStyle.copyWith(
-              fontSize: 11,
-              color: LiquidGlassTheme.secondaryTextColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===== Recent Activities Section =====
-  Widget _buildRecentActivitiesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'النشاط الحديثة',
-          style: LiquidGlassTheme.headerTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildActivityCard(
-          icon: Icons.report_problem,
-          title: 'بلاغ جديد',
-          description: 'تم إرسال بلاغ حادث مروري',
-          time: 'منذ 5 دقائق',
-          color: Colors.redAccent,
-        ),
-        const SizedBox(height: 12),
-        _buildActivityCard(
-          icon: Icons.star,
-          title: 'نقاط جديدة',
-          description: 'حصلت على 50 نقطة',
-          time: 'منذ ساعة',
-          color: Colors.amber,
-        ),
-        const SizedBox(height: 12),
-        _buildActivityCard(
-          icon: Icons.verified,
-          title: 'تأكيد بلاغ',
-          description: 'تم تأكيد بلاغك من قبل المجتمع',
-          time: 'منذ 3 ساعات',
-          color: Colors.green,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivityCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required String time,
-    required Color color,
-  }) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.secondary,
-      isInteractive: true,
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(16),
-      margin: const EdgeInsets.only(bottom: 2),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withAlpha((255 * 0.15).toInt()),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: LiquidGlassTheme.headerTextStyle.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  description,
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 12,
-                    color: LiquidGlassTheme.secondaryTextColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ===== Achievements Section =====
-  Widget _buildAchievementsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'الإنجازات',
-          style: LiquidGlassTheme.headerTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 150,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildAchievementCard(
-                icon: Icons.emoji_events,
-                title: 'مبلغ نشط',
-                description: '10 بلاغات',
-                isUnlocked: true,
-              ),
-              const SizedBox(width: 16),
-              _buildAchievementCard(
-                icon: Icons.star,
-                title: 'نجم المجتمع',
-                description: '100 نقطة',
-                isUnlocked: true,
-              ),
-              const SizedBox(width: 16),
-              _buildAchievementCard(
-                icon: Icons.track_changes,
-                title: 'هدف الشهر',
-                description: '50 بلاغ',
-                isUnlocked: false,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAchievementCard({
-    required IconData icon,
-    required String title,
-    required String description,
-    required bool isUnlocked,
-  }) {
-    return SizedBox(
-      width: 140,
-      child: LiquidGlassContainer(
-        type: LiquidGlassType.ultraLight,
-        isInteractive: true,
-        padding: const EdgeInsets.all(18),
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isUnlocked ? Colors.blueAccent.withAlpha((255 * 0.15).toInt()) : Colors.grey.withAlpha((255 * 0.15).toInt()),
-              ),
-              child: Icon(
-                icon,
-                size: 26,
-                color: isUnlocked ? Colors.blueAccent : Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isUnlocked ? LiquidGlassTheme.primaryTextColor : Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                fontSize: 11,
-                color: isUnlocked ? LiquidGlassTheme.secondaryTextColor : Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ===== Leaderboard Section =====
   Widget _buildLeaderboardSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,7 +604,14 @@ class _CommunityScreenState extends State<CommunityScreen>
         children: [
           CircleAvatar(
             backgroundColor: Colors.blueAccent.withAlpha((255 * 0.15).toInt()),
-            child: const Icon(Icons.person, color: Colors.blueAccent),
+            child: Text(
+              '#$rank',
+              style: TextStyle(
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -581,30 +647,35 @@ class _CommunityScreenState extends State<CommunityScreen>
     );
   }
 
-  // ===== Floating Report Button with Menu =====
   Widget _buildFloatingReportMenu() {
     return Positioned(
-      bottom: 20,
+      bottom: 180, // رفع الزر لأعلى بحيث يظهر فوق منطقة الكتابة
       right: 20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (_showFabMenu) ...[
             _buildFabOption(Icons.warning, "حادث", Colors.redAccent),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildFabOption(Icons.traffic, "ازدحام", Colors.orange),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _buildFabOption(Icons.speed, "مطب", Colors.green),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
           FloatingActionButton(
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Color(0xFF2196F3),
+            foregroundColor: Colors.white,
+            elevation: 6,
             onPressed: () {
               setState(() {
                 _showFabMenu = !_showFabMenu;
               });
             },
-            child: Icon(_showFabMenu ? Icons.close : Icons.add),
+            child: AnimatedRotation(
+              turns: _showFabMenu ? 0.125 : 0, // دوران 45 درجة عند الفتح
+              duration: Duration(milliseconds: 200),
+              child: Icon(_showFabMenu ? Icons.close : Icons.add, size: 28),
+            ),
           ),
         ],
       ),
@@ -615,6 +686,10 @@ class _CommunityScreenState extends State<CommunityScreen>
     return GestureDetector(
       onTap: () {
         // تنفيذ الإجراء
+        setState(() {
+          _showFabMenu = false;
+        });
+        // يمكنك إضافة منطق إرسال البلاغ هنا
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -642,4 +717,36 @@ class _CommunityScreenState extends State<CommunityScreen>
       ),
     );
   }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+
+    if (difference.inMinutes < 1) {
+      return 'الآن';
+    } else if (difference.inMinutes < 60) {
+      return 'منذ ${difference.inMinutes} د';
+    } else if (difference.inHours < 24) {
+      return 'منذ ${difference.inHours} س';
+    } else {
+      return '${time.day}/${time.month}';
+    }
+  }
+}
+
+// نموذج الرسالة
+class ChatMessage {
+  final String id;
+  final String userName;
+  final String message;
+  final DateTime time;
+  final bool isCurrentUser;
+
+  ChatMessage({
+    required this.id,
+    required this.userName,
+    required this.message,
+    required this.time,
+    required this.isCurrentUser,
+  });
 }
