@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../providers/reports_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/report_model.dart';
@@ -28,6 +31,11 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
   bool _isSubmitting = false;
   int _currentStep = 0; // 0: نوع البلاغ، 1: التفاصيل، 2: المراجعة
   double _selectedDistance = 100; // المسافة بالمتر
+  
+  // إضافة متغيرات للصور
+  final ImagePicker _picker = ImagePicker();
+  List<File> _reportImages = [];
+  bool _isUploading = false;
 
   final List<String> _stepTitles = ['اختر نوع البلاغ', 'أضف التفاصيل', 'راجع البلاغ'];
   final List<double> _distanceOptions = [50, 100, 200, 500, 1000]; // خيارات المسافة بالمتر
@@ -77,6 +85,51 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     }
   }
 
+  // دالة لالتقاط الصور من الكاميرا
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        setState(() {
+          _reportImages.add(File(image.path));
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar('حدث خطأ أثناء التقاط الصورة');
+    }
+  }
+
+  // دالة لاختيار الصور من المعرض
+  Future<void> _pickImagesFromGallery() async {
+    try {
+      final List<XFile>? images = await _picker.pickMultiImage(
+        imageQuality: 80,
+      );
+      if (images != null && images.isNotEmpty) {
+        setState(() {
+          _reportImages.addAll(images.map((image) => File(image.path)).toList());
+          // تحديد الحد الأقصى للصور (3 صور)
+          if (_reportImages.length > 3) {
+            _reportImages = _reportImages.sublist(0, 3);
+            _showErrorSnackBar('يمكنك إضافة 3 صور كحد أقصى');
+          }
+        });
+      }
+    } catch (e) {
+      _showErrorSnackBar('حدث خطأ أثناء اختيار الصور');
+    }
+  }
+
+  // دالة لحذف صورة
+  void _removeImage(int index) {
+    setState(() {
+      _reportImages.removeAt(index);
+    });
+  }
+
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate() || _selectedType == null) {
       _showErrorSnackBar('يرجى ملء جميع الحقول المطلوبة');
@@ -96,11 +149,15 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     });
 
     try {
+      // في الواقع هنا يجب رفع الصور أولاً ثم الحصول على روابطها
+      // لكن سنفترض أن الـ Provider يتعامل مع ذلك
       final success = await reportsProvider.createReport(
         type: _selectedType!,
         description: _descriptionController.text.trim(),
         createdBy: authProvider.userModel!.id,
-        imageUrl: null,
+        imageUrl: _reportImages.isNotEmpty ? _reportImages.first.path : null,
+        // يمكن إضافة قائمة الصور كاملة إذا كان النموذج يدعم ذلك
+        // images: _reportImages.map((file) => file.path).toList(),
       );
 
       if (success) {
@@ -196,20 +253,13 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // شريط العلوي مع زر الرجوع والعنوان
+                  // شريط العلوي مع اللوجو والعنوان
                   Row(
                     children: [
-                      LiquidGlassContainer(
-                        type: LiquidGlassType.secondary,
-                        borderRadius: BorderRadius.circular(12),
-                        padding: const EdgeInsets.all(8),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.arrow_back,
-                            color: LiquidGlassTheme.getTextColor('primary'),
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
+                      Image.asset(
+                        'assets/images/logo.jpg',
+                        width: 40,
+                        height: 40,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -369,7 +419,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // عرض النوع المحدد
+          // عرض النوع المحدد مع تصميم محسن
           LiquidGlassContainer(
             type: LiquidGlassType.secondary,
             borderRadius: BorderRadius.circular(16),
@@ -377,26 +427,49 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getReportColor(_selectedType!).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: _getReportColor(_selectedType!).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     _getReportIcon(_selectedType!),
                     color: _getReportColor(_selectedType!),
-                    size: 20,
+                    size: 22,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  _getReportTypeTitle(_selectedType!),
-                  style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getReportTypeTitle(_selectedType!),
+                        style: LiquidGlassTheme.headerTextStyle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'تم اختيار هذا النوع من البلاغات',
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
-                TextButton(
+                TextButton.icon(
                   onPressed: _previousStep,
-                  child: Text('تغيير', style: TextStyle(color: LiquidGlassTheme.getGradientByName('primary').colors.first)),
+                  icon: Icon(
+                    Icons.edit,
+                    size: 16,
+                    color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                  ),
+                  label: Text(
+                    'تغيير',
+                    style: TextStyle(
+                      color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -404,14 +477,27 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           
           const SizedBox(height: 24),
           
-          // حقل الوصف
-          Text(
-            'وصف مفصل للمخطر',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+          // حقل الوصف مع تصميم محسن
+          Row(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'وصف مفصل للمخطر',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            'اكتب وصفاً واضحاً يساعد السائقين الآخرين',
+            'اكتب وصفاً واضحاً يساعد السائقين الآخرين على فهم المخطر',
             style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
@@ -446,10 +532,131 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           
           const SizedBox(height: 24),
           
-          // تحديد المسافة
+          // إضافة صور للبلاغ
+          Row(
+            children: [
+              Icon(
+                Icons.photo_camera_outlined,
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'إضافة صور للبلاغ',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '(اختياري)',
+                style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                  fontSize: 12,
+                  color: LiquidGlassTheme.getTextColor('secondary'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
-            'مسافة تأثير البلاغ',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+            'يمكنك إضافة حتى 3 صور توضيحية للبلاغ',
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          
+          // عرض الصور المختارة
+          if (_reportImages.isNotEmpty)
+            Container(
+              height: 100,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _reportImages.length,
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: DecorationImage(
+                            image: FileImage(_reportImages[index]),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 12,
+                        child: GestureDetector(
+                          onTap: () => _removeImage(index),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          
+          // أزرار إضافة الصور
+          Row(
+            children: [
+              Expanded(
+                child: LiquidGlassButton(
+                  text: 'التقاط صورة',
+                  onPressed: _reportImages.length >= 3 ? null : _pickImageFromCamera,
+                  type: LiquidGlassType.secondary,
+                  borderRadius: 12,
+                  icon: Icons.camera_alt,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: LiquidGlassButton(
+                  text: ' من المعرض',
+                  onPressed: _reportImages.length >= 3 ? null : _pickImagesFromGallery,
+                  type: LiquidGlassType.secondary,
+                  borderRadius: 12,
+                  icon: Icons.photo_library,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // تحديد المسافة
+          Row(
+            children: [
+              Icon(
+                Icons.straighten_outlined,
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'مسافة تأثير البلاغ',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -462,16 +669,24 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
           
           const SizedBox(height: 24),
           
-          // معلومات الموقع
+          // معلومات الموقع مع تصميم محسن
           LiquidGlassContainer(
             type: LiquidGlassType.primary,
             borderRadius: BorderRadius.circular(16),
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  color: LiquidGlassTheme.getTextColor('primary'),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.location_on,
+                    color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -480,7 +695,10 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     children: [
                       Text(
                         'الموقع الحالي',
-                        style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
+                        style: LiquidGlassTheme.headerTextStyle.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         'سيتم استخدام موقعك الحالي للبلاغ',
@@ -508,98 +726,301 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'مراجعة البلاغ',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 20),
+          // عنوان المراجعة مع أيقونة
+          Row(
+            children: [
+              Icon(
+                Icons.fact_check_outlined,
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'مراجعة البلاغ',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            'تأكد من صحة البيانات قبل الإرسال',
-            style: LiquidGlassTheme.bodyTextStyle,
+            'راجع تفاصيل البلاغ قبل الإرسال للتأكد من صحة المعلومات',
+            style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
-          
           const SizedBox(height: 24),
           
-          // معاينة البلاغ
+          // عرض نوع البلاغ بتصميم محسن
           LiquidGlassContainer(
-            type: LiquidGlassType.secondary,
-            borderRadius: BorderRadius.circular(16),
-            padding: const EdgeInsets.all(20),
+            type: LiquidGlassType.ultraLight,
+            borderRadius: BorderRadius.circular(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            // تعيين لون الخلفية إلى اللون الأبيض
+            backgroundColor: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
+                    Icon(
+                      Icons.category_outlined,
+                      color: _getReportColor(_selectedType ?? ReportType.accident),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'نوع البلاغ',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.primaryTextColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() => _currentStep = 0),
+                      child: Text(
+                        'تعديل',
+                        style: TextStyle(
+                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: _getReportColor(_selectedType!).withOpacity(0.1),
+                        color: _getReportColor(_selectedType!).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         _getReportIcon(_selectedType!),
                         color: _getReportColor(_selectedType!),
-                        size: 24,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _getReportTypeTitle(_selectedType!),
-                            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
-                          ),
-                          Text(
-                            'الآن',
-                            style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
-                          ),
-                        ],
+                    const SizedBox(width: 12),
+                    Text(
+                      _getReportTypeTitle(_selectedType!),
+                      style: LiquidGlassTheme.headerTextStyle.copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 16),
-                
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: LiquidGlassTheme.backgroundColor?.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _descriptionController.text.trim(),
-                    style: LiquidGlassTheme.bodyTextStyle,
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // عرض الوصف بتصميم محسن
+          LiquidGlassContainer(
+            type: LiquidGlassType.ultraLight,
+            borderRadius: BorderRadius.circular(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            backgroundColor: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Row(
                   children: [
                     Icon(
-                      Icons.location_on,
+                      Icons.description_outlined,
+                      color: LiquidGlassTheme.primaryTextColor,
                       size: 16,
-                      color: LiquidGlassTheme.getTextColor('secondary'),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
-                      'الموقع الحالي',
-                      style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                      'وصف البلاغ',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.primaryTextColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(width: 16),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() => _currentStep = 1),
+                      child: Text(
+                        'تعديل',
+                        style: TextStyle(
+                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _descriptionController.text,
+                  style: LiquidGlassTheme.primaryTextStyle,
+                ),
+              ],
+            ),
+          ),
+          
+          // عرض الصور المرفقة إذا وجدت
+          if (_reportImages.isNotEmpty) ...[  
+            const SizedBox(height: 16),
+            LiquidGlassContainer(
+              type: LiquidGlassType.ultraLight,
+              borderRadius: BorderRadius.circular(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              backgroundColor: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        color: LiquidGlassTheme.primaryTextColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'الصور المرفقة',
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          color: LiquidGlassTheme.primaryTextColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => setState(() => _currentStep = 1),
+                        child: Text(
+                          'تعديل',
+                          style: TextStyle(
+                            color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _reportImages.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: FileImage(_reportImages[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+          
+          // عرض المسافة بتصميم محسن
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Icon(
-                      Icons.straighten,
-                      size: 16,
+                      Icons.straighten_outlined,
                       color: LiquidGlassTheme.getTextColor('secondary'),
+                      size: 16,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
-                      '${_selectedDistance.toInt()} متر',
-                      style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                      'مسافة التأثير',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.getTextColor('secondary'),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() => _currentStep = 1),
+                      child: Text(
+                        'تعديل',
+                        style: TextStyle(
+                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: LiquidGlassTheme.getGradientByName('info').colors.first.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.route,
+                        color: LiquidGlassTheme.getGradientByName('info').colors.first,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _getDistanceDescription(_selectedDistance),
+                      style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -607,38 +1028,97 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             ),
           ),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           
-          // تحذير مهم
-          LiquidGlassContainer(
-            type: LiquidGlassType.primary,
-            borderRadius: BorderRadius.circular(16),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: LiquidGlassTheme.getGradientByName('warning').colors.first,
+          // عرض الموقع بتصميم محسن
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'تأكد من صحة البيانات',
-                        style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
+              ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      color: LiquidGlassTheme.getTextColor('secondary'),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'الموقع',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.getTextColor('secondary'),
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        'البلاغات الخاطئة تؤثر على مصداقية حسابك',
-                        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ],
-                  ),
+                      child: Icon(
+                        Icons.location_on,
+                        color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'الموقع الحالي',
+                          style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          'سيتم استخدام موقعك الحالي للبلاغ',
+                          style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                            fontSize: 12,
+                            color: LiquidGlassTheme.getTextColor('secondary'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          
+          if (_isSubmitting) ...[  
+            const SizedBox(height: 24),
+            Center(
+              child: Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 12),
+                  Text(
+                    'جاري إرسال البلاغ...',
+                    style: LiquidGlassTheme.bodyTextStyle,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -709,9 +1189,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      childAspectRatio: 1.2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      childAspectRatio: 1.3, // تعديل نسبة العرض للارتفاع
+      crossAxisSpacing: 12, // تقليل المسافة بين العناصر
+      mainAxisSpacing: 12, // تقليل المسافة بين العناصر
       children: ReportType.values.map((type) {
         final isSelected = _selectedType == type;
         return GestureDetector(
@@ -719,36 +1199,55 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             setState(() {
               _selectedType = type;
             });
+            // تأثير اهتزاز خفيف عند الاختيار
+            HapticFeedback.lightImpact();
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutQuart,
+            // تكبير الكارد عند الاختيار
+            transform: isSelected ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
+            transformAlignment: Alignment.center,
             child: LiquidGlassContainer(
               type: isSelected ? LiquidGlassType.primary : LiquidGlassType.ultraLight,
               isInteractive: true,
               borderRadius: BorderRadius.circular(16),
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(14), // تقليل الحشو الداخلي
+              backgroundColor: Colors.white,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  LiquidGlassContainer(
-                    type: LiquidGlassType.primary,
-                    padding: const EdgeInsets.all(10),
-                    borderRadius: BorderRadius.circular(12),
+                  Container(
+                    padding: const EdgeInsets.all(10), // تقليل الحشو الداخلي للأيقونة
+                    decoration: BoxDecoration(
+                      color: _getReportColor(type).withOpacity(isSelected ? 0.25 : 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: isSelected 
+                          ? Border.all(color: _getReportColor(type), width: 2)
+                          : null,
+                      boxShadow: isSelected ? [
+                        BoxShadow(
+                          color: _getReportColor(type).withOpacity(0.4),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        )
+                      ] : null,
+                    ),
                     child: Icon(
                       _getReportIcon(type),
-                      size: 22,
-                      color: LiquidGlassTheme.getIconColor('primary'),
+                      size: 26, // تقليل حجم الأيقونة قليلاً
+                      color: _getReportColor(type),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8), // تقليل المسافة
                   Text(
                     _getReportTypeTitle(type),
                     style: LiquidGlassTheme.headerTextStyle.copyWith(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+                      fontSize: isSelected ? 15 : 14, // زيادة حجم النص عند الاختيار
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected 
-                        ? Colors.white
-                        : LiquidGlassTheme.primaryTextColor,
+                        ? _getReportColor(type) // تغيير لون النص ليكون بنفس لون نوع التقرير عند الاختيار
+                        : LiquidGlassTheme.primaryTextColor.withOpacity(0.9), // تعتيم النص قليلاً عند عدم الاختيار
                     ),
                     textAlign: TextAlign.center,
                   ),

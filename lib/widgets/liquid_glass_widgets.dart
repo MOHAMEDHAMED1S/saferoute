@@ -11,6 +11,8 @@ class LiquidGlassContainer extends StatelessWidget {
   final BorderRadius? borderRadius;
   final LiquidGlassType type;
   final bool isInteractive;
+  final Color? backgroundColor;
+  final List<BoxShadow>? boxShadow;
   
   const LiquidGlassContainer({
     Key? key,
@@ -22,6 +24,8 @@ class LiquidGlassContainer extends StatelessWidget {
     this.borderRadius,
     this.type = LiquidGlassType.primary,
     this.isInteractive = false,
+    this.backgroundColor,
+    this.boxShadow,
   }) : super(key: key);
   
   @override
@@ -48,6 +52,18 @@ class LiquidGlassContainer extends StatelessWidget {
     
     if (borderRadius != null) {
       decoration = decoration.copyWith(borderRadius: borderRadius);
+    }
+    
+    // تعديل الديكوريشن إذا تم تحديد لون خلفية مخصص أو ظلال
+    if (backgroundColor != null) {
+      decoration = decoration.copyWith(
+        color: backgroundColor,
+        gradient: null, // إزالة التدرج عند تعيين لون خلفية مخصص
+      );
+    }
+    
+    if (boxShadow != null) {
+      decoration = decoration.copyWith(boxShadow: boxShadow);
     }
     
     Widget container = Container(
