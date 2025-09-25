@@ -2,13 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart' as AuthProviderCustom;
 import '../../providers/reports_provider.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 import '../settings/notifications_settings_screen.dart';
 import '../settings/help_support_screen.dart';
 import '../../models/report_model.dart';
+import '../../models/rewards_model.dart';
+import '../../services/rewards_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:saferoute/models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const String routeName = '/profile';
@@ -24,13 +28,26 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isEditing = false;
-
+  
+  // متغيرات نظام النقاط والمكافآت
+  final RewardsService _rewardsService = RewardsService();
+  PointsModel? _userPoints;
+  List<RewardModel> _availableRewards = [];
+  List<UserRewardModel> _userRewards = [];
+  bool _isLoading = false;
+  
+  // متغيرات الإحصائيات
+  int _activeReports = 0;
+  int _confirmedReports = 0;
+  double _accuracyRate = 0.0;
+  
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadUserData();
     _loadUserReports();
+    _loadUserPoints();
   }
 
   @override
@@ -40,17 +57,51 @@ class _ProfileScreenState extends State<ProfileScreen>
     _phoneController.dispose();
     super.dispose();
   }
+  
+  // تحميل نقاط المستخدم والمكافآت المتاحة
+  Future<void> _loadUserPoints() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // تحميل نقاط المستخدم
+      final points = await _rewardsService.getUserPoints(FirebaseAuth.instance.currentUser!.uid);
+      
+      // تحميل المكافآت المتاحة
+      final rewards = await _rewardsService.getAvailableRewards();
+      
+      // تحميل مكافآت المستخدم المستخدمة
+      final userRewards = await _rewardsService.getUserRewards(FirebaseAuth.instance.currentUser!.uid);
+      
+      if (mounted) {
+        setState(() {
+          _userPoints = points;
+          _availableRewards = rewards;
+          _userRewards = userRewards;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      print('Error loading user points: $e');
+    }
+  }
 
   void _loadUserData() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
     if (authProvider.userModel != null) {
-      _nameController.text = authProvider.userModel!.name;
-      _phoneController.text = authProvider.userModel!.phone ?? '';
+        _nameController.text = authProvider.userModel?.name ?? '';
+        _phoneController.text = authProvider.userModel?.phone ?? '';
     }
   }
 
   void _loadUserReports() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
     if (authProvider.userId != null) {
       final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
       reportsProvider.loadUserReports(authProvider.userId!);
@@ -58,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _updateProfile() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
     
     final success = await authProvider.updateUserProfile(
       name: _nameController.text.trim(),
@@ -82,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _signOut() async {
     final confirmed = await _showConfirmDialog('تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج؟');
     if (confirmed) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
       await authProvider.signOut();
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -135,13 +186,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: LiquidGlassTheme.backgroundColor,
-      body: Consumer<AuthProvider>(
+      body: Consumer<AuthProviderCustom.AuthProvider>(
         builder: (context, authProvider, child) {
           if (authProvider.userModel == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final user = authProvider.userModel!;
+              return const Center(child: CircularProgressIndicator());
+            }
+            final user = authProvider.userModel ?? UserModel(id: '', email: '', name: 'Guest', createdAt: DateTime.now(), lastLogin: DateTime.now());
           
           return CustomScrollView(
             slivers: [
@@ -160,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       icon: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withAlpha(51),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(Icons.logout, color: Colors.white, size: 20),
@@ -185,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withAlpha(51),
                                 border: Border.all(color: Colors.white, width: 2),
                               ),
                               child: const Icon(
@@ -211,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               user.email,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withAlpha(204),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -235,7 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       decoration: BoxDecoration(
                         border: Border(
                           bottom: BorderSide(
-                            color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withOpacity(0.1),
+                            color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withAlpha(25),
                             width: 1,
                           ),
                         ),
@@ -252,6 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           Tab(icon: Icon(Icons.person, size: 20), text: 'المعلومات'),
                           Tab(icon: Icon(Icons.report, size: 20), text: 'البلاغات'),
                           Tab(icon: Icon(Icons.analytics, size: 20), text: 'الإحصائيات'),
+                          Tab(icon: Icon(Icons.card_giftcard, size: 20), text: 'المكافآت'),
                         ],
                       ),
                     ),
@@ -261,14 +312,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               
               // Tab Content
               SliverFillRemaining(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildProfileTab(),
-                    _buildReportsTab(),
-                    _buildStatsTab(),
-                  ],
-                ),
+                child: _buildTabBarView(),
               ),
             ],
           );
@@ -277,10 +321,221 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildTabBarView() {
+    return Expanded(
+      child: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildProfileTab(),
+          _buildReportsTab(),
+          _buildAchievementsTab(),
+          _buildRewardsTab(),
+        ],
+      ),
+    );
+  }
+  
+  // بناء بطاقة إحصائية
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withAlpha(25),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // بناء علامة تبويب الإنجازات
+  // بناء شارة الإنجاز
+  Widget _buildBadge({
+    required String title,
+    required String description,
+    required IconData icon,
+    required bool isUnlocked,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isUnlocked ? Colors.white : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isUnlocked
+                  ? LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25)
+                  : Colors.grey.withAlpha(25),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isUnlocked
+                  ? LiquidGlassTheme.getGradientByName('primary').colors.first
+                  : Colors.grey,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isUnlocked ? Colors.black : Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 12,
+              color: isUnlocked ? Colors.grey.shade600 : Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsTab() {
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildStatCard(
+                title: 'البلاغات النشطة',
+                value: _activeReports.toString(),
+                icon: Icons.report_problem,
+                color: Colors.orange,
+              ),
+              const SizedBox(height: 16),
+              _buildStatCard(
+                title: 'البلاغات المؤكدة',
+                value: _confirmedReports.toString(),
+                icon: Icons.verified,
+                color: Colors.green,
+              ),
+              const SizedBox(height: 16),
+              _buildStatCard(
+                title: 'نسبة الدقة',
+                value: '${(_accuracyRate * 100).toStringAsFixed(1)}%',
+                icon: Icons.analytics,
+                color: Colors.blue,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'الإنجازات',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                children: [
+                  _buildBadge(
+                    title: 'المبلغ النشط',
+                    description: 'قم بإرسال 5 بلاغات',
+                    icon: Icons.star,
+                    isUnlocked: _activeReports >= 5,
+                  ),
+                  _buildBadge(
+                    title: 'المبلغ الخبير',
+                    description: 'قم بإرسال 20 بلاغ',
+                    icon: Icons.workspace_premium,
+                    isUnlocked: _activeReports >= 20,
+                  ),
+                  _buildBadge(
+                    title: 'دقة عالية',
+                    description: 'حقق نسبة دقة 80%',
+                    icon: Icons.verified,
+                    isUnlocked: _accuracyRate >= 0.8,
+                  ),
+                  _buildBadge(
+                    title: 'مبلغ موثوق',
+                    description: 'حقق 10 بلاغات مؤكدة',
+                    icon: Icons.security,
+                    isUnlocked: _confirmedReports >= 10,
+                  ),
+                ],
+              ),
+            ],
+          );
+  }
+
   Widget _buildProfileTab() {
-    return Consumer<AuthProvider>(
+    return Consumer<AuthProviderCustom.AuthProvider>(
       builder: (context, authProvider, child) {
-        final user = authProvider.userModel!;
+        final user = authProvider.userModel ?? UserModel(id: '', email: '', name: 'Guest', createdAt: DateTime.now(), lastLogin: DateTime.now());
         
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -315,7 +570,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+                                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -464,7 +719,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.05),
+        color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -472,7 +727,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+              color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 18, color: LiquidGlassTheme.getGradientByName('primary').colors.first),
@@ -501,7 +756,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (textColor ?? LiquidGlassTheme.getTextColor('primary')).withOpacity(0.1),
+            color: (textColor ?? LiquidGlassTheme.getTextColor('primary')).withAlpha(25),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: textColor ?? LiquidGlassTheme.getTextColor('primary'), size: 20),
@@ -512,6 +767,244 @@ class _ProfileScreenState extends State<ProfileScreen>
         onTap: onTap,
       ),
     );
+  }
+
+  Widget _buildRewardsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // قسم المكافآت المتاحة
+          Text(
+            'المكافآت المتاحة',
+            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          _availableRewards.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'لا توجد مكافآت متاحة حالياً',
+                      style: LiquidGlassTheme.bodyTextStyle,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: _availableRewards.map((reward) => _buildRewardCard(reward)).toList(),
+                ),
+          
+          const SizedBox(height: 24),
+          
+          // قسم مكافآت المستخدم
+          Text(
+            'مكافآتك',
+            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          _userRewards.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'لم تقم باستبدال أي مكافآت بعد',
+                      style: LiquidGlassTheme.bodyTextStyle,
+                    ),
+                  ),
+                )
+              : Column(
+                  children: _userRewards.map((userReward) => _buildUserRewardCard(userReward)).toList(),
+                ),
+        ],
+      ),
+    );
+  }
+
+  // بطاقة المكافأة المتاحة
+  Widget _buildRewardCard(RewardModel reward) {
+    final bool canRedeem = _userPoints != null && _userPoints!.points >= reward.requiredPoints;
+    
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: reward.imageUrl.isNotEmpty
+                      ? Image.network(
+                          reward.imageUrl,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.card_giftcard,
+                              size: 30,
+                              color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                            );
+                          },
+                        )
+                      : Icon(
+                          Icons.card_giftcard,
+                          size: 30,
+                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      reward.brandName,
+                      style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      reward.description,
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.getTextColor('secondary'),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${reward.requiredPoints} نقطة',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                ),
+              ),
+              LiquidGlassButton(
+                onPressed: canRedeem ? () => _redeemReward(reward) : null,
+                text: canRedeem ? 'استبدال' : 'نقاط غير كافية',
+                type: canRedeem ? LiquidGlassType.primary : LiquidGlassType.secondary,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // بطاقة مكافأة المستخدم
+  Widget _buildUserRewardCard(UserRewardModel userReward) {
+    final bool isExpired = userReward.expiryDate.isBefore(DateTime.now());
+    
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'كود الخصم:',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isExpired || userReward.isUsed
+                      ? Colors.grey
+                      : LiquidGlassTheme.getGradientByName('primary').colors.first,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  userReward.discountCode,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'تاريخ الانتهاء: ${_formatDate(userReward.expiryDate)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isExpired ? Colors.red : LiquidGlassTheme.getTextColor('secondary'),
+                ),
+              ),
+              Text(
+                userReward.isUsed
+                    ? 'مستخدم'
+                    : isExpired
+                        ? 'منتهي الصلاحية'
+                        : 'صالح',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: userReward.isUsed || isExpired ? Colors.red : Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // دالة تنسيق التاريخ
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // دالة استبدال المكافأة
+  Future<void> _redeemReward(RewardModel reward) async {
+    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
+    if (authProvider.userId == null) return;
+    
+    try {
+      final userReward = await _rewardsService.redeemReward(
+        authProvider.userId!,
+        reward.id,
+      );
+      
+      if (userReward != null) {
+        // تحديث النقاط والمكافآت
+        _loadUserPoints();
+        _showSuccessSnackBar('تم استبدال المكافأة بنجاح!');
+      } else {
+        _showErrorSnackBar('فشل استبدال المكافأة. يرجى المحاولة مرة أخرى.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('حدث خطأ أثناء استبدال المكافأة.');
+    }
   }
 
   Widget _buildReportsTab() {
@@ -529,7 +1022,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withOpacity(0.1),
+                      color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withAlpha(25),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -643,7 +1136,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           height: 10,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withAlpha(51),
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
@@ -690,17 +1183,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     const SizedBox(height: 20),
                     Row(
                       children: [
-                        Expanded(child: _buildStatCard('إجمالي البلاغات', totalReports.toString(), Icons.report, LiquidGlassTheme.getGradientByName('primary').colors.first)),
+                        Expanded(child: _buildStatCard(title: 'إجمالي البلاغات', value: totalReports.toString(), icon: Icons.report, color: LiquidGlassTheme.getGradientByName('primary').colors.first)),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildStatCard('النشطة', activeReports.toString(), Icons.check_circle, LiquidGlassTheme.getGradientByName('success').colors.first)),
+                        Expanded(child: _buildStatCard(title: 'النشطة', value: activeReports.toString(), icon: Icons.check_circle, color: LiquidGlassTheme.getGradientByName('success').colors.first)),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _buildStatCard('المؤكدة', confirmedReports.toString(), Icons.verified, LiquidGlassTheme.getGradientByName('warning').colors.first)),
+                        Expanded(child: _buildStatCard(title: 'المؤكدة', value: confirmedReports.toString(), icon: Icons.verified, color: LiquidGlassTheme.getGradientByName('warning').colors.first)),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildStatCard('الدقة', '${accuracy.toStringAsFixed(1)}%', Icons.trending_up, LiquidGlassTheme.getGradientByName('info').colors.first)),
+                        Expanded(child: _buildStatCard(title: 'الدقة', value: '${accuracy.toStringAsFixed(1)}%', icon: Icons.trending_up, color: LiquidGlassTheme.getGradientByName('info').colors.first)),
                       ],
                     ),
                   ],
@@ -994,7 +1487,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 height: 8,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withAlpha(51),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1053,9 +1546,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       width: MediaQuery.of(context).size.width * 0.28,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withAlpha(77), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1091,9 +1584,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withAlpha(12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withAlpha(25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1103,7 +1596,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 16),
@@ -1143,7 +1636,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 height: 6,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withAlpha(51),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -1162,74 +1655,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.ultraLight,
-      isInteractive: true,
-      padding: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: LiquidGlassTheme.primaryTextColor,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: LiquidGlassTheme.headerTextStyle.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: LiquidGlassTheme.primaryTextColor,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
+  // تم حذف التعريف المكرر لدالة _buildStatCard
 
-  Widget _buildBadge(String emoji, String title) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.ultraLight,
-      isInteractive: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      borderRadius: BorderRadius.circular(20),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              title,
-              style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // تم حذف التعريف المكرر لدالة _buildBadge
 
   Widget _buildReportCard(ReportModel report) {
     return Container(
@@ -1244,7 +1672,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _getReportColor(report.type).withOpacity(0.15),
+                color: _getReportColor(report.type).withAlpha(38),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -1278,7 +1706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getStatusColor(report.status).withOpacity(0.15),
+                color: _getStatusColor(report.status).withAlpha(38),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -1294,10 +1722,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 
   IconData _getReportIcon(ReportType type) {
@@ -1329,8 +1753,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         return LiquidGlassTheme.getGradientByName('warning').colors.last;
       case ReportType.closedRoad:
         return LiquidGlassTheme.getGradientByName('primary').colors.first;
-      default:
-        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
 
@@ -1346,8 +1768,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
-      default:
-        return 'بلاغ';
     }
   }
 
@@ -1358,8 +1778,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       case ReportStatus.removed:
         return LiquidGlassTheme.getGradientByName('info').colors.first;
       case ReportStatus.expired:
-        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
-      default:
         return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
     }
   }
@@ -1372,8 +1790,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         return 'محذوف';
       case ReportStatus.expired:
         return 'منتهي الصلاحية';
-      default:
-        return 'غير معروف';
     }
   }
 }
