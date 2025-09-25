@@ -50,10 +50,8 @@ class LocationService {
       await checkAndRequestPermissions();
       
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
       );
       
       _currentPosition = position;

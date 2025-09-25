@@ -12,6 +12,13 @@ enum MapStyle { standard, satellite, hybrid, terrain, dark, retro }
 
 enum NavigationStyle { minimal, detailed, voiceOnly }
 
+enum MapType {
+  normal,
+  satellite,
+  terrain,
+  hybrid,
+}
+
 class DrivingSettings {
   final DrivingMode mode;
   final SpeedUnit speedUnit;
@@ -19,6 +26,7 @@ class DrivingSettings {
   final VoiceGender voiceGender;
   final MapStyle mapStyle;
   final NavigationStyle navigationStyle;
+  final MapType mapType;
 
   // Display preferences
   final bool showSpeedometer;
@@ -36,6 +44,10 @@ class DrivingSettings {
   final bool emergencyDetectionEnabled;
   final int speedWarningThreshold; // km/h over limit
   final int fatigueCheckInterval; // minutes
+  final bool enableSpeedAlerts;
+  final bool enableAccidentAlerts;
+  final bool enableTrafficAlerts;
+  final int alertDistance;
 
   // Voice preferences
   final bool voiceEnabled;
@@ -43,10 +55,15 @@ class DrivingSettings {
   final double voiceVolume;
   final double voiceSpeed;
   final String voiceLanguage;
+  final bool enableVoiceGuidance;
 
   // Navigation preferences
   final bool avoidTolls;
   final bool avoidHighways;
+  
+  // Notification preferences
+  final bool enableReportNotifications;
+  final bool enableEmergencyNotifications;
   final bool avoidFerries;
   final bool preferFastestRoute;
   final bool showAlternativeRoutes;
@@ -89,6 +106,7 @@ class DrivingSettings {
     this.voiceGender = VoiceGender.female,
     this.mapStyle = MapStyle.standard,
     this.navigationStyle = NavigationStyle.detailed,
+    this.mapType = MapType.normal,
 
     // Display defaults
     this.showSpeedometer = true,
@@ -102,27 +120,36 @@ class DrivingSettings {
     // Safety defaults
     this.speedWarningsEnabled = true,
     this.fatigueDetectionEnabled = true,
-    this.laneAssistEnabled = false,
+    this.laneAssistEnabled = true,
     this.emergencyDetectionEnabled = true,
     this.speedWarningThreshold = 10,
-    this.fatigueCheckInterval = 30,
+    this.fatigueCheckInterval = 60,
+    this.enableSpeedAlerts = true,
+    this.enableAccidentAlerts = true,
+    this.enableTrafficAlerts = true,
+    this.alertDistance = 500,
 
-    // Voice defaults
+    // Voice preferences
     this.voiceEnabled = true,
     this.voiceProactiveAnnouncements = true,
-    this.voiceVolume = 0.8,
-    this.voiceSpeed = 0.8,
-    this.voiceLanguage = 'ar-SA',
+    this.voiceVolume = 0.7,
+    this.voiceSpeed = 1.0,
+    this.voiceLanguage = 'ar',
+    this.enableVoiceGuidance = true,
 
-    // Navigation defaults
+    // Navigation preferences
     this.avoidTolls = false,
     this.avoidHighways = false,
-    this.avoidFerries = true,
+    this.avoidFerries = false,
     this.preferFastestRoute = true,
     this.showAlternativeRoutes = true,
     this.routeRecalculationSensitivity = 3,
+    
+    // Notification preferences
+    this.enableReportNotifications = true,
+    this.enableEmergencyNotifications = true,
 
-    // Warning defaults
+    // Warning preferences
     this.showAccidentWarnings = true,
     this.showTrafficWarnings = true,
     this.showSpeedCameraWarnings = true,
@@ -130,23 +157,23 @@ class DrivingSettings {
     this.showRoadworkWarnings = true,
     this.warningDistance = 1000,
 
-    // Privacy defaults
+    // Privacy preferences
     this.shareLocationData = true,
     this.shareTrafficData = true,
     this.shareIncidentReports = true,
     this.anonymousMode = false,
 
-    // Advanced defaults
+    // Advanced preferences
     this.adaptiveInterface = true,
     this.learningMode = true,
     this.predictiveRouting = true,
     this.weatherAdaptation = true,
     this.timeBasedOptimization = true,
 
-    // UI Element visibility defaults
+    // UI Element visibility preferences
     this.showFloatingActions = true,
-    this.showARNavigation = true,
-    this.showPerformanceMonitor = true,
+    this.showARNavigation = false,
+    this.showPerformanceMonitor = false,
     this.showAIChat = true,
     this.showVoiceAssistant = true,
     this.showNavigationInfo = true,

@@ -28,6 +28,16 @@ class DrivingSettingsService {
   Stream<Map<String, DrivingSettings>> get profilesStream => _profilesController.stream;
   DrivingSettings get currentSettings => _currentSettings;
   Map<String, DrivingSettings> get profiles => Map.unmodifiable(_profiles);
+  
+  // Add missing getters for driving settings screen
+  bool get enableVoiceGuidance => _currentSettings.enableVoiceGuidance;
+  MapType get mapType => _currentSettings.mapType;
+  bool get enableSpeedAlerts => _currentSettings.enableSpeedAlerts;
+  bool get enableAccidentAlerts => _currentSettings.enableAccidentAlerts;
+  bool get enableTrafficAlerts => _currentSettings.enableTrafficAlerts;
+  int get alertDistance => _currentSettings.alertDistance;
+  bool get enableReportNotifications => _currentSettings.enableReportNotifications;
+  bool get enableEmergencyNotifications => _currentSettings.enableEmergencyNotifications;
   String get currentProfileName => _currentProfileName;
   
   Future<void> initialize() async {
@@ -47,6 +57,18 @@ class DrivingSettingsService {
       _currentSettings = const DrivingSettings();
       await _createDefaultProfiles();
     }
+  }
+  
+  // Add missing methods for driving settings screen
+  Future<DrivingSettings> getSettings() async {
+    return _currentSettings;
+  }
+  
+  Future<void> saveSettings(DrivingSettings settings) async {
+    _currentSettings = settings;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_settingsKey, jsonEncode(settings.toJson()));
+    _settingsController.add(_currentSettings);
   }
   
   Future<void> _loadSettings() async {
