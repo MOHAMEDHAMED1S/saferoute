@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import '../models/user_model.dart';
+import '../firebase_web_client_id.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,7 +17,7 @@ class AuthService {
       if (kIsWeb) {
         // For web, use GoogleSignIn with specific configuration
         _googleSignIn = GoogleSignIn(
-          clientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
+          clientId: firebaseWebClientId,
           scopes: ['email', 'profile'],
         );
       } else {
@@ -25,13 +26,12 @@ class AuthService {
           // For iOS platform
           _googleSignIn = GoogleSignIn(
             scopes: ['email', 'profile'],
-            clientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
+            clientId:
+                '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
           );
         } else {
           // For Android and other platforms
-          _googleSignIn = GoogleSignIn(
-            scopes: ['email', 'profile'],
-          );
+          _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
         }
       }
     } catch (e) {
@@ -53,19 +53,19 @@ class AuthService {
   }) async {
     try {
       print('محاولة تسجيل الدخول للبريد الإلكتروني: $email');
-      
+
       UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       print('تم تسجيل الدخول بنجاح للمستخدم: ${result.user?.uid}');
-      
+
       // Update last login
       if (result.user != null) {
         await _updateLastLogin(result.user!.uid);
       }
-      
+
       return result;
     } on FirebaseAuthException catch (e) {
       print('خطأ Firebase Auth: ${e.code} - ${e.message}');
@@ -88,11 +88,11 @@ class AuthService {
         email: email,
         password: password,
       );
-      
+
       if (result.user != null) {
         // Update display name
         await result.user!.updateDisplayName(name);
-        
+
         // Create user document in Firestore
         await _createUserDocument(
           uid: result.user!.uid,
@@ -102,7 +102,7 @@ class AuthService {
           photoUrl: result.user!.photoURL,
         );
       }
-      
+
       return result;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -122,13 +122,14 @@ class AuthService {
           googleProvider.addScope('profile');
           // Add client ID for web
           googleProvider.setCustomParameters({
-            'client_id': '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
-            'prompt': 'select_account'
+            'client_id':
+                '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
+            'prompt': 'select_account',
           });
-          
+
           // Sign in with popup for better user experience
           UserCredential result = await _auth.signInWithPopup(googleProvider);
-          
+
           if (result.user != null) {
             await _createOrUpdateUserDocument(
               uid: result.user!.uid,
@@ -137,23 +138,24 @@ class AuthService {
               photoUrl: result.user!.photoURL,
             );
           }
-          
+
           return result;
         } else {
           throw 'Google Sign-In غير متاح في هذه البيئة';
         }
       }
-      
+
       // For mobile platforms
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
-      
+
       if (googleUser == null) {
         return null; // User cancelled the sign-in
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -163,7 +165,7 @@ class AuthService {
 
       // Sign in to Firebase with the Google credential
       UserCredential result = await _auth.signInWithCredential(credential);
-      
+
       if (result.user != null) {
         // Check if user document exists, create if not
         await _createOrUpdateUserDocument(
@@ -173,10 +175,12 @@ class AuthService {
           photoUrl: result.user!.photoURL,
         );
       }
-      
+
       return result;
     } on FirebaseAuthException catch (e) {
-      print('خطأ Firebase Auth في تسجيل الدخول بـ Google: ${e.code} - ${e.message}');
+      print(
+        'خطأ Firebase Auth في تسجيل الدخول بـ Google: ${e.code} - ${e.message}',
+      );
       throw _handleAuthException(e);
     } catch (e) {
       print('خطأ غير متوقع في تسجيل الدخول بـ Google: $e');
@@ -188,11 +192,11 @@ class AuthService {
   Future<void> signOut() async {
     try {
       List<Future> signOutFutures = [_auth.signOut()];
-      
+
       if (_googleSignIn != null) {
         signOutFutures.add(_googleSignIn!.signOut());
       }
-      
+
       await Future.wait(signOutFutures);
     } catch (e) {
       throw 'حدث خطأ في تسجيل الخروج: ${e.toString()}';
@@ -217,7 +221,7 @@ class AuthService {
       if (user != null) {
         // Delete user document from Firestore
         await _firestore.collection('users').doc(user.uid).delete();
-        
+
         // Delete user account
         await user.delete();
       }
@@ -231,7 +235,10 @@ class AuthService {
   // Get user document from Firestore
   Future<UserModel?> getUserDocument(String uid) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists) {
         return UserModel.fromFirestore(doc);
       }
@@ -263,7 +270,7 @@ class AuthService {
       isDriverMode: false,
       location: null,
     );
-    
+
     await _firestore.collection('users').doc(uid).set(user.toFirestore());
   }
 
@@ -276,7 +283,7 @@ class AuthService {
   }) async {
     DocumentReference userDoc = _firestore.collection('users').doc(uid);
     DocumentSnapshot doc = await userDoc.get();
-    
+
     if (!doc.exists) {
       // Create new user document
       UserModel user = UserModel(
@@ -293,7 +300,7 @@ class AuthService {
         isDriverMode: false,
         location: null,
       );
-      
+
       await userDoc.set(user.toFirestore());
     } else {
       // Update last login
@@ -376,7 +383,9 @@ class AuthService {
   // Check if email exists (for better UX before registration)
   Future<bool> checkEmailExists(String email) async {
     try {
-      List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+      List<String> signInMethods = await _auth.fetchSignInMethodsForEmail(
+        email,
+      );
       return signInMethods.isNotEmpty;
     } catch (e) {
       // If there's an error, assume email doesn't exist to allow registration attempt

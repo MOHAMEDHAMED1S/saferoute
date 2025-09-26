@@ -468,7 +468,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         .copyWith(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color: LiquidGlassTheme.whiteTextColor,
+                                          color:
+                                              LiquidGlassTheme.whiteTextColor,
                                         ),
                                   ),
                                 ),
