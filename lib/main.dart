@@ -26,11 +26,13 @@ import 'screens/notifications/smart_notifications_screen.dart';
 import 'screens/maps/3d_maps_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/driving/driving_mode_screen.dart';
+import 'screens/community_chat_screen.dart';
 import 'theme/enhanced_theme.dart';
 import 'utils/performance_utils.dart';
 import 'utils/network_utils.dart';
 import 'services/firebase_schema_service.dart';
 import 'services/firestore_connection_manager.dart';
+import 'widgets/auth_initializer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,7 +67,14 @@ class SafeRouteApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final authProvider = AuthProvider();
+            // Initialize auth provider asynchronously
+            authProvider.initialize();
+            return authProvider;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(
           create: (_) => ReportsProvider(
@@ -99,7 +108,9 @@ class SafeRouteApp extends StatelessWidget {
               extensions: [CustomColors.dark],
             ),
             themeMode: ThemeMode.system,
-            home: const NetworkAwareWidget(child: SplashScreen()),
+            home: AuthInitializer(
+              child: const NetworkAwareWidget(child: SplashScreen()),
+            ),
             routes: {
               '/login': (context) =>
                   const NetworkAwareWidget(child: LoginScreen()),
@@ -129,6 +140,8 @@ class SafeRouteApp extends StatelessWidget {
                   NetworkAwareWidget(child: const SmartNotificationsScreen()),
               '/3d-maps': (context) =>
                   NetworkAwareWidget(child: const Maps3DScreen()),
+              '/community-chat': (context) =>
+                  const NetworkAwareWidget(child: CommunityChatScreen()),
             },
             builder: (context, child) {
               return Directionality(

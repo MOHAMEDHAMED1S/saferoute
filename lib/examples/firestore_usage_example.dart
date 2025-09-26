@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_connection_manager.dart';
 import '../widgets/firestore_connection_indicator.dart';
@@ -53,14 +54,11 @@ class FirestoreUsageExample {
 
   /// Example 4: Using cached data fallback
   Future<Map<String, dynamic>?> getUserWithCache(String userId) async {
-    return await FirestoreConnectionManager().getCachedOrFetch(
-      'user_$userId',
-      () async {
-        final doc = await _firestore.collection('users').doc(userId).get();
-        return doc.data();
-      },
-      operationName: 'getUserWithCache',
-    );
+    return await FirestoreConnectionManager()
+        .getCachedOrFetch<Map<String, dynamic>?>('user_$userId', () async {
+          final doc = await _firestore.collection('users').doc(userId).get();
+          return doc.data();
+        }, operationName: 'getUserWithCache');
   }
 }
 

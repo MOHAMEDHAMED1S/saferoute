@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/auth_storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -19,7 +20,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get userModel => _userModel;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get isLoggedIn => _firebaseUser != null && _userModel != null;
+  bool get isLoggedIn => _firebaseUser != null;
   bool get isAuthenticated => _firebaseUser != null && _userModel != null;
   bool get isInitialized => _isInitialized;
   String? get userId => _firebaseUser?.uid;
@@ -34,13 +35,31 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
 
+      // Initialize auth storage service
+      await AuthStorageService.initialize();
+
+      // Check if user was previously logged in
+      final wasLoggedIn = await AuthStorageService.isLoggedIn();
+
       // Listen to auth state changes
       _authService.authStateChanges.listen(_onAuthStateChanged);
 
       // Get current user if exists
       _firebaseUser = _authService.currentUser;
+
       if (_firebaseUser != null) {
         await _loadUserData(_firebaseUser!.uid);
+        // Update storage with current login
+        await _saveLoginStateToStorage();
+      } else if (wasLoggedIn) {
+        // User was logged in before but Firebase session expired
+        // Try to restore from saved data
+        final savedData = await AuthStorageService.getSavedUserData();
+        if (savedData['userId'] != null) {
+          debugPrint('AuthProvider: محاولة استعادة جلسة المستخدم المحفوظة');
+          // Note: Firebase will handle re-authentication automatically
+          // if the user's token is still valid
+        }
       }
 
       _isInitialized = true;
@@ -59,10 +78,17 @@ class AuthProvider extends ChangeNotifier {
 
     if (user != null) {
       print('AuthProvider: المستخدم مسجل دخول، تحميل البيانات');
-      await _loadUserData(user.uid);
+      try {
+        await _loadUserData(user.uid);
+        await _saveLoginStateToStorage();
+      } catch (e) {
+        print('AuthProvider: خطأ في تحميل بيانات المستخدم: $e');
+        // Don't clear user data on error, just log it
+      }
     } else {
       print('AuthProvider: المستخدم غير مسجل دخول');
       _userModel = null;
+      await AuthStorageService.clearLoginState();
       _clearError();
     }
 
@@ -458,6 +484,34 @@ class AuthProvider extends ChangeNotifier {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
+  }
+
+  // Save login state to storage
+  Future<void> _saveLoginStateToStorage() async {
+    if (_firebaseUser != null && _userModel != null) {
+      await AuthStorageService.saveLoginState(
+        userId: _firebaseUser!.uid,
+        email: _firebaseUser!.email ?? '',
+        name: _userModel!.name,
+        photoUrl: _userModel!.photoUrl,
+        rememberMe: true,
+      );
+    }
+  }
+
+  // Update remember me preference
+  Future<void> setRememberMe(bool rememberMe) async {
+    await AuthStorageService.setRememberMe(rememberMe);
+    if (!rememberMe) {
+      await AuthStorageService.clearLoginState();
+    } else if (_firebaseUser != null) {
+      await _saveLoginStateToStorage();
+    }
+  }
+
+  // Get remember me preference
+  Future<bool> getRememberMe() async {
+    return await AuthStorageService.getRememberMe();
   }
 
   // Clear all data (for testing)

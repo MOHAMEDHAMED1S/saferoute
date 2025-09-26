@@ -55,26 +55,46 @@ class CommunityService {
   void _startListeningToMessages() {
     _messagesSubscription?.cancel();
     _messagesSubscription = _schemaService.communityChat
+        .where('deletedAt', isNull: true) // تجاهل الرسائل المحذوفة
         .orderBy('timestamp', descending: true)
-        .limit(50)
-        .snapshots()
+        .limit(100) // زيادة عدد الرسائل المحملة
+        .snapshots(
+          includeMetadataChanges: true,
+        ) // تضمين تغييرات البيانات الوصفية
         .listen(
           (snapshot) {
-            for (final change in snapshot.docChanges) {
-              final message = ChatMessage.fromFirestore(change.doc);
+            // التحقق من مصدر البيانات (cache أم server)
+            final source = snapshot.metadata.isFromCache ? 'cache' : 'server';
+            debugPrint('تحديث الرسائل من: $source');
 
-              switch (change.type) {
-                case DocumentChangeType.added:
-                  // رسالة جديدة - إضافتها للـ stream
-                  _messageStreamController.add(message);
-                  break;
-                case DocumentChangeType.modified:
-                  // رسالة معدلة - إرسال تحديث
-                  _messageStreamController.add(message);
-                  break;
-                case DocumentChangeType.removed:
-                  // رسالة محذوفة - لا نحتاج للتعامل معها هنا
-                  break;
+            for (final change in snapshot.docChanges) {
+              try {
+                final message = ChatMessage.fromFirestore(change.doc);
+
+                switch (change.type) {
+                  case DocumentChangeType.added:
+                    // رسالة جديدة - إضافتها للـ stream
+                    _messageStreamController.add(message);
+                    debugPrint('رسالة جديدة مضافة: ${message.id}');
+                    break;
+                  case DocumentChangeType.modified:
+                    // رسالة معدلة - إرسال تحديث
+                    _messageStreamController.add(message);
+                    debugPrint('رسالة معدلة: ${message.id}');
+                    break;
+                  case DocumentChangeType.removed:
+                    // رسالة محذوفة - إرسال إشعار بالحذف
+                    _messageStreamController.add(
+                      message.copyWith(
+                        message: '[تم حذف هذه الرسالة]',
+                        deletedAt: DateTime.now(),
+                      ),
+                    );
+                    debugPrint('رسالة محذوفة: ${message.id}');
+                    break;
+                }
+              } catch (e) {
+                debugPrint('خطأ في معالجة تغيير الرسالة: $e');
               }
             }
           },
@@ -92,13 +112,22 @@ class CommunityService {
         .where(
           'lastLogin',
           isGreaterThan: Timestamp.fromDate(
-            DateTime.now().subtract(const Duration(minutes: 5)),
+            DateTime.now().subtract(
+              const Duration(minutes: 10),
+            ), // زيادة المدة إلى 10 دقائق
           ),
         )
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .listen(
           (snapshot) {
-            _onlineCountStreamController.add(snapshot.docs.length);
+            final onlineCount = snapshot.docs.length;
+            _onlineCountStreamController.add(onlineCount);
+
+            // تسجيل معلومات إضافية للتشخيص
+            final source = snapshot.metadata.isFromCache ? 'cache' : 'server';
+            debugPrint(
+              'تحديث عدد المستخدمين المتصلين: $onlineCount من $source',
+            );
           },
           onError: (error) {
             debugPrint('خطأ في استماع عدد المستخدمين المتصلين: $error');
@@ -107,15 +136,15 @@ class CommunityService {
         );
   }
 
-  // Reconnect listeners if connection is lost
+  // Reconnect listeners after error
   void _reconnectListeners() {
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
-      if (_isInitialized) {
-        debugPrint('إعادة محاولة الاتصال...');
-        _startListeningToMessages();
-        _startListeningToOnlineUsers();
-      }
+    if (_reconnectTimer?.isActive == true) return;
+
+    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+      // تقليل وقت إعادة الاتصال
+      debugPrint('إعادة محاولة الاتصال بـ Firestore...');
+      _startListeningToMessages();
+      _startListeningToOnlineUsers();
     });
   }
 

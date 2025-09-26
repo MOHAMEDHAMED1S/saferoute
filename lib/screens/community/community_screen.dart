@@ -65,20 +65,27 @@ class _CommunityScreenState extends State<CommunityScreen>
             if (mounted) {
               setState(() {
                 // تجنب إضافة الرسائل المكررة
-                final existingIndex = _messages.indexWhere((msg) => msg.id == newMessage.id);
+                final existingIndex = _messages.indexWhere(
+                  (msg) => msg.id == newMessage.id,
+                );
                 if (existingIndex != -1) {
                   // تحديث الرسالة الموجودة
                   _messages[existingIndex] = newMessage;
                 } else {
                   // إضافة رسالة جديدة فقط إذا لم تكن موجودة
                   // وتجنب إضافة الرسائل المؤقتة مرة أخرى
-                  final tempIndex = _messages.indexWhere((msg) => 
-                    msg.userId == newMessage.userId && 
-                    msg.message == newMessage.message &&
-                    msg.id.startsWith('temp_') &&
-                    msg.timestamp.difference(newMessage.timestamp).abs().inSeconds < 5
+                  final tempIndex = _messages.indexWhere(
+                    (msg) =>
+                        msg.userId == newMessage.userId &&
+                        msg.message == newMessage.message &&
+                        msg.id.startsWith('temp_') &&
+                        msg.timestamp
+                                .difference(newMessage.timestamp)
+                                .abs()
+                                .inSeconds <
+                            5,
                   );
-                  
+
                   if (tempIndex != -1) {
                     // استبدال الرسالة المؤقتة بالرسالة الحقيقية
                     _messages[tempIndex] = newMessage;
@@ -182,7 +189,9 @@ class _CommunityScreenState extends State<CommunityScreen>
 
       // تحديث الرسالة المؤقتة بالرسالة الحقيقية
       setState(() {
-        final tempIndex = _messages.indexWhere((msg) => msg.id == tempMessage.id);
+        final tempIndex = _messages.indexWhere(
+          (msg) => msg.id == tempMessage.id,
+        );
         if (tempIndex != -1) {
           _messages[tempIndex] = sentMessage.copyWith(
             isDelivered: true,
@@ -190,7 +199,6 @@ class _CommunityScreenState extends State<CommunityScreen>
           );
         }
       });
-
     } catch (e) {
       // إزالة الرسالة المؤقتة في حالة الفشل
       setState(() {
@@ -356,6 +364,15 @@ class _CommunityScreenState extends State<CommunityScreen>
                 onPressed: () {
                   // Navigate to notifications
                   Navigator.pushNamed(context, '/notifications');
+                },
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.chat_bubble),
+                color: Colors.white,
+                onPressed: () {
+                  // Navigate to community chat
+                  Navigator.pushNamed(context, '/community-chat');
                 },
               ),
             ],

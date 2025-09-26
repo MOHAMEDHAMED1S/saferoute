@@ -22,6 +22,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  bool _rememberMe = true; // خيار تذكرني
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberMePreference();
+  }
+
+  Future<void> _loadRememberMePreference() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final rememberMe = await authProvider.getRememberMe();
+    setState(() {
+      _rememberMe = rememberMe;
+    });
+  }
 
   @override
   void dispose() {
@@ -39,6 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // تحديث تفضيل "تذكرني" قبل تسجيل الدخول
+      await authProvider.setRememberMe(_rememberMe);
+      
       bool success = await authProvider.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -563,6 +582,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
+                const SizedBox(height: 16),
+                // Remember Me Checkbox
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _rememberMe,
+                      onChanged: (value) {
+                        setState(() {
+                          _rememberMe = value ?? true;
+                        });
+                      },
+                      activeColor: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                    ),
+                    Text(
+                      'تذكرني',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 16),
+                    ),
+                    const Spacer(),
+                    // Forgot Password
+                    TextButton(
+                      onPressed: () {
+                        _showForgotPasswordDialog();
+                      },
+                      child: Text(
+                        'نسيت كلمة المرور؟',
+                        style: LiquidGlassTheme.primaryTextStyle.copyWith(
+                          color: LiquidGlassTheme.getTextColor('primary'),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 // Login Button
                 LiquidGlassButton(
@@ -595,20 +647,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: Icons.login,
                 ),
                 const SizedBox(height: 24),
-                // Forgot Password
-                TextButton(
-                  onPressed: () {
-                    _showForgotPasswordDialog();
-                  },
-                  child: Text(
-                    'نسيت كلمة المرور؟',
-                    style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                      color: LiquidGlassTheme.getTextColor('primary'),
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
