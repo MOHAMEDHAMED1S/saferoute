@@ -2,11 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/route_model.dart';
 import '../models/threat_model.dart';
+import '../models/report_model.dart';
 import '../utils/cache_utils.dart';
 import '../utils/network_utils.dart';
 import 'ai_prediction_service.dart';
+import 'firebase_schema_service.dart';
 
 // Smart Notification Service
 class SmartNotificationService {
@@ -23,6 +30,13 @@ class SmartNotificationService {
   Timer? _notificationTimer;
   bool _isInitialized = false;
   bool _isDisposed = false;
+
+  // Firebase services
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   // Notification channels
   final Map<NotificationChannel, bool> _channelStates = {
@@ -553,6 +567,171 @@ class SmartNotificationService {
     _notificationTimer?.cancel();
     _notificationController.close();
     _activeNotifications.clear();
+  }
+
+  // إضافة وظائف إرسال البلاغات ورفع الصور
+  Future<void> initializeLocalNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
+
+    await _localNotifications.initialize(initializationSettings);
+  }
+
+  // إرسال بلاغ مع صورة
+  Future<void> sendReport({
+    required String type,
+    required Map<String, dynamic> location,
+    required String description,
+    List<File>? images,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('المستخدم غير مسجل الدخول');
+      }
+
+      // رفع الصور إذا وجدت
+      List<String> imageUrls = [];
+      if (images != null && images.isNotEmpty) {
+        for (var image in images) {
+          String fileName =
+              'reports/ ${DateTime.now().millisecondsSinceEpoch}_${imageUrls.length}.jpg';
+          final ref = _storage.ref().child(fileName);
+          await ref.putFile(image);
+          final url = await ref.getDownloadURL();
+          imageUrls.add(url);
+        }
+      }
+
+      // إنشاء البلاغ
+      final reportRef = await _firestore
+          .collection(FirebaseSchemaService.reportsCollection)
+          .add({
+            'userId': user.uid,
+            'type': type,
+            'location': location,
+            'description': description,
+            'imageUrls': imageUrls,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+            'status': 'pending',
+            'verifiedBy': [],
+            'rejectedBy': [],
+          });
+
+      // إرسال إشعار للمستخدم
+      await sendFirebaseNotification(
+        userId: user.uid,
+        title: 'تم إرسال البلاغ',
+        body: 'تم إرسال بلاغك بنجاح وسيتم مراجعته',
+        type: 'report',
+        data: {'reportId': reportRef.id},
+      );
+
+      // تحديث نقاط المستخدم
+      await _firestore
+          .collection(FirebaseSchemaService.usersCollection)
+          .doc(user.uid)
+          .update({
+            'points': FieldValue.increment(5), // إضافة 5 نقاط لإرسال بلاغ
+            'totalReports': FieldValue.increment(1),
+          });
+    } catch (e) {
+      print('Error sending report: $e');
+      throw Exception('فشل في إرسال البلاغ: $e');
+    }
+  }
+
+  // إرسال إشعار إلى Firebase
+  Future<void> sendFirebaseNotification({
+    required String userId,
+    required String title,
+    required String body,
+    required String type,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _firestore
+          .collection(FirebaseSchemaService.notificationsCollection)
+          .add({
+            'userId': userId,
+            'title': title,
+            'body': body,
+            'type': type,
+            'data': data,
+            'createdAt': FieldValue.serverTimestamp(),
+            'read': false,
+            'readAt': null,
+          });
+
+      // إرسال إشعار محلي أيضًا
+      await showLocalNotification(title: title, body: body, payload: type);
+    } catch (e) {
+      print('Error sending notification: $e');
+      throw Exception('فشل في إرسال الإشعار');
+    }
+  }
+
+  // إرسال إشعار محلي
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'saferoute_channel',
+          'SafeRoute Notifications',
+          channelDescription: 'Notifications for SafeRoute app',
+          importance: Importance.high,
+          priority: Priority.high,
+        );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecond,
+      title,
+      body,
+      notificationDetails,
+      payload: payload,
+    );
+  }
+
+  // الحصول على بلاغات المستخدم
+  Stream<QuerySnapshot> getUserReports() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('المستخدم غير مسجل الدخول');
+    }
+
+    return _firestore
+        .collection(FirebaseSchemaService.reportsCollection)
+        .where('userId', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 }
 
