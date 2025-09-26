@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/driving_settings_model.dart';
+import 'driving_firebase_service.dart';
 
 class DrivingSettingsService {
   static final DrivingSettingsService _instance = DrivingSettingsService._internal();

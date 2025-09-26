@@ -33,16 +33,16 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       _setLoading(true);
-      
+
       // Listen to auth state changes
       _authService.authStateChanges.listen(_onAuthStateChanged);
-      
+
       // Get current user if exists
       _firebaseUser = _authService.currentUser;
       if (_firebaseUser != null) {
         await _loadUserData(_firebaseUser!.uid);
       }
-      
+
       _isInitialized = true;
     } catch (e) {
       _setError('خطأ في تهيئة المصادقة: ${e.toString()}');
@@ -54,14 +54,14 @@ class AuthProvider extends ChangeNotifier {
   // Handle auth state changes
   void _onAuthStateChanged(User? user) async {
     _firebaseUser = user;
-    
+
     if (user != null) {
       await _loadUserData(user.uid);
     } else {
       _userModel = null;
       _clearError();
     }
-    
+
     // Use post frame callback to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
@@ -73,30 +73,38 @@ class AuthProvider extends ChangeNotifier {
     try {
       print('AuthProvider: تحميل بيانات المستخدم من Firestore للمعرف: $userId');
       _userModel = await _firestoreService.getUser(userId);
-      
+
       if (_userModel != null) {
-        print('AuthProvider: تم تحميل بيانات المستخدم بنجاح: ${_userModel!.name}');
+        print(
+          'AuthProvider: تم تحميل بيانات المستخدم بنجاح: ${_userModel!.name}',
+        );
       } else {
-        print('AuthProvider: لم يتم العثور على بيانات المستخدم في Firestore، سيتم إنشاء مستند جديد');
-        
+        print(
+          'AuthProvider: لم يتم العثور على بيانات المستخدم في Firestore، سيتم إنشاء مستند جديد',
+        );
+
         // Create user document if it doesn't exist
         if (_firebaseUser != null) {
           await _createUserDocumentFromFirebaseUser(_firebaseUser!);
           // Try to load again after creating
           _userModel = await _firestoreService.getUser(userId);
-          
+
           if (_userModel != null) {
-            print('AuthProvider: تم إنشاء وتحميل بيانات المستخدم بنجاح: ${_userModel!.name}');
+            print(
+              'AuthProvider: تم إنشاء وتحميل بيانات المستخدم بنجاح: ${_userModel!.name}',
+            );
           } else {
             _setError('فشل في إنشاء بيانات المستخدم. يرجى المحاولة مرة أخرى.');
             return;
           }
         } else {
-          _setError('لم يتم العثور على بيانات المستخدم. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.');
+          _setError(
+            'لم يتم العثور على بيانات المستخدم. يرجى المحاولة مرة أخرى أو التواصل مع الدعم الفني.',
+          );
           return;
         }
       }
-      
+
       _clearError();
     } catch (e) {
       print('AuthProvider: خطأ في تحميل بيانات المستخدم: $e');
@@ -112,22 +120,23 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       print('AuthProvider: بدء عملية تسجيل الدخول');
-      
-      UserCredential? userCredential = await _authService.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (userCredential?.user != null) {
-        print('AuthProvider: تم الحصول على UserCredential، تحميل بيانات المستخدم');
-        _firebaseUser = userCredential!.user!;
-        await _loadUserData(userCredential.user!.uid);
+
+      UserCredential? userCredential = await _authService
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      final user = userCredential?.user;
+      if (user != null) {
+        print(
+          'AuthProvider: تم الحصول على UserCredential، تحميل بيانات المستخدم',
+        );
+        _firebaseUser = user;
+        await _loadUserData(user.uid);
         print('AuthProvider: تم تسجيل الدخول بنجاح');
         return true;
       }
-      
+
       print('AuthProvider: لم يتم الحصول على UserCredential');
       return false;
     } catch (e) {
@@ -149,19 +158,21 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
-      UserCredential? userCredential = await _authService.registerWithEmailAndPassword(
-        email: email,
-        password: password,
-        name: name,
-        phone: phone,
-      );
-      
-      if (userCredential?.user != null) {
-        await _loadUserData(userCredential!.user!.uid);
+
+      UserCredential? userCredential = await _authService
+          .registerWithEmailAndPassword(
+            email: email,
+            password: password,
+            name: name,
+            phone: phone,
+          );
+
+      final user = userCredential?.user;
+      if (user != null) {
+        await _loadUserData(user.uid);
         return true;
       }
-      
+
       return false;
     } catch (e) {
       _setError(e.toString());
@@ -176,14 +187,15 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       UserCredential? userCredential = await _authService.signInWithGoogle();
-      
-      if (userCredential?.user != null) {
-        await _loadUserData(userCredential!.user!.uid);
+
+      final user = userCredential?.user;
+      if (user != null) {
+        await _loadUserData(user.uid);
         return true;
       }
-      
+
       return false;
     } catch (e) {
       _setError('خطأ في تسجيل الدخول بـ Google: ${e.toString()}');
@@ -198,7 +210,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       await _authService.signOut();
       _firebaseUser = null;
       _userModel = null;
@@ -214,7 +226,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       await _authService.resetPassword(email);
       return true;
     } catch (e) {
@@ -232,36 +244,36 @@ class AuthProvider extends ChangeNotifier {
     String? photoUrl,
   }) async {
     if (_userModel == null) return false;
-    
+
     try {
       _setLoading(true);
       _clearError();
-      
+
       Map<String, dynamic> updates = {};
-      
+
       if (name != null && name != _userModel!.name) {
         updates['name'] = name;
       }
-      
+
       if (phone != null && phone != _userModel!.phone) {
         updates['phone'] = phone;
       }
-      
+
       if (photoUrl != null && photoUrl != _userModel!.photoUrl) {
         updates['photoUrl'] = photoUrl;
       }
-      
+
       if (updates.isNotEmpty) {
         _userModel = _userModel!.copyWith(
           name: name ?? _userModel!.name,
           phone: phone ?? _userModel!.phone,
           photoUrl: photoUrl ?? _userModel!.photoUrl,
         );
-        
+
         await _firestoreService.updateUser(_userModel!);
         notifyListeners();
       }
-      
+
       return true;
     } catch (e) {
       _setError('خطأ في تحديث الملف الشخصي: ${e.toString()}');
@@ -274,7 +286,7 @@ class AuthProvider extends ChangeNotifier {
   // Update user location
   Future<void> updateUserLocation(LocationData location) async {
     if (_userModel == null) return;
-    
+
     try {
       _userModel = _userModel!.copyWith(location: location);
       await _firestoreService.updateUser(_userModel!);
@@ -287,11 +299,11 @@ class AuthProvider extends ChangeNotifier {
   // Toggle driver mode
   Future<void> toggleDriverMode() async {
     if (_userModel == null) return;
-    
+
     try {
       bool newDriverMode = !_userModel!.isDriverMode;
       _userModel = _userModel!.copyWith(isDriverMode: newDriverMode);
-      
+
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
@@ -302,11 +314,11 @@ class AuthProvider extends ChangeNotifier {
   // Add points to user
   Future<void> addPoints(int points) async {
     if (_userModel == null) return;
-    
+
     try {
       int newPoints = _userModel!.points + points;
       _userModel = _userModel!.copyWith(points: newPoints);
-      
+
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
@@ -317,7 +329,7 @@ class AuthProvider extends ChangeNotifier {
   // Update trust score
   Future<void> updateTrustScore(double newScore) async {
     if (_userModel == null) return;
-    
+
     try {
       _userModel = _userModel!.copyWith(trustScore: newScore);
       await _firestoreService.updateUser(_userModel!);
@@ -344,7 +356,7 @@ class AuthProvider extends ChangeNotifier {
         isDriverMode: false,
         location: null,
       );
-      
+
       await _firestoreService.createUser(user);
       print('AuthProvider: تم إنشاء مستند المستخدم في Firestore بنجاح');
     } catch (e) {
@@ -356,11 +368,11 @@ class AuthProvider extends ChangeNotifier {
   // Increment total reports
   Future<void> incrementTotalReports() async {
     if (_userModel == null) return;
-    
+
     try {
       int newTotal = _userModel!.totalReports + 1;
       _userModel = _userModel!.copyWith(totalReports: newTotal);
-      
+
       await _firestoreService.updateUser(_userModel!);
       notifyListeners();
     } catch (e) {
@@ -371,16 +383,16 @@ class AuthProvider extends ChangeNotifier {
   // Delete account
   Future<bool> deleteAccount() async {
     if (_firebaseUser == null) return false;
-    
+
     try {
       _setLoading(true);
       _clearError();
-      
+
       await _authService.deleteAccount();
-      
+
       _firebaseUser = null;
       _userModel = null;
-      
+
       return true;
     } catch (e) {
       _setError('خطأ في حذف الحساب: ${e.toString()}');
@@ -393,7 +405,7 @@ class AuthProvider extends ChangeNotifier {
   // Refresh user data
   Future<void> refreshUserData() async {
     if (_firebaseUser == null) return;
-    
+
     try {
       await _loadUserData(_firebaseUser!.uid);
     } catch (e) {

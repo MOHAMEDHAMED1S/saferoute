@@ -5,12 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/security_model.dart';
+import 'notifications_firebase_service.dart';
 
 class SecurityService {
   static final SecurityService _instance = SecurityService._internal();
   factory SecurityService() => _instance;
   SecurityService._internal();
+
+  // Firebase services
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final NotificationsFirebaseService _notificationsService = NotificationsFirebaseService();
 
   // Stream Controllers
   final _securityStateController = StreamController<ProtectionState>.broadcast();
@@ -38,6 +46,7 @@ class SecurityService {
   bool _isInitialized = false;
   int _failedLoginAttempts = 0;
   DateTime? _lastFailedLogin;
+  StreamSubscription? _securitySettingsSubscription;
 
   // Getters
   ProtectionState get currentState => _currentState;
@@ -51,10 +60,17 @@ class SecurityService {
     if (_isInitialized) return;
 
     try {
-      await _loadSettings();
+      // تهيئة خدمة الإشعارات
+      await _notificationsService.initialize();
+      
+      // تحميل البيانات من Firebase
+      await _loadSettingsFromFirebase();
       await _loadThreats();
       await _loadEvents();
       await _loadSecurityState();
+      
+      // الاشتراك في تغييرات إعدادات الأمان من Firebase
+      _subscribeToSecuritySettingsChanges();
       
       if (_settings.realTimeMonitoring) {
         _startRealTimeMonitoring();
@@ -72,8 +88,50 @@ class SecurityService {
       debugPrint('خطأ في تهيئة خدمة الأمان: $e');
     }
   }
+  
+  // تحميل الإعدادات من Firebase
+  Future<void> _loadSettingsFromFirebase() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+      
+      final securityDoc = await _firestore
+          .collection('security')
+          .doc(userId)
+          .get();
+          
+      if (securityDoc.exists) {
+        final securityData = securityDoc.data() as Map<String, dynamic>;
+        if (securityData.containsKey('securityPreferences')) {
+          final prefsMap = securityData['securityPreferences'] as Map<String, dynamic>;
+          
+          // تحويل البيانات من Firebase إلى نموذج الإعدادات
+          _settings = SecuritySettings(
+            biometricEnabled: prefsMap['biometricEnabled'] ?? _settings.biometricEnabled,
+            twoFactorEnabled: prefsMap['twoFactorEnabled'] ?? _settings.twoFactorEnabled,
+            locationEncryption: prefsMap['locationEncryption'] ?? _settings.locationEncryption,
+            dataEncryption: prefsMap['dataEncryption'] ?? _settings.dataEncryption,
+            autoLock: prefsMap['autoLock'] ?? _settings.autoLock,
+            autoLockTimeout: prefsMap['autoLockTimeout'] ?? _settings.autoLockTimeout,
+            threatDetection: prefsMap['threatDetection'] ?? _settings.threatDetection,
+            realTimeMonitoring: prefsMap['realTimeMonitoring'] ?? _settings.realTimeMonitoring,
+            biometricAuth: prefsMap['biometricAuth'] ?? _settings.biometricAuth,
+            shareLocationWithContacts: prefsMap['shareLocationWithContacts'] ?? _settings.shareLocationWithContacts,
+            recordIncidents: prefsMap['recordIncidents'] ?? _settings.recordIncidents,
+            automaticEmergencyCalls: prefsMap['automaticEmergencyCalls'] ?? _settings.automaticEmergencyCalls,
+          );
+          
+          _settingsController.add(_settings);
+        }
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل إعدادات الأمان من Firebase: $e');
+      // في حالة الفشل، نحاول تحميل الإعدادات المحلية
+      await _loadSettings();
+    }
+  }
 
-  // تحميل الإعدادات
+  // تحميل الإعدادات من التخزين المحلي (كنسخة احتياطية)
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -89,15 +147,88 @@ class SecurityService {
       debugPrint('خطأ في تحميل إعدادات الأمان: $e');
     }
   }
+  
+  // الاشتراك في تغييرات إعدادات الأمان من Firebase
+  void _subscribeToSecuritySettingsChanges() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+    
+    _securitySettingsSubscription?.cancel();
+    _securitySettingsSubscription = _firestore
+        .collection('security')
+        .doc(userId)
+        .snapshots()
+        .listen((snapshot) {
+          if (snapshot.exists) {
+            final securityData = snapshot.data() as Map<String, dynamic>;
+            if (securityData.containsKey('securityPreferences')) {
+              final prefsMap = securityData['securityPreferences'] as Map<String, dynamic>;
+              
+              // تحويل البيانات من Firebase إلى نموذج الإعدادات
+              _settings = SecuritySettings(
+                realTimeMonitoring: prefsMap['recordIncidents'] ?? _settings.realTimeMonitoring,
+                biometricAuth: prefsMap['biometricAuth'] ?? _settings.biometricAuth,
+                autoLock: prefsMap['autoLock'] ?? _settings.autoLock,
+                shareLocationWithContacts: prefsMap['shareLocationWithContacts'] ?? _settings.shareLocationWithContacts,
+                recordIncidents: prefsMap['recordIncidents'] ?? _settings.recordIncidents,
+                automaticEmergencyCalls: prefsMap['automaticEmergencyCalls'] ?? _settings.automaticEmergencyCalls,
+                // تحميل باقي الإعدادات
+              );
+              
+              _settingsController.add(_settings);
+              
+              // حفظ الإعدادات محليًا كنسخة احتياطية
+              _saveSettingsLocally();
+            }
+          }
+        }, onError: (e) {
+          debugPrint('خطأ في الاشتراك بتغييرات إعدادات الأمان: $e');
+        });
+  }
 
-  // حفظ الإعدادات
-  Future<void> updateSettings(SecuritySettings newSettings) async {
+  // حفظ الإعدادات محليًا
+  Future<void> _saveSettingsLocally() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('security_settings', jsonEncode(newSettings.toMap()));
+      final settingsJson = jsonEncode(_settings.toMap());
+      await prefs.setString('security_settings', settingsJson);
+    } catch (e) {
+      debugPrint('خطأ في حفظ إعدادات الأمان محليًا: $e');
+    }
+  }
+  
+  // حفظ الإعدادات في Firebase
+  Future<void> updateSettings(SecuritySettings newSettings) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('المستخدم غير مسجل الدخول');
+      }
       
       _settings = newSettings;
       _settingsController.add(_settings);
+      
+      // حفظ الإعدادات في Firebase
+      await _firestore.collection('security').doc(userId).set({
+        'securityPreferences': {
+          'biometricEnabled': newSettings.biometricEnabled,
+          'twoFactorEnabled': newSettings.twoFactorEnabled,
+          'locationEncryption': newSettings.locationEncryption,
+          'dataEncryption': newSettings.dataEncryption,
+          'autoLock': newSettings.autoLock,
+          'autoLockTimeout': newSettings.autoLockTimeout,
+          'threatDetection': newSettings.threatDetection,
+          'realTimeMonitoring': newSettings.realTimeMonitoring,
+          'secureBackup': newSettings.secureBackup,
+          'biometricAuth': newSettings.biometricAuth,
+          'shareLocationWithContacts': newSettings.shareLocationWithContacts,
+          'recordIncidents': newSettings.recordIncidents,
+          'automaticEmergencyCalls': newSettings.automaticEmergencyCalls,
+        }
+      }, SetOptions(merge: true));
+      
+      // حفظ الإعدادات محليًا كنسخة احتياطية
+      await _saveSettingsLocally();
       
       // إعادة تشغيل المراقبة إذا تغيرت الإعدادات
       if (newSettings.realTimeMonitoring != _settings.realTimeMonitoring) {
@@ -115,11 +246,57 @@ class SecurityService {
       );
     } catch (e) {
       debugPrint('خطأ في حفظ إعدادات الأمان: $e');
+      throw Exception('فشل في حفظ إعدادات الأمان: $e');
     }
   }
 
-  // تحميل التهديدات
+  // تحميل التهديدات من Firebase
   Future<void> _loadThreats() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        // إذا لم يكن المستخدم مسجل الدخول، نحاول تحميل التهديدات من التخزين المحلي
+        await _loadThreatsFromLocal();
+        return;
+      }
+      
+      final threatsSnapshot = await _firestore
+          .collection('security')
+          .doc(userId)
+          .collection('threats')
+          .get();
+          
+      _threats = threatsSnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return SecurityThreat(
+              id: doc.id,
+              type: _getThreatTypeFromString(data['type'] ?? ''),
+              level: _getSecurityLevelFromString(data['level'] ?? ''),
+              title: data['title'] ?? '',
+              description: data['description'] ?? '',
+              detectedAt: (data['detectedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              source: data['source'] ?? '',
+              isResolved: data['isResolved'] ?? false,
+              resolvedAt: (data['resolvedAt'] as Timestamp?)?.toDate(),
+              metadata: data['metadata'] as Map<String, dynamic>? ?? {},
+            );
+          })
+          .toList();
+      
+      _threatsController.add(_threats);
+      
+      // حفظ نسخة احتياطية محلياً
+      _saveThreatsToLocal();
+    } catch (e) {
+      debugPrint('خطأ في تحميل التهديدات من Firebase: $e');
+      // في حالة الفشل، نحاول تحميل التهديدات من التخزين المحلي
+      await _loadThreatsFromLocal();
+    }
+  }
+  
+  // تحميل التهديدات من التخزين المحلي (كنسخة احتياطية)
+  Future<void> _loadThreatsFromLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final threatsJson = prefs.getStringList('security_threats') ?? [];
@@ -130,12 +307,51 @@ class SecurityService {
       
       _threatsController.add(_threats);
     } catch (e) {
-      debugPrint('خطأ في تحميل التهديدات: $e');
+      debugPrint('خطأ في تحميل التهديدات من التخزين المحلي: $e');
     }
   }
 
-  // حفظ التهديدات
+  // حفظ التهديدات في Firebase
   Future<void> _saveThreats() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        // إذا لم يكن المستخدم مسجل الدخول، نحفظ التهديدات محلياً فقط
+        await _saveThreatsToLocal();
+        return;
+      }
+      
+      // حفظ كل تهديد في Firebase
+      for (final threat in _threats) {
+        await _firestore
+            .collection('security')
+            .doc(userId)
+            .collection('threats')
+            .doc(threat.id)
+            .set({
+              'type': threat.type.toString().split('.').last,
+              'level': threat.level.toString().split('.').last,
+              'title': threat.title,
+              'description': threat.description,
+              'detectedAt': Timestamp.fromDate(threat.detectedAt),
+              'source': threat.source,
+              'isResolved': threat.isResolved,
+              'resolvedAt': threat.resolvedAt != null ? Timestamp.fromDate(threat.resolvedAt!) : null,
+              'metadata': threat.metadata,
+            });
+      }
+      
+      // حفظ نسخة احتياطية محلياً
+      await _saveThreatsToLocal();
+    } catch (e) {
+      debugPrint('خطأ في حفظ التهديدات في Firebase: $e');
+      // في حالة الفشل، نحفظ التهديدات محلياً على الأقل
+      await _saveThreatsToLocal();
+    }
+  }
+  
+  // حفظ التهديدات محلياً (كنسخة احتياطية)
+  Future<void> _saveThreatsToLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final threatsJson = _threats
@@ -144,12 +360,93 @@ class SecurityService {
       
       await prefs.setStringList('security_threats', threatsJson);
     } catch (e) {
-      debugPrint('خطأ في حفظ التهديدات: $e');
+      debugPrint('خطأ في حفظ التهديدات محلياً: $e');
+    }
+  }
+  
+  // تحويل نص نوع التهديد إلى كائن ThreatType
+  ThreatType _getThreatTypeFromString(String typeStr) {
+    switch (typeStr) {
+      case 'malware':
+        return ThreatType.malware;
+      case 'phishing':
+        return ThreatType.phishing;
+      case 'dataBreach':
+        return ThreatType.dataBreach;
+      case 'unauthorizedAccess':
+        return ThreatType.unauthorizedAccess;
+      case 'suspiciousActivity':
+        return ThreatType.suspiciousActivity;
+      default:
+        return ThreatType.suspiciousActivity;
+    }
+  }
+  
+  // تحويل نص مستوى الأمان إلى كائن SecurityLevel
+  SecurityLevel _getSecurityLevelFromString(String levelStr) {
+    switch (levelStr) {
+      case 'low':
+        return SecurityLevel.low;
+      case 'medium':
+        return SecurityLevel.medium;
+      case 'high':
+        return SecurityLevel.high;
+      case 'critical':
+        return SecurityLevel.critical;
+      default:
+        return SecurityLevel.medium;
     }
   }
 
-  // تحميل الأحداث
+  // تحميل الأحداث من Firebase
   Future<void> _loadEvents() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        // إذا لم يكن المستخدم مسجل الدخول، نحاول تحميل الأحداث من التخزين المحلي
+        await _loadEventsFromLocal();
+        return;
+      }
+      
+      final eventsSnapshot = await _firestore
+          .collection('security')
+          .doc(userId)
+          .collection('events')
+          .orderBy('timestamp', descending: true)
+          .limit(100)
+          .get();
+          
+      _events = eventsSnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return SecurityEvent(
+              id: doc.id,
+              type: _getEventTypeFromString(data['type'] ?? ''),
+              title: data['title'] ?? '',
+              description: data['description'] ?? '',
+              timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              userId: data['userId'] ?? '',
+              deviceId: data['deviceId'] ?? '',
+              ipAddress: data['ipAddress'] ?? '',
+              details: data['details'] as Map<String, dynamic>? ?? {},
+              riskLevel: _getSecurityLevelFromString(data['riskLevel'] ?? ''),
+            );
+          })
+          .toList();
+      
+      _eventsController.add(_events);
+      
+      // حفظ نسخة احتياطية محلياً
+      _saveEventsToLocal();
+    } catch (e) {
+      debugPrint('خطأ في تحميل الأحداث من Firebase: $e');
+      // في حالة الفشل، نحاول تحميل الأحداث من التخزين المحلي
+      await _loadEventsFromLocal();
+    }
+  }
+  
+  // تحميل الأحداث من التخزين المحلي (كنسخة احتياطية)
+  Future<void> _loadEventsFromLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final eventsJson = prefs.getStringList('security_events') ?? [];
@@ -165,12 +462,54 @@ class SecurityService {
       
       _eventsController.add(_events);
     } catch (e) {
-      debugPrint('خطأ في تحميل الأحداث: $e');
+      debugPrint('خطأ في تحميل الأحداث من التخزين المحلي: $e');
     }
   }
 
-  // حفظ الأحداث
+  // حفظ الأحداث في Firebase
   Future<void> _saveEvents() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        // إذا لم يكن المستخدم مسجل الدخول، نحفظ الأحداث محلياً فقط
+        await _saveEventsToLocal();
+        return;
+      }
+      
+      // حفظ آخر 50 حدث فقط في Firebase لتجنب استهلاك المساحة
+      final eventsToSave = _events.length > 50 ? _events.sublist(0, 50) : _events;
+      
+      // حفظ كل حدث في Firebase
+      for (final event in eventsToSave) {
+        await _firestore
+            .collection('security')
+            .doc(userId)
+            .collection('events')
+            .doc(event.id)
+            .set({
+              'type': event.type.toString().split('.').last,
+              'title': event.title,
+              'description': event.description,
+              'timestamp': Timestamp.fromDate(event.timestamp),
+              'userId': event.userId,
+              'deviceId': event.deviceId,
+              'ipAddress': event.ipAddress,
+              'details': event.details,
+              'riskLevel': event.riskLevel.toString().split('.').last,
+            });
+      }
+      
+      // حفظ نسخة احتياطية محلياً
+      await _saveEventsToLocal();
+    } catch (e) {
+      debugPrint('خطأ في حفظ الأحداث في Firebase: $e');
+      // في حالة الفشل، نحفظ الأحداث محلياً على الأقل
+      await _saveEventsToLocal();
+    }
+  }
+  
+  // حفظ الأحداث محلياً (كنسخة احتياطية)
+  Future<void> _saveEventsToLocal() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final eventsJson = _events
@@ -179,7 +518,25 @@ class SecurityService {
       
       await prefs.setStringList('security_events', eventsJson);
     } catch (e) {
-      debugPrint('خطأ في حفظ الأحداث: $e');
+      debugPrint('خطأ في حفظ الأحداث محلياً: $e');
+    }
+  }
+  
+  // تحويل نص نوع الحدث إلى كائن SecurityEventType
+  SecurityEventType _getEventTypeFromString(String typeStr) {
+    switch (typeStr) {
+      case 'loginAttempt':
+        return SecurityEventType.loginAttempt;
+      case 'dataAccess':
+        return SecurityEventType.dataAccess;
+      case 'permissionChange':
+        return SecurityEventType.permissionChange;
+      case 'appInstall':
+        return SecurityEventType.appInstall;
+      case 'appUninstall':
+        return SecurityEventType.appUninstall;
+      default:
+        return SecurityEventType.dataAccess;
     }
   }
 
@@ -562,7 +919,7 @@ class SecurityService {
       title: title,
       description: description,
       timestamp: DateTime.now(),
-      userId: 'current_user', // يجب الحصول على معرف المستخدم الحقيقي
+      userId: _auth.currentUser?.uid ?? 'anonymous',
       deviceId: await _getDeviceId(),
       ipAddress: await _getIpAddress(),
       details: details ?? {},
@@ -577,6 +934,32 @@ class SecurityService {
     }
     
     _eventsController.add(_events);
+    
+    // حفظ الحدث في Firebase
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        await _firestore
+            .collection('security')
+            .doc(userId)
+            .collection('events')
+            .doc(event.id)
+            .set({
+              'type': event.type.toString().split('.').last,
+              'title': event.title,
+              'description': event.description,
+              'timestamp': Timestamp.fromDate(event.timestamp),
+              'userId': event.userId,
+              'deviceId': event.deviceId,
+              'ipAddress': event.ipAddress,
+              'details': event.details,
+              'riskLevel': event.riskLevel.toString().split('.').last,
+            });
+      }
+    } catch (e) {
+      debugPrint('خطأ في حفظ الحدث الأمني في Firebase: $e');
+    }
+    
     await _saveEvents();
   }
 
@@ -724,7 +1107,8 @@ class SecurityService {
       final deviceInfo = await _deviceInfo.androidInfo;
       return deviceInfo.id;
     } catch (e) {
-      return 'unknown';
+      debugPrint('خطأ في الحصول على معرف الجهاز: $e');
+      return 'unknown_device';
     }
   }
 
@@ -754,28 +1138,56 @@ class SecurityService {
 
   // إضافة تهديد جديد
   Future<void> addThreat(SecurityThreat threat) async {
-    _threats.add(threat);
-    await _saveThreats();
-    _threatsController.add(_threats);
-    
-    await _logSecurityEvent(
-      SecurityEventType.dataAccess,
-      'تم إضافة تهديد جديد',
-      'تم إضافة تهديد: ${threat.title}',
-    );
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('المستخدم غير مسجل الدخول');
+      }
+      
+      // إضافة التهديد إلى Firebase
+      await _firestore.collection('security').doc(userId).collection('threats').doc(threat.id).set(threat.toMap());
+      
+      // إضافة التهديد إلى القائمة المحلية
+      _threats.add(threat);
+      await _saveThreats();
+      _threatsController.add(_threats);
+      
+      await _logSecurityEvent(
+        SecurityEventType.dataAccess,
+        'تم إضافة تهديد جديد',
+        'تم إضافة تهديد: ${threat.title}',
+      );
+    } catch (e) {
+      debugPrint('خطأ في إضافة تهديد: $e');
+      throw Exception('فشل في إضافة تهديد: $e');
+    }
   }
 
   // حذف تهديد
   Future<void> deleteThreat(String threatId) async {
-    _threats.removeWhere((threat) => threat.id == threatId);
-    await _saveThreats();
-    _threatsController.add(_threats);
-    
-    await _logSecurityEvent(
-      SecurityEventType.dataAccess,
-      'تم حذف تهديد',
-      'تم حذف تهديد بالمعرف: $threatId',
-    );
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('المستخدم غير مسجل الدخول');
+      }
+      
+      // حذف التهديد من Firebase
+      await _firestore.collection('security').doc(userId).collection('threats').doc(threatId).delete();
+      
+      // حذف التهديد من القائمة المحلية
+      _threats.removeWhere((threat) => threat.id == threatId);
+      await _saveThreats();
+      _threatsController.add(_threats);
+      
+      await _logSecurityEvent(
+        SecurityEventType.dataAccess,
+        'تم حذف تهديد',
+        'تم حذف تهديد بالمعرف: $threatId',
+      );
+    } catch (e) {
+      debugPrint('خطأ في حذف تهديد: $e');
+      throw Exception('فشل في حذف تهديد: $e');
+    }
   }
 
   // تنظيف الموارد

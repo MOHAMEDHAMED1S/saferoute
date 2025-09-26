@@ -1,36 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 // تعدادات التقارير التحليلية
-enum AnalyticsReportType {
-  daily,
-  weekly,
-  monthly,
-  yearly,
-  custom,
-}
+enum AnalyticsReportType { daily, weekly, monthly, yearly, custom }
 
-enum AnalyticsCategory {
-  driving,
-  performance,
-  safety,
-  fuel,
-  routes,
-  usage,
-}
+enum AnalyticsCategory { driving, performance, safety, fuel, routes, usage }
 
-enum ReportFormat {
-  pdf,
-  excel,
-  csv,
-  json,
-}
+enum ReportFormat { pdf, excel, csv, json }
 
-enum ChartType {
-  line,
-  bar,
-  pie,
-  area,
-  scatter,
-  heatmap,
-}
+enum ChartType { line, bar, pie, area, scatter, heatmap }
 
 // نموذج التقرير التحليلي
 class AnalyticsReportModel {
@@ -70,6 +47,11 @@ class AnalyticsReportModel {
     required this.summary,
   });
 
+  factory AnalyticsReportModel.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return AnalyticsReportModel.fromJson({'id': doc.id, ...data});
+  }
+
   factory AnalyticsReportModel.fromJson(Map<String, dynamic> json) {
     return AnalyticsReportModel(
       id: json['id'] ?? '',
@@ -83,12 +65,26 @@ class AnalyticsReportModel {
         (e) => e.name == json['category'],
         orElse: () => AnalyticsCategory.driving,
       ),
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
+      createdAt: json['createdAt'] != null
+          ? (json['createdAt'] is Timestamp
+                ? (json['createdAt'] as Timestamp).toDate()
+                : DateTime.parse(json['createdAt']))
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? (json['updatedAt'] is Timestamp
+                ? (json['updatedAt'] as Timestamp).toDate()
+                : DateTime.parse(json['updatedAt']))
           : null,
-      startDate: DateTime.parse(json['startDate']),
-      endDate: DateTime.parse(json['endDate']),
+      startDate: json['startDate'] != null
+          ? (json['startDate'] is Timestamp
+                ? (json['startDate'] as Timestamp).toDate()
+                : DateTime.parse(json['startDate']))
+          : DateTime.now(),
+      endDate: json['endDate'] != null
+          ? (json['endDate'] is Timestamp
+                ? (json['endDate'] as Timestamp).toDate()
+                : DateTime.parse(json['endDate']))
+          : DateTime.now(),
       data: Map<String, dynamic>.from(json['data'] ?? {}),
       charts: (json['charts'] as List<dynamic>? ?? [])
           .map((chart) => ChartData.fromJson(chart))
@@ -307,8 +303,8 @@ class DataPoint {
     return DataPoint(
       label: json['label'] ?? '',
       value: (json['value'] ?? 0).toDouble(),
-      timestamp: json['timestamp'] != null 
-          ? DateTime.parse(json['timestamp']) 
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
           : null,
       metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
       color: json['color'],
@@ -714,7 +710,13 @@ class AnalyticsReportConstants {
       name: 'تحليلات القيادة اليومية',
       description: 'تقرير شامل عن أنشطة وسلوكيات القيادة اليومية',
       category: AnalyticsCategory.driving,
-      sections: ['summary', 'trips', 'performance', 'safety', 'recommendations'],
+      sections: [
+        'summary',
+        'trips',
+        'performance',
+        'safety',
+        'recommendations',
+      ],
     ),
     ReportTemplate(
       id: 'weekly_performance_analytics',
@@ -728,21 +730,37 @@ class AnalyticsReportConstants {
       name: 'التحليلات الشاملة الشهرية',
       description: 'تحليل شامل ومفصل للبيانات والإحصائيات الشهرية',
       category: AnalyticsCategory.usage,
-      sections: ['overview', 'detailed_analysis', 'comparisons', 'predictions', 'actionable_insights'],
+      sections: [
+        'overview',
+        'detailed_analysis',
+        'comparisons',
+        'predictions',
+        'actionable_insights',
+      ],
     ),
     ReportTemplate(
       id: 'fuel_efficiency_report',
       name: 'تقرير كفاءة الوقود',
       description: 'تحليل استهلاك الوقود وتوصيات التحسين',
       category: AnalyticsCategory.fuel,
-      sections: ['consumption_analysis', 'efficiency_trends', 'cost_analysis', 'eco_recommendations'],
+      sections: [
+        'consumption_analysis',
+        'efficiency_trends',
+        'cost_analysis',
+        'eco_recommendations',
+      ],
     ),
     ReportTemplate(
       id: 'safety_analytics_report',
       name: 'تقرير تحليلات السلامة',
       description: 'تحليل شامل لمؤشرات السلامة وسلوك القيادة',
       category: AnalyticsCategory.safety,
-      sections: ['safety_score', 'incident_analysis', 'behavior_patterns', 'improvement_suggestions'],
+      sections: [
+        'safety_score',
+        'incident_analysis',
+        'behavior_patterns',
+        'improvement_suggestions',
+      ],
     ),
   ];
 

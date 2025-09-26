@@ -204,6 +204,17 @@ class RouteInfo {
   }
 }
 
+enum ManeuverType {
+  start,
+  turnRight,
+  turnLeft,
+  straight,
+  roundabout,
+  merge,
+  exit,
+  arrive,
+}
+
 class RouteInstruction {
   final String text;
   final String maneuver;
@@ -211,6 +222,9 @@ class RouteInstruction {
   final int distance; // meters to next instruction
   final Duration time; // time to next instruction
   final String? streetName;
+  final ManeuverType? maneuverType;
+  final Duration? timeToInstruction;
+  final String? instruction;
   
   const RouteInstruction({
     required this.text,
@@ -219,6 +233,9 @@ class RouteInstruction {
     required this.distance,
     required this.time,
     this.streetName,
+    this.maneuverType,
+    this.timeToInstruction,
+    this.instruction,
   });
   
   Map<String, dynamic> toJson() {

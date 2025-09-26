@@ -26,6 +26,7 @@ enum SecurityEventType {
   locationRequest,
   permissionChange,
   appInstall,
+  appUninstall,
   networkConnection,
   fileAccess,
 }
@@ -226,6 +227,11 @@ class SecuritySettings {
   final List<AuthenticationMethod> enabledMethods;
   final Map<String, bool> permissions;
   final SecurityLevel minimumSecurityLevel;
+  // الخصائص المضافة لحل المشاكل
+  final bool biometricAuth;
+  final bool shareLocationWithContacts;
+  final bool recordIncidents;
+  final bool automaticEmergencyCalls;
 
   const SecuritySettings({
     this.biometricEnabled = false,
@@ -240,6 +246,10 @@ class SecuritySettings {
     this.enabledMethods = const [AuthenticationMethod.password],
     this.permissions = const {},
     this.minimumSecurityLevel = SecurityLevel.medium,
+    this.biometricAuth = false,
+    this.shareLocationWithContacts = false,
+    this.recordIncidents = true,
+    this.automaticEmergencyCalls = false,
   });
 
   factory SecuritySettings.fromMap(Map<String, dynamic> map) {
@@ -264,6 +274,11 @@ class SecuritySettings {
         (e) => e.toString() == map['minimumSecurityLevel'],
         orElse: () => SecurityLevel.medium,
       ),
+      // إضافة الخصائص الجديدة
+      biometricAuth: map['biometricAuth'] ?? false,
+      shareLocationWithContacts: map['shareLocationWithContacts'] ?? false,
+      recordIncidents: map['recordIncidents'] ?? true,
+      automaticEmergencyCalls: map['automaticEmergencyCalls'] ?? false,
     );
   }
 
@@ -281,6 +296,11 @@ class SecuritySettings {
       'enabledMethods': enabledMethods.map((e) => e.toString()).toList(),
       'permissions': permissions,
       'minimumSecurityLevel': minimumSecurityLevel.toString(),
+      // إضافة الخصائص الجديدة
+      'biometricAuth': biometricAuth,
+      'shareLocationWithContacts': shareLocationWithContacts,
+      'recordIncidents': recordIncidents,
+      'automaticEmergencyCalls': automaticEmergencyCalls,
     };
   }
 
@@ -297,6 +317,10 @@ class SecuritySettings {
     List<AuthenticationMethod>? enabledMethods,
     Map<String, bool>? permissions,
     SecurityLevel? minimumSecurityLevel,
+    bool? biometricAuth,
+    bool? shareLocationWithContacts,
+    bool? recordIncidents,
+    bool? automaticEmergencyCalls,
   }) {
     return SecuritySettings(
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
@@ -311,6 +335,10 @@ class SecuritySettings {
       enabledMethods: enabledMethods ?? this.enabledMethods,
       permissions: permissions ?? this.permissions,
       minimumSecurityLevel: minimumSecurityLevel ?? this.minimumSecurityLevel,
+      biometricAuth: biometricAuth ?? this.biometricAuth,
+      shareLocationWithContacts: shareLocationWithContacts ?? this.shareLocationWithContacts,
+      recordIncidents: recordIncidents ?? this.recordIncidents,
+      automaticEmergencyCalls: automaticEmergencyCalls ?? this.automaticEmergencyCalls,
     );
   }
 }

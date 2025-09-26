@@ -170,8 +170,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
       case ReportType.closedRoad:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
-      default:
-        return BitmapDescriptor.defaultMarker;
     }
   }
 
@@ -187,8 +185,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
-      default:
-        return 'بلاغ';
     }
   }
 
@@ -281,27 +277,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return Icons.warning;
       case ReportType.closedRoad:
         return Icons.block;
-      default:
-        return Icons.report;
     }
   }
 
-  Color _getReportColor(ReportType type) {
-    switch (type) {
-      case ReportType.accident:
-        return LiquidGlassTheme.getGradientByName('danger').colors.first;
-      case ReportType.jam:
-        return LiquidGlassTheme.getGradientByName('warning').colors.first;
-      case ReportType.carBreakdown:
-        return LiquidGlassTheme.getIconColor('primary');
-      case ReportType.bump:
-        return LiquidGlassTheme.getGradientByName('warning').colors.last;
-      case ReportType.closedRoad:
-        return LiquidGlassTheme.getIconColor('secondary');
-      default:
-        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
-    }
-  }
+  // تم إزالة الدالة غير المستخدمة _getReportColor
 
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();

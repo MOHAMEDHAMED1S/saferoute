@@ -25,7 +25,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
-  String userName = "زياد";
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
