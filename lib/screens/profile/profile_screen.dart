@@ -11,7 +11,9 @@ import '../settings/help_support_screen.dart';
 import '../../models/report_model.dart';
 import '../../models/rewards_model.dart';
 import '../../services/rewards_service.dart';
+import '../../services/user_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saferoute/models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -29,6 +31,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _phoneController = TextEditingController();
   bool _isEditing = false;
   
+  // خدمة المستخدم للتعامل مع Firestore
+  final UserService _userService = UserService();
+  
   // متغيرات نظام النقاط والمكافآت
   final RewardsService _rewardsService = RewardsService();
   PointsModel? _userPoints;
@@ -41,13 +46,28 @@ class _ProfileScreenState extends State<ProfileScreen>
   int _confirmedReports = 0;
   double _accuracyRate = 0.0;
   
+  // Stream للاستماع لتغييرات بيانات المستخدم
+  Stream<DocumentSnapshot>? _userStream;
+  
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _setupUserStream();
     _loadUserData();
     _loadUserReports();
     _loadUserPoints();
+  }
+  
+  // إعداد Stream للاستماع لتغييرات بيانات المستخدم
+  void _setupUserStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _userStream = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots();
+    }
   }
 
   @override
@@ -92,11 +112,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _loadUserData() {
+  Future<void> _loadUserData() async {
     final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
-    if (authProvider.userModel != null) {
-        _nameController.text = authProvider.userModel?.name ?? '';
-        _phoneController.text = authProvider.userModel?.phone ?? '';
+    
+    // استخدام خدمة المستخدم للحصول على البيانات من Firestore
+    final userData = await _userService.getCurrentUserData();
+    
+    if (userData != null) {
+      if (mounted) {
+        setState(() {
+          _nameController.text = userData.name;
+          _phoneController.text = userData.phone ?? '';
+        });
+      }
+    } else if (authProvider.userModel != null) {
+      // استخدام البيانات من AuthProvider كاحتياطي
+      _nameController.text = authProvider.userModel?.name ?? '';
+      _phoneController.text = authProvider.userModel?.phone ?? '';
     }
   }
 
@@ -110,13 +142,27 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _updateProfile() async {
     final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
+    final userId = FirebaseAuth.instance.currentUser?.uid;
     
-    final success = await authProvider.updateUserProfile(
+    if (userId == null) {
+      _showErrorSnackBar('لم يتم العثور على المستخدم');
+      return;
+    }
+    
+    // استخدام خدمة المستخدم لتحديث البيانات في Firestore
+    final success = await _userService.updateUserProfile(
+      userId: userId,
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
     );
-
+    
+    // تحديث البيانات في AuthProvider أيضًا للتوافق
     if (success) {
+      await authProvider.updateUserProfile(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+      );
+      
       if (mounted) {
         setState(() {
           _isEditing = false;
@@ -125,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } else {
       if (mounted) {
-        _showErrorSnackBar(authProvider.errorMessage ?? 'خطأ في تحديث الملف الشخصي');
+        _showErrorSnackBar('خطأ في تحديث الملف الشخصي');
       }
     }
   }
@@ -186,18 +232,29 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: LiquidGlassTheme.backgroundColor,
-      body: Consumer<AuthProviderCustom.AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.userModel == null) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final user = authProvider.userModel ?? UserModel(id: '', email: '', name: 'Guest', createdAt: DateTime.now(), lastLogin: DateTime.now());
-          
-          return CustomScrollView(
-            slivers: [
-              // Modern Profile Header
-              SliverAppBar(
-                expandedHeight: 200,
+      body: _userStream != null
+          ? StreamBuilder<DocumentSnapshot>(
+              stream: _userStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                UserModel? user;
+                if (snapshot.hasData && snapshot.data!.exists) {
+                  // استخدام البيانات من Firestore
+                  user = UserModel.fromFirestore(snapshot.data!);
+                } else {
+                  // استخدام البيانات من AuthProvider كاحتياطي
+                  final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(context, listen: false);
+                  user = authProvider.userModel ?? UserModel(id: '', email: '', name: 'Guest', createdAt: DateTime.now(), lastLogin: DateTime.now());
+                }
+                
+                return CustomScrollView(
+                  slivers: [
+                    // Modern Profile Header
+                    SliverAppBar(
+                      expandedHeight: 200,
                 floating: false,
                 pinned: true,
                 backgroundColor: Colors.transparent,
@@ -317,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           );
         },
-      ),
+      ) : const Center(child: CircularProgressIndicator()),
     );
   }
 
