@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../home/home_screen.dart';
 import '../maps/basic_map_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/add_report_screen.dart';
 import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/dashboard_models.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
-import 'prayer_service.dart';
 import 'prayer_times_section.dart';
+import '../../services/weather_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   static const String routeName = '/dashboard';
@@ -23,7 +23,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -47,6 +48,59 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+
+    // فحص حالة المصادقة عند بدء الشاشة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthenticationStatus();
+    });
+  }
+
+  void _checkAuthenticationStatus() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+
+      // فحص إذا كان المستخدم مسجل دخول
+      if (!authProvider.isLoggedIn) {
+        print(
+          'DashboardScreen: المستخدم غير مسجل دخول، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      // فحص صحة بيانات المستخدم
+      if (authProvider.userModel == null) {
+        print(
+          'DashboardScreen: بيانات المستخدم غير متوفرة، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      // فحص البيانات الأساسية
+      if (authProvider.userModel!.name.isEmpty ||
+          authProvider.userModel!.email.isEmpty) {
+        print(
+          'DashboardScreen: بيانات المستخدم غير مكتملة، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      print('DashboardScreen: المصادقة صحيحة، يمكن المتابعة');
+    } catch (e) {
+      print('DashboardScreen: خطأ في فحص المصادقة: $e');
+      // إزالة إعادة التوجيه التلقائي عند الخطأ لتجنب تسجيل الخروج غير المرغوب فيه
+      // if (mounted) {
+      //   Navigator.of(context).pushReplacementNamed('/login');
+      // }
+    }
   }
 
   @override
@@ -83,7 +137,8 @@ class DashboardHomeWidget extends StatefulWidget {
   State<DashboardHomeWidget> createState() => _DashboardHomeWidgetState();
 }
 
-class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerProviderStateMixin {
+class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
+    with TickerProviderStateMixin {
   late AnimationController _cardAnimationController;
   late AnimationController _pulseAnimationController;
   late Animation<double> _slideAnimation;
@@ -95,27 +150,36 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
   @override
   void initState() {
     super.initState();
-    
+
     _cardAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-    
+
     _pulseAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
 
     _slideAnimation = Tween<double>(begin: -50, end: 0).animate(
-      CurvedAnimation(parent: _cardAnimationController, curve: Curves.elasticOut),
+      CurvedAnimation(
+        parent: _cardAnimationController,
+        curve: Curves.elasticOut,
+      ),
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _cardAnimationController, curve: Curves.elasticOut),
+      CurvedAnimation(
+        parent: _cardAnimationController,
+        curve: Curves.elasticOut,
+      ),
     );
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseAnimationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _pulseAnimationController,
+        curve: Curves.easeInOut,
+      ),
     );
 
     _cardAnimationController.forward();
@@ -134,7 +198,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
   }
 
   void _switchToMap() {
-    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+    final dashboardState = context
+        .findAncestorStateOfType<_DashboardScreenState>();
     if (dashboardState != null) {
       dashboardState.setState(() {
         dashboardState._currentIndex = 1;
@@ -181,16 +246,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                         offset: Offset(0, _slideAnimation.value),
                         child: Transform.scale(
                           scale: _scaleAnimation.value,
-                          child: _buildEnhancedWelcomeSection(dashboardProvider.weather),
+                          child: _buildEnhancedWelcomeSection(
+                            dashboardProvider.weather,
+                          ),
                         ),
                       ),
                     ),
                   ),
 
                   // Statistics Cards
-                  const SliverToBoxAdapter(
-                    child: PrayerTimesSection(),
-                  ),
+                  const SliverToBoxAdapter(child: PrayerTimesSection()),
 
                   // Around You Section
                   SliverToBoxAdapter(
@@ -226,13 +291,29 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
   Widget _buildEnhancedHeader(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           // App Logo with animation
           Hero(
             tag: 'app_logo',
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(0),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -245,11 +326,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
                   'assets/images/logo.jpg',
-                  width: 32,
-                  height: 32,
+                  width: 64,
+                  height: 64,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(
@@ -263,7 +344,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
             ),
           ),
           const SizedBox(width: 16),
-          
+
           // App Title
           Expanded(
             child: Column(
@@ -289,50 +370,448 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
               ],
             ),
           ),
-          
+
           // Notifications with badge
           Container(
             margin: const EdgeInsets.only(left: 8),
             child: Stack(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                GestureDetector(
+                  onTap: () {
+                    final dashboardProvider = context.read<DashboardProvider>();
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.grey.shade700,
-                    size: 24,
+                      builder: (context) {
+                        final reports = dashboardProvider.nearbyReports
+                            .take(5)
+                            .toList();
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.95),
+                                Colors.white.withValues(alpha: 0.9),
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: SafeArea(
+                            top: false,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                10,
+                                16,
+                                16,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Handle
+                                  Container(
+                                    width: 40,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade400,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Title
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.notifications_active_outlined,
+                                        color: Colors.blue.shade600,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'آخر البلاغات',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  if (reports.isEmpty)
+                                    Container(
+                                      height: 180,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'لا توجد بلاغات حديثة',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Flexible(
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        itemCount: reports.length,
+                                        separatorBuilder: (_, __) =>
+                                            const SizedBox(height: 10),
+                                        itemBuilder: (context, i) {
+                                          final r = reports[i];
+                                          final Color accent =
+                                              _getReportTypeColor(r.type);
+                                          return GestureDetector(
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  backgroundColor:
+                                                      Colors.transparent,
+                                                  contentPadding:
+                                                      EdgeInsets.zero,
+                                                  content: Container(
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        begin:
+                                                            Alignment.topLeft,
+                                                        end: Alignment
+                                                            .bottomRight,
+                                                        colors: [
+                                                          Colors.white
+                                                              .withValues(
+                                                                alpha: 0.95,
+                                                              ),
+                                                          Colors.white
+                                                              .withValues(
+                                                                alpha: 0.9,
+                                                              ),
+                                                        ],
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            24,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: Colors
+                                                            .grey
+                                                            .shade300,
+                                                        width: 1.2,
+                                                      ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                          20,
+                                                        ),
+                                                    child: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          r.title,
+                                                          style: TextStyle(
+                                                            fontSize: 18,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade800,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 10,
+                                                        ),
+                                                        _buildDetailRow(
+                                                          Icons.category,
+                                                          'النوع:',
+                                                          r.type.displayName,
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        _buildDetailRow(
+                                                          Icons.access_time,
+                                                          'الوقت:',
+                                                          r.timeAgo,
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        if (r
+                                                            .description
+                                                            .isNotEmpty)
+                                                          _buildDetailRow(
+                                                            Icons.notes,
+                                                            'الوصف:',
+                                                            r.description,
+                                                          ),
+                                                        const SizedBox(
+                                                          height: 16,
+                                                        ),
+                                                        Align(
+                                                          alignment: Alignment
+                                                              .centerRight,
+                                                          child: TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                  context,
+                                                                ),
+                                                            child: Text(
+                                                              'إغلاق',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .blue
+                                                                    .shade600,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
+                                                border: Border.all(
+                                                  color: Colors.grey.shade200,
+                                                ),
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Colors.white.withValues(
+                                                      alpha: 0.9,
+                                                    ),
+                                                    Colors.white.withValues(
+                                                      alpha: 0.8,
+                                                    ),
+                                                  ],
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black
+                                                        .withValues(
+                                                          alpha: 0.08,
+                                                        ),
+                                                    blurRadius: 12,
+                                                    offset: const Offset(0, 6),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(
+                                                  14,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            10,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        gradient:
+                                                            LinearGradient(
+                                                              colors: [
+                                                                accent,
+                                                                accent
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.8,
+                                                                    ),
+                                                              ],
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
+                                                      child: Icon(
+                                                        r.type.icon,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            r.title,
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .grey
+                                                                  .shade800,
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                            ),
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 4,
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .access_time,
+                                                                size: 14,
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade600,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Text(
+                                                                r.timeAgo,
+                                                                style: TextStyle(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade600,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: accent
+                                                            .withValues(
+                                                              alpha: 0.1,
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: accent
+                                                              .withValues(
+                                                                alpha: 0.3,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        r.type.displayName,
+                                                        style: TextStyle(
+                                                          color: accent,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.grey.shade700,
+                      size: 24,
+                    ),
                   ),
                 ),
                 Positioned(
                   right: 6,
                   top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade400, Colors.red.shade600],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  child: Consumer<DashboardProvider>(
+                    builder: (context, provider, child) {
+                      final count = provider.nearbyReports.length;
+                      if (count == 0) return const SizedBox.shrink();
+                      return Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.red.shade400, Colors.red.shade600],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : count.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -345,7 +824,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
 
   Widget _buildEnhancedWelcomeSection(WeatherInfo weather) {
     final now = DateTime.now();
-    final timeFormat = DateFormat('HH:mm');
+    // تغيير تنسيق الوقت إلى نظام 12 ساعة بدلاً من 24 ساعة
+    final weatherService = WeatherService();
+    final timeString = weatherService.formatTimeIn12Hour(now);
     final dateFormat = DateFormat('EEEE، d MMMM yyyy', 'ar');
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -417,21 +898,30 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'أهلاً بك، زياد! 👋',
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.07,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    height: 1.1,
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 8,
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        offset: const Offset(1, 2),
-                                      )
-                                    ],
-                                  ),
+                                child: Consumer<AuthProvider>(
+                                  builder: (context, authProvider, child) {
+                                    final userName =
+                                        authProvider.userModel?.name ??
+                                        'مستخدم';
+                                    return Text(
+                                      'أهلاً بك، $userName',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.07,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        height: 1.1,
+                                        shadows: [
+                                          Shadow(
+                                            blurRadius: 8,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            offset: const Offset(1, 2),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -439,7 +929,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                           const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 7),
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(22),
@@ -448,7 +940,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                               ),
                             ),
                             child: Text(
-                              '${timeFormat.format(now)} • ${dateFormat.format(now)}',
+                              '$timeString • ${dateFormat.format(now)}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Colors.white,
@@ -467,7 +959,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.15),
@@ -478,8 +972,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                       ),
                       child: Column(
                         children: [
-                          Text(weather.icon,
-                              style: const TextStyle(fontSize: 26)),
+                          Text(
+                            weather.icon,
+                            style: const TextStyle(fontSize: 26),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             '${weather.temperature}°',
@@ -555,7 +1051,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.orange.withValues(alpha: 0.45),
+                                      color: Colors.orange.withValues(
+                                        alpha: 0.45,
+                                      ),
                                       blurRadius: 14,
                                       offset: const Offset(0, 5),
                                     ),
@@ -614,47 +1112,12 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
     );
   }
 
-  Widget _buildQuickActionCard(
-    String title,
-    IconData icon,
-    List<Color> colors,
-    VoidCallback onTap,
+  Widget _buildAroundYouSection(
+    BuildContext context,
+    DashboardProvider dashboardProvider,
+    String selectedFilter,
+    Function(String) onFilterSelected,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colors.first.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAroundYouSection(BuildContext context, DashboardProvider dashboardProvider, String selectedFilter, Function(String) onFilterSelected) {
     return Container(
       margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -682,7 +1145,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.orange.shade400, Colors.orange.shade600],
+                          colors: [
+                            Colors.orange.shade400,
+                            Colors.orange.shade600,
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -706,7 +1172,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                 GestureDetector(
                   onTap: _switchToMap,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.blue.shade400, Colors.blue.shade600],
@@ -740,7 +1209,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
               ],
             ),
             const SizedBox(height: 20),
-            
+
             // Enhanced filter chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -798,7 +1267,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Reports list
             ...dashboardProvider.filteredReports.map(
               (report) => Padding(
@@ -831,11 +1300,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(colors: [Colors.blue.shade400, Colors.blue.shade600])
+              ? LinearGradient(
+                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                )
               : null,
           color: isSelected ? null : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
-          border: isSelected ? null : Border.all(color: Colors.grey.shade300, width: 1.5),
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.grey.shade300, width: 1.5),
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -892,7 +1365,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              backgroundColor: Colors.transparent, // Make alert dialog background transparent
+              backgroundColor: Colors
+                  .transparent, // Make alert dialog background transparent
               contentPadding: EdgeInsets.zero, // Remove default padding
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(28), // Larger border radius
@@ -950,13 +1424,26 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                             ),
                           ),
                           const SizedBox(height: 15),
-                          _buildDetailRow(Icons.location_on, 'المسافة:', distance),
+                          _buildDetailRow(
+                            Icons.location_on,
+                            'المسافة:',
+                            distance,
+                          ),
                           const SizedBox(height: 10),
                           _buildDetailRow(Icons.access_time, 'الوقت:', time),
                           const SizedBox(height: 10),
-                          _buildDetailRow(Icons.warning, 'مستوى الخطورة:', severity, color: _getSeverityColor(severity)),
+                          _buildDetailRow(
+                            Icons.warning,
+                            'مستوى الخطورة:',
+                            severity,
+                            color: _getSeverityColor(severity),
+                          ),
                           const SizedBox(height: 10),
-                          _buildDetailRow(Icons.directions_car, 'السيارات المتأثرة:', '$affectedCars'),
+                          _buildDetailRow(
+                            Icons.directions_car,
+                            'السيارات المتأثرة:',
+                            '$affectedCars',
+                          ),
                         ],
                       ),
                     ),
@@ -968,7 +1455,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                         child: Text(
                           'إغلاق',
                           style: TextStyle(
-                            color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                            color: LiquidGlassTheme.getGradientByName(
+                              'primary',
+                            ).colors.first,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -992,7 +1481,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
             colors: [Colors.white, Colors.grey.shade50],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: severityColor.withValues(alpha: 0.2), width: 1.5),
+          border: Border.all(
+            color: severityColor.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: severityColor.withValues(alpha: 0.15),
@@ -1015,7 +1507,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [severityColor, severityColor.withValues(alpha: 0.8)],
+                      colors: [
+                        severityColor,
+                        severityColor.withValues(alpha: 0.8),
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
@@ -1044,7 +1539,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.access_time, color: Colors.grey.shade500, size: 14),
+                          Icon(
+                            Icons.access_time,
+                            color: Colors.grey.shade500,
+                            size: 14,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             time,
@@ -1060,7 +1559,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: severityColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -1079,7 +1581,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
             const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.location_on_outlined, color: Colors.grey.shade500, size: 16),
+                Icon(
+                  Icons.location_on_outlined,
+                  color: Colors.grey.shade500,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   distance,
@@ -1090,7 +1596,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                   ),
                 ),
                 const SizedBox(width: 20),
-                Icon(Icons.directions_car_outlined, color: Colors.grey.shade500, size: 16),
+                Icon(
+                  Icons.directions_car_outlined,
+                  color: Colors.grey.shade500,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '$affectedCars سيارات متأثرة',
@@ -1125,7 +1635,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                                   end: Alignment.bottomRight,
                                   colors: [
                                     LiquidGlassTheme.primaryGlass,
-                                    LiquidGlassTheme.primaryGlass.withValues(alpha: 0.8),
+                                    LiquidGlassTheme.primaryGlass.withValues(
+                                      alpha: 0.8,
+                                    ),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(28),
@@ -1162,22 +1674,28 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 16,
-                                            color: LiquidGlassTheme.textColor.withValues(alpha: 0.8),
+                                            color: LiquidGlassTheme.textColor
+                                                .withValues(alpha: 0.8),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  Divider(color: Colors.grey.shade300, height: 1),
+                                  Divider(
+                                    color: Colors.grey.shade300,
+                                    height: 1,
+                                  ),
                                   Row(
                                     children: [
                                       Expanded(
                                         child: TextButton(
-                                          onPressed: () => Navigator.of(context).pop(),
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(),
                                           child: Text(
                                             'إلغاء',
                                             style: TextStyle(
-                                              color: LiquidGlassTheme.textColor.withValues(alpha: 0.7),
+                                              color: LiquidGlassTheme.textColor
+                                                  .withValues(alpha: 0.7),
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -1188,9 +1706,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                                         child: TextButton(
                                           onPressed: () {
                                             Navigator.of(context).pop();
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                               const SnackBar(
-                                                content: Text('تم مشاركة البلاغ بنجاح'),
+                                                content: Text(
+                                                  'تم مشاركة البلاغ بنجاح',
+                                                ),
                                                 backgroundColor: Colors.green,
                                               ),
                                             );
@@ -1198,7 +1720,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                                           child: Text(
                                             'مشاركة',
                                             style: TextStyle(
-                                              color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                                              color:
+                                                  LiquidGlassTheme.getGradientByName(
+                                                    'primary',
+                                                  ).colors.first,
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -1254,7 +1779,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                               borderRadius: BorderRadius.circular(20),
                             ),
                             title: const Text('مشاركة البلاغ'),
-                            content: const Text('سيتم مشاركة هذا البلاغ مع الآخرين'),
+                            content: const Text(
+                              'سيتم مشاركة هذا البلاغ مع الآخرين',
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(context).pop(),
@@ -1282,7 +1809,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
                       ),
                       child: Text(
                         'مشاركة',
@@ -1316,6 +1846,19 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
     }
   }
 
+  Color _getReportTypeColor(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return Colors.red.shade500;
+      case ReportType.traffic:
+        return Colors.orange.shade500;
+      case ReportType.maintenance:
+        return Colors.blue.shade500;
+      default:
+        return Colors.grey.shade500;
+    }
+  }
+
   Widget _buildEmergencyAlert(BuildContext context, dynamic alert) {
     return Container(
       margin: const EdgeInsets.all(20),
@@ -1341,7 +1884,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.warning_rounded, color: Colors.white, size: 28),
+            child: const Icon(
+              Icons.warning_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1399,7 +1946,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.lightbulb_outline, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.lightbulb_outline,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1433,7 +1984,12 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value, {Color? color}) {
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? color,
+  }) {
     return Row(
       children: [
         Icon(icon, color: color ?? Colors.grey.shade600, size: 18),
@@ -1457,70 +2013,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget> with TickerPr
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEnhancedFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        // إضافة بلاغ جديد
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: const Text('إضافة بلاغ جديد'),
-              content: const Text('هل تريد إضافة بلاغ مرور جديد؟'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('إلغاء'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // انتقال لصفحة إضافة البلاغ
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'إضافة',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-      backgroundColor: Colors.blue.shade600,
-      elevation: 8,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade400, Colors.blue.shade600],
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
-      ),
     );
   }
 }

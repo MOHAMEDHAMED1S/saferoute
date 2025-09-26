@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/report_model.dart';
 import '../models/notification_model.dart';
@@ -7,6 +9,29 @@ import '../models/app_settings_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Firestore configuration for better connection handling
+  static const Duration _defaultTimeout = Duration(seconds: 15);
+  static const Duration _offlineTimeout = Duration(seconds: 5);
+
+  FirestoreService() {
+    _configureFirestore();
+  }
+
+  void _configureFirestore() {
+    // Enable offline persistence
+    _firestore.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+
+    // Configure connection timeout
+    _firestore.settings = Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      host: 'firestore.googleapis.com',
+    );
+  }
 
   // Collections
   CollectionReference get _usersCollection => _firestore.collection('users');
@@ -17,28 +42,75 @@ class FirestoreService {
   CollectionReference get _settingsCollection =>
       _firestore.collection('settings');
 
+  // Helper method to handle timeouts and offline mode
+  Future<T> _withTimeout<T>(
+    Future<T> Function() operation, {
+    Duration? timeout,
+    String? operationName,
+  }) async {
+    try {
+      return await operation().timeout(
+        timeout ?? _defaultTimeout,
+        onTimeout: () {
+          if (kDebugMode) {
+            print('Firestore operation timeout: ${operationName ?? 'Unknown'}');
+          }
+          throw TimeoutException(
+            'انتهت مهلة الاتصال بخادم قاعدة البيانات',
+            timeout ?? _defaultTimeout,
+          );
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Firestore error in ${operationName ?? 'Unknown'}: $e');
+      }
+
+      // Handle specific Firestore errors
+      if (e.toString().contains('Could not reach Cloud Firestore backend')) {
+        throw 'لا يمكن الوصول إلى قاعدة البيانات. تحقق من اتصالك بالإنترنت.';
+      } else if (e.toString().contains('timeout')) {
+        throw 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.';
+      } else if (e.toString().contains('permission')) {
+        throw 'ليس لديك صلاحية للوصول إلى هذه البيانات.';
+      } else {
+        throw 'حدث خطأ في قاعدة البيانات: ${e.toString()}';
+      }
+    }
+  }
+
+  // Check if Firestore is available
+  Future<bool> isFirestoreAvailable() async {
+    try {
+      await _firestore
+          .collection('_health_check')
+          .limit(1)
+          .get()
+          .timeout(_offlineTimeout);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ========== USER OPERATIONS ==========
 
   // Get user by ID
   Future<UserModel?> getUser(String userId) async {
-    try {
+    return await _withTimeout(() async {
       DocumentSnapshot doc = await _usersCollection.doc(userId).get();
       if (doc.exists) {
         return UserModel.fromFirestore(doc);
       }
       return null;
-    } catch (e) {
-      throw 'خطأ في جلب بيانات المستخدم: ${e.toString()}';
-    }
+    }, operationName: 'getUser');
   }
 
   // Create user
   Future<void> createUser(UserModel user) async {
-    try {
+    return await _withTimeout(() async {
       await _usersCollection.doc(user.id).set(user.toFirestore());
-    } catch (e) {
-      throw 'خطأ في إنشاء بيانات المستخدم: ${e.toString()}';
-    }
+    }, operationName: 'createUser');
   }
 
   // Update user

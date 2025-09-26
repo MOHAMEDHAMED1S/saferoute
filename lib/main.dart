@@ -30,12 +30,16 @@ import 'theme/enhanced_theme.dart';
 import 'utils/performance_utils.dart';
 import 'utils/network_utils.dart';
 import 'services/firebase_schema_service.dart';
+import 'services/firestore_connection_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Firestore connection manager
+  FirestoreConnectionManager().initialize();
 
   // Initialize Firestore schema (ensure base collections exist)
   await FirebaseSchemaService().initializeDatabase();
