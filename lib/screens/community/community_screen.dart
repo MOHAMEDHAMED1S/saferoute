@@ -64,7 +64,29 @@ class _CommunityScreenState extends State<CommunityScreen>
           _communityService.messageStream.listen((newMessage) {
             if (mounted) {
               setState(() {
-                _messages.add(newMessage);
+                // تجنب إضافة الرسائل المكررة
+                final existingIndex = _messages.indexWhere((msg) => msg.id == newMessage.id);
+                if (existingIndex != -1) {
+                  // تحديث الرسالة الموجودة
+                  _messages[existingIndex] = newMessage;
+                } else {
+                  // إضافة رسالة جديدة فقط إذا لم تكن موجودة
+                  // وتجنب إضافة الرسائل المؤقتة مرة أخرى
+                  final tempIndex = _messages.indexWhere((msg) => 
+                    msg.userId == newMessage.userId && 
+                    msg.message == newMessage.message &&
+                    msg.id.startsWith('temp_') &&
+                    msg.timestamp.difference(newMessage.timestamp).abs().inSeconds < 5
+                  );
+                  
+                  if (tempIndex != -1) {
+                    // استبدال الرسالة المؤقتة بالرسالة الحقيقية
+                    _messages[tempIndex] = newMessage;
+                  } else {
+                    // إضافة رسالة جديدة
+                    _messages.add(newMessage);
+                  }
+                }
               });
               _scrollToBottom();
             }
@@ -131,15 +153,49 @@ class _CommunityScreenState extends State<CommunityScreen>
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      await _communityService.sendChatMessage(
+      // إنشاء رسالة مؤقتة لعرضها فوراً
+      final tempMessage = ChatMessage(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        userId: authProvider.userModel?.id ?? '',
+        userName: authProvider.userModel?.name ?? 'مستخدم',
+        message: messageText,
+        timestamp: DateTime.now(),
+        userAvatar: authProvider.userModel?.photoUrl,
+        isDelivered: false, // مؤقتة - لم يتم التأكيد بعد
+        isRead: false,
+      );
+
+      // إضافة الرسالة فوراً للواجهة
+      setState(() {
+        _messages.add(tempMessage);
+      });
+      _scrollToBottom();
+      _messageController.clear();
+
+      // إرسال الرسالة للخادم
+      final sentMessage = await _communityService.sendChatMessage(
         userId: authProvider.userModel?.id ?? '',
         userName: authProvider.userModel?.name ?? 'مستخدم',
         message: messageText,
         userAvatar: authProvider.userModel?.photoUrl,
       );
 
-      _messageController.clear();
+      // تحديث الرسالة المؤقتة بالرسالة الحقيقية
+      setState(() {
+        final tempIndex = _messages.indexWhere((msg) => msg.id == tempMessage.id);
+        if (tempIndex != -1) {
+          _messages[tempIndex] = sentMessage.copyWith(
+            isDelivered: true,
+            isRead: false,
+          );
+        }
+      });
+
     } catch (e) {
+      // إزالة الرسالة المؤقتة في حالة الفشل
+      setState(() {
+        _messages.removeWhere((msg) => msg.id.startsWith('temp_'));
+      });
       _showErrorSnackBar('فشل في إرسال الرسالة');
     } finally {
       setState(() {
