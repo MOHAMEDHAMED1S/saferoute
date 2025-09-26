@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../home/home_screen.dart';
 import '../maps/basic_map_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/add_report_screen.dart';
 import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/dashboard_models.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
-import 'prayer_service.dart';
 import 'prayer_times_section.dart';
 import '../../services/weather_service.dart';
 
@@ -49,6 +48,59 @@ class _DashboardScreenState extends State<DashboardScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+
+    // فحص حالة المصادقة عند بدء الشاشة
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthenticationStatus();
+    });
+  }
+
+  void _checkAuthenticationStatus() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+
+      // فحص إذا كان المستخدم مسجل دخول
+      if (!authProvider.isLoggedIn) {
+        print(
+          'DashboardScreen: المستخدم غير مسجل دخول، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      // فحص صحة بيانات المستخدم
+      if (authProvider.userModel == null) {
+        print(
+          'DashboardScreen: بيانات المستخدم غير متوفرة، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      // فحص البيانات الأساسية
+      if (authProvider.userModel!.name.isEmpty ||
+          authProvider.userModel!.email.isEmpty) {
+        print(
+          'DashboardScreen: بيانات المستخدم غير مكتملة، إعادة توجيه لصفحة تسجيل الدخول',
+        );
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+        return;
+      }
+
+      print('DashboardScreen: المصادقة صحيحة، يمكن المتابعة');
+    } catch (e) {
+      print('DashboardScreen: خطأ في فحص المصادقة: $e');
+      // إزالة إعادة التوجيه التلقائي عند الخطأ لتجنب تسجيل الخروج غير المرغوب فيه
+      // if (mounted) {
+      //   Navigator.of(context).pushReplacementNamed('/login');
+      // }
+    }
   }
 
   @override
@@ -239,13 +291,29 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
   Widget _buildEnhancedHeader(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           // App Logo with animation
           Hero(
             tag: 'app_logo',
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(0),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -258,11 +326,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
                   'assets/images/logo.jpg',
-                  width: 32,
-                  height: 32,
+                  width: 64,
+                  height: 64,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return const Icon(
@@ -495,13 +563,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                                         const SizedBox(
                                                           height: 8,
                                                         ),
-                                                        if ((r.description ??
-                                                                '')
+                                                        if (r
+                                                            .description
                                                             .isNotEmpty)
                                                           _buildDetailRow(
                                                             Icons.notes,
                                                             'الوصف:',
-                                                            r.description!,
+                                                            r.description,
                                                           ),
                                                         const SizedBox(
                                                           height: 16,
@@ -830,23 +898,30 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'أهلاً بك، زياد! 👋',
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.07,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    height: 1.1,
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 8,
-                                        color: Colors.black.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        offset: const Offset(1, 2),
+                                child: Consumer<AuthProvider>(
+                                  builder: (context, authProvider, child) {
+                                    final userName =
+                                        authProvider.userModel?.name ??
+                                        'مستخدم';
+                                    return Text(
+                                      'أهلاً بك، $userName',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.07,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        height: 1.1,
+                                        shadows: [
+                                          Shadow(
+                                            blurRadius: 8,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            offset: const Offset(1, 2),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -1033,46 +1108,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard(
-    String title,
-    IconData icon,
-    List<Color> colors,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colors.first.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1978,66 +2013,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEnhancedFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        // إضافة بلاغ جديد
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: const Text('إضافة بلاغ جديد'),
-              content: const Text('هل تريد إضافة بلاغ مرور جديد؟'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('إلغاء'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // انتقال لصفحة إضافة البلاغ
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'إضافة',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
-      backgroundColor: Colors.blue.shade600,
-      elevation: 8,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade400, Colors.blue.shade600],
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withValues(alpha: 0.4),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
     );
   }
 }

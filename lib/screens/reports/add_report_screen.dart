@@ -162,9 +162,20 @@ class _AddReportScreenState extends State<AddReportScreen>
     });
 
     try {
+      print('AddReportScreen: بدء عملية إرسال البلاغ');
+
+      // فحص حالة المصادقة مرة أخرى قبل الإرسال
+      if (!authProvider.isLoggedIn || authProvider.userModel == null) {
+        print('AddReportScreen: المستخدم غير مسجل دخول، إعادة توجيه');
+        Navigator.of(context).pushReplacementNamed('/login');
+        return;
+      }
+
       // الحصول على الموقع الحالي
       final currentLocation = await locationService.getCurrentLocation();
-      // currentLocation is non-null when permission is granted
+      print(
+        'AddReportScreen: تم الحصول على الموقع: ${currentLocation.latitude}, ${currentLocation.longitude}',
+      );
 
       // إنشاء كائن ReportsFirebaseService
       final reportsFirebaseService = ReportsFirebaseService();
@@ -189,29 +200,42 @@ class _AddReportScreenState extends State<AddReportScreen>
         updatedAt: DateTime.now(),
       );
 
+      print('AddReportScreen: تم إنشاء نموذج البلاغ');
+
       // رفع الصور وإنشاء الإبلاغ
       if (_reportImages.isNotEmpty) {
+        print('AddReportScreen: رفع الصور مع البلاغ');
         // استخدام الدالة الجديدة لرفع الصور وإنشاء الإبلاغ
-        final success = await reportsFirebaseService.createReportWithImages(
+        final reportId = await reportsFirebaseService.createReportWithImages(
           report,
           _reportImages,
         );
 
-        if (success == true) {
+        if (reportId.isNotEmpty) {
+          print('AddReportScreen: تم إرسال البلاغ مع الصور بنجاح: $reportId');
           _showSuccessDialog();
         } else {
-          _showErrorSnackBar('خطأ في إرسال البلاغ');
+          print('AddReportScreen: فشل في إرسال البلاغ مع الصور');
+          _showErrorSnackBar(
+            'خطأ في إرسال البلاغ - لم يتم الحصول على معرف البلاغ',
+          );
         }
       } else {
+        print('AddReportScreen: إرسال البلاغ بدون صور');
         // إنشاء إبلاغ بدون صور
         final reportId = await reportsFirebaseService.createReport(report);
         if (reportId.isNotEmpty) {
+          print('AddReportScreen: تم إرسال البلاغ بدون صور بنجاح: $reportId');
           _showSuccessDialog();
         } else {
-          _showErrorSnackBar('خطأ في إرسال البلاغ');
+          print('AddReportScreen: فشل في إرسال البلاغ بدون صور');
+          _showErrorSnackBar(
+            'خطأ في إرسال البلاغ - لم يتم الحصول على معرف البلاغ',
+          );
         }
       }
     } catch (e) {
+      print('AddReportScreen: خطأ في إرسال البلاغ: $e');
       _showErrorSnackBar('خطأ في إرسال البلاغ: ${e.toString()}');
     } finally {
       setState(() {
@@ -281,8 +305,32 @@ class _AddReportScreenState extends State<AddReportScreen>
             LiquidGlassButton(
               text: 'حسناً',
               onPressed: () {
-                Navigator.of(context).pop(); // إغلاق الحوار
-                Navigator.of(context).pop(); // العودة للصفحة السابقة
+                try {
+                  // إغلاق الحوار أولاً
+                  Navigator.of(context).pop();
+
+                  // العودة للصفحة الرئيسية بدلاً من الصفحة السابقة
+                  Future.delayed(const Duration(milliseconds: 200), () {
+                    if (mounted) {
+                      try {
+                        // استخدام pushReplacementNamed للعودة للصفحة الرئيسية
+                        Navigator.of(
+                          context,
+                        ).pushReplacementNamed('/dashboard');
+                      } catch (e) {
+                        print('AddReportScreen: خطأ في التنقل: $e');
+                        // محاولة بديلة للعودة
+                        Navigator.of(context).pop();
+                      }
+                    }
+                  });
+                } catch (e) {
+                  print('AddReportScreen: خطأ في إغلاق الحوار: $e');
+                  // محاولة إغلاق الحوار بطريقة بديلة
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                  }
+                }
               },
               type: LiquidGlassType.primary,
               borderRadius: 12,

@@ -53,11 +53,15 @@ class AuthProvider extends ChangeNotifier {
 
   // Handle auth state changes
   void _onAuthStateChanged(User? user) async {
+    print('AuthProvider: تغيير في حالة المصادقة - المستخدم: ${user?.uid}');
+
     _firebaseUser = user;
 
     if (user != null) {
+      print('AuthProvider: المستخدم مسجل دخول، تحميل البيانات');
       await _loadUserData(user.uid);
     } else {
+      print('AuthProvider: المستخدم غير مسجل دخول');
       _userModel = null;
       _clearError();
     }
@@ -191,15 +195,17 @@ class AuthProvider extends ChangeNotifier {
       final userCredential = await _authService.signInWithGoogle();
       if (userCredential != null && userCredential.user != null) {
         _firebaseUser = userCredential.user;
-        
+
         // Check if user exists in Firestore
-        final existingUser = await _firestoreService.getUser(_firebaseUser!.uid);
-        
+        final existingUser = await _firestoreService.getUser(
+          _firebaseUser!.uid,
+        );
+
         if (existingUser == null) {
           // Create new user document if it doesn't exist
           await _createUserDocumentFromFirebaseUser(_firebaseUser!);
         }
-        
+
         // Load user data
         await _loadUserData(_firebaseUser!.uid);
         return true;

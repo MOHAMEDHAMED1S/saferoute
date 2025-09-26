@@ -23,40 +23,34 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _logoAnimationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     _fadeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    _logoScaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoAnimationController,
-      curve: Curves.elasticOut,
-    ));
+    _logoScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
 
-    _logoRotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _logoRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _logoAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeAnimationController,
-      curve: Curves.easeIn,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeAnimationController, curve: Curves.easeIn),
+    );
 
     _startAnimations();
   }
@@ -64,10 +58,10 @@ class _SplashScreenState extends State<SplashScreen>
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 500));
     _logoAnimationController.forward();
-    
+
     await Future.delayed(const Duration(milliseconds: 1000));
     _fadeAnimationController.forward();
-    
+
     await Future.delayed(const Duration(milliseconds: 3000));
     _navigateToNextScreen();
   }
@@ -75,31 +69,70 @@ class _SplashScreenState extends State<SplashScreen>
   void _navigateToNextScreen() async {
     try {
       final authService = AuthService();
-      final isLoggedIn = authService.isSignedIn;
-      
+
+      // فحص شامل لحالة المصادقة
+      bool isAuthenticated = false;
+
+      try {
+        // فحص وجود المستخدم في Firebase Auth
+        final currentUser = authService.currentUser;
+        if (currentUser != null) {
+          // فحص صحة البيانات في Firestore
+          final userDoc = await authService.getUserDocument(currentUser.uid);
+          if (userDoc != null) {
+            // فحص صحة البيانات الأساسية
+            if (userDoc.name.isNotEmpty && userDoc.email.isNotEmpty) {
+              isAuthenticated = true;
+              print('SplashScreen: المستخدم مسجل دخول وبياناته صحيحة');
+            } else {
+              print(
+                'SplashScreen: بيانات المستخدم غير مكتملة، إعادة توجيه لتسجيل الدخول',
+              );
+              isAuthenticated = false;
+            }
+          } else {
+            print(
+              'SplashScreen: لم يتم العثور على بيانات المستخدم في Firestore',
+            );
+            isAuthenticated = false;
+          }
+        } else {
+          print('SplashScreen: لا يوجد مستخدم مسجل دخول');
+          isAuthenticated = false;
+        }
+      } catch (e) {
+        print('SplashScreen: خطأ في فحص المصادقة: $e');
+        isAuthenticated = false;
+      }
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) {
-              return isLoggedIn ? const DashboardScreen() : const LoginScreen();
+              return isAuthenticated
+                  ? const DashboardScreen()
+                  : const LoginScreen();
             },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 800),
           ),
         );
       }
     } catch (e) {
+      print('SplashScreen: خطأ عام في التنقل: $e');
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) {
               return const LoginScreen();
             },
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
             transitionDuration: const Duration(milliseconds: 800),
           ),
         );
@@ -124,8 +157,12 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
-              LiquidGlassTheme.getGradientByName('secondary').colors.first.withOpacity(0.1),
+              LiquidGlassTheme.getGradientByName(
+                'primary',
+              ).colors.first.withOpacity(0.1),
+              LiquidGlassTheme.getGradientByName(
+                'secondary',
+              ).colors.first.withOpacity(0.1),
               LiquidGlassTheme.backgroundColor,
             ],
           ),
@@ -176,9 +213,9 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                 },
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // App Title with Fade Animation
               AnimatedBuilder(
                 animation: _fadeAnimation,
@@ -195,7 +232,9 @@ class _SplashScreenState extends State<SplashScreen>
                             color: LiquidGlassTheme.getTextColor('primary'),
                             shadows: [
                               Shadow(
-                                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.3),
+                                color: LiquidGlassTheme.getGradientByName(
+                                  'primary',
+                                ).colors.first.withOpacity(0.3),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -218,9 +257,9 @@ class _SplashScreenState extends State<SplashScreen>
                   );
                 },
               ),
-              
+
               const SizedBox(height: 60),
-              
+
               // Loading Indicator
               AnimatedBuilder(
                 animation: _fadeAnimation,
@@ -233,7 +272,9 @@ class _SplashScreenState extends State<SplashScreen>
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first,
                         ),
                       ),
                     ),
