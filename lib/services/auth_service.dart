@@ -25,11 +25,13 @@ class AuthService {
           // For iOS platform
           _googleSignIn = GoogleSignIn(
             scopes: ['email', 'profile'],
-            clientId: '74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com',
+            clientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
           );
         } else {
           // For Android and other platforms
-          _googleSignIn = GoogleSignIn();
+          _googleSignIn = GoogleSignIn(
+            scopes: ['email', 'profile'],
+          );
         }
       }
     } catch (e) {
@@ -120,7 +122,8 @@ class AuthService {
           googleProvider.addScope('profile');
           // Add client ID for web
           googleProvider.setCustomParameters({
-            'client_id': '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com'
+            'client_id': '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
+            'prompt': 'select_account'
           });
           
           // Sign in with popup for better user experience

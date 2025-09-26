@@ -71,6 +71,7 @@ class DefaultFirebaseOptions {
     storageBucket: 'saferoute-11.firebasestorage.app',
     iosClientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
     iosBundleId: 'com.example.saferoute',
+    androidClientId: '74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

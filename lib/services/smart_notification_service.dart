@@ -10,17 +10,20 @@ import 'ai_prediction_service.dart';
 
 // Smart Notification Service
 class SmartNotificationService {
-  static final SmartNotificationService _instance = SmartNotificationService._internal();
+  static final SmartNotificationService _instance =
+      SmartNotificationService._internal();
   factory SmartNotificationService() => _instance;
   SmartNotificationService._internal();
 
-  final StreamController<SmartNotification> _notificationController = StreamController.broadcast();
+  final StreamController<SmartNotification> _notificationController =
+      StreamController.broadcast();
   final List<SmartNotification> _activeNotifications = [];
   final List<NotificationRule> _rules = [];
   final Map<String, NotificationPreference> _userPreferences = {};
   Timer? _notificationTimer;
   bool _isInitialized = false;
-  
+  bool _isDisposed = false;
+
   // Notification channels
   final Map<NotificationChannel, bool> _channelStates = {
     NotificationChannel.safety: true,
@@ -32,25 +35,28 @@ class SmartNotificationService {
   };
 
   Stream<SmartNotification> get notifications => _notificationController.stream;
-  List<SmartNotification> get activeNotifications => List.unmodifiable(_activeNotifications);
+  List<SmartNotification> get activeNotifications =>
+      List.unmodifiable(_activeNotifications);
 
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     await _loadUserPreferences();
     await _setupNotificationRules();
     _startNotificationEngine();
-    
+
     _isInitialized = true;
-    
+
     if (kDebugMode) {
       print('Smart Notification Service initialized');
     }
   }
 
   Future<void> _loadUserPreferences() async {
-    final cached = CacheManager().get<Map<String, dynamic>>('notification_preferences');
-    
+    final cached = CacheManager().get<Map<String, dynamic>>(
+      'notification_preferences',
+    );
+
     if (cached != null) {
       cached.forEach((key, value) {
         _userPreferences[key] = NotificationPreference.fromJson(value);
@@ -80,92 +86,111 @@ class SmartNotificationService {
 
   Future<void> _setupNotificationRules() async {
     _rules.clear();
-    
+
     // Safety rules
-    _rules.add(NotificationRule(
-      id: 'high_risk_route',
-      channel: NotificationChannel.safety,
-      priority: NotificationPriority.high,
-      condition: (context) => context.riskLevel == RiskLevel.high || context.riskLevel == RiskLevel.critical,
-      template: NotificationTemplate(
-        title: 'تحذير: طريق عالي الخطورة',
-        body: 'تم اكتشاف مخاطر عالية على الطريق المحدد. يُنصح بالحذر أو اختيار طريق بديل.',
-        icon: 'warning',
-        actions: ['view_details', 'find_alternative'],
+    _rules.add(
+      NotificationRule(
+        id: 'high_risk_route',
+        channel: NotificationChannel.safety,
+        priority: NotificationPriority.high,
+        condition: (context) =>
+            context.riskLevel == RiskLevel.high ||
+            context.riskLevel == RiskLevel.critical,
+        template: NotificationTemplate(
+          title: 'تحذير: طريق عالي الخطورة',
+          body:
+              'تم اكتشاف مخاطر عالية على الطريق المحدد. يُنصح بالحذر أو اختيار طريق بديل.',
+          icon: 'warning',
+          actions: ['view_details', 'find_alternative'],
+        ),
+        cooldown: const Duration(minutes: 30),
       ),
-      cooldown: const Duration(minutes: 30),
-    ));
-    
-    _rules.add(NotificationRule(
-      id: 'weather_alert',
-      channel: NotificationChannel.weather,
-      priority: NotificationPriority.high,
-      condition: (context) => context.weatherCondition == WeatherCondition.storm || 
-                              context.weatherCondition == WeatherCondition.snow,
-      template: NotificationTemplate(
-        title: 'تحذير طقس',
-        body: 'ظروف جوية سيئة متوقعة. قد بحذر شديد.',
-        icon: 'weather',
-        actions: ['view_weather', 'delay_trip'],
+    );
+
+    _rules.add(
+      NotificationRule(
+        id: 'weather_alert',
+        channel: NotificationChannel.weather,
+        priority: NotificationPriority.high,
+        condition: (context) =>
+            context.weatherCondition == WeatherCondition.storm ||
+            context.weatherCondition == WeatherCondition.snow,
+        template: NotificationTemplate(
+          title: 'تحذير طقس',
+          body: 'ظروف جوية سيئة متوقعة. قد بحذر شديد.',
+          icon: 'weather',
+          actions: ['view_weather', 'delay_trip'],
+        ),
+        cooldown: const Duration(hours: 2),
       ),
-      cooldown: const Duration(hours: 2),
-    ));
-    
-    _rules.add(NotificationRule(
-      id: 'traffic_jam',
-      channel: NotificationChannel.traffic,
-      priority: NotificationPriority.medium,
-      condition: (context) => context.trafficDensity > 0.8,
-      template: NotificationTemplate(
-        title: 'ازدحام مروري',
-        body: 'ازدحام شديد على طريقك. وقت إضافي متوقع: {extra_time} دقيقة.',
-        icon: 'traffic',
-        actions: ['view_traffic', 'find_alternative'],
+    );
+
+    _rules.add(
+      NotificationRule(
+        id: 'traffic_jam',
+        channel: NotificationChannel.traffic,
+        priority: NotificationPriority.medium,
+        condition: (context) => context.trafficDensity > 0.8,
+        template: NotificationTemplate(
+          title: 'ازدحام مروري',
+          body: 'ازدحام شديد على طريقك. وقت إضافي متوقع: {extra_time} دقيقة.',
+          icon: 'traffic',
+          actions: ['view_traffic', 'find_alternative'],
+        ),
+        cooldown: const Duration(minutes: 15),
       ),
-      cooldown: const Duration(minutes: 15),
-    ));
-    
-    _rules.add(NotificationRule(
-      id: 'ai_prediction',
-      channel: NotificationChannel.ai,
-      priority: NotificationPriority.medium,
-      condition: (context) => context.aiConfidence > 0.8 && context.riskScore > 0.6,
-      template: NotificationTemplate(
-        title: 'تنبؤ ذكي',
-        body: 'الذكاء الاصطناعي يتوقع مخاطر محتملة. دقة التنبؤ: {confidence}%',
-        icon: 'ai',
-        actions: ['view_prediction', 'ignore'],
+    );
+
+    _rules.add(
+      NotificationRule(
+        id: 'ai_prediction',
+        channel: NotificationChannel.ai,
+        priority: NotificationPriority.medium,
+        condition: (context) =>
+            context.aiConfidence > 0.8 && context.riskScore > 0.6,
+        template: NotificationTemplate(
+          title: 'تنبؤ ذكي',
+          body:
+              'الذكاء الاصطناعي يتوقع مخاطر محتملة. دقة التنبؤ: {confidence}%',
+          icon: 'ai',
+          actions: ['view_prediction', 'ignore'],
+        ),
+        cooldown: const Duration(minutes: 45),
       ),
-      cooldown: const Duration(minutes: 45),
-    ));
-    
-    _rules.add(NotificationRule(
-      id: 'route_optimization',
-      channel: NotificationChannel.route,
-      priority: NotificationPriority.low,
-      condition: (context) => context.hasAlternativeRoute && context.timeSavings > 10,
-      template: NotificationTemplate(
-        title: 'طريق أفضل متاح',
-        body: 'وجدنا طريقاً أسرع يوفر {time_savings} دقيقة.',
-        icon: 'route',
-        actions: ['use_alternative', 'keep_current'],
+    );
+
+    _rules.add(
+      NotificationRule(
+        id: 'route_optimization',
+        channel: NotificationChannel.route,
+        priority: NotificationPriority.low,
+        condition: (context) =>
+            context.hasAlternativeRoute && context.timeSavings > 10,
+        template: NotificationTemplate(
+          title: 'طريق أفضل متاح',
+          body: 'وجدنا طريقاً أسرع يوفر {time_savings} دقيقة.',
+          icon: 'route',
+          actions: ['use_alternative', 'keep_current'],
+        ),
+        cooldown: const Duration(minutes: 20),
       ),
-      cooldown: const Duration(minutes: 20),
-    ));
-    
-    _rules.add(NotificationRule(
-      id: 'emergency_alert',
-      channel: NotificationChannel.emergency,
-      priority: NotificationPriority.critical,
-      condition: (context) => context.hasEmergency,
-      template: NotificationTemplate(
-        title: 'تحذير طوارئ',
-        body: 'حالة طوارئ على طريقك: {emergency_type}',
-        icon: 'emergency',
-        actions: ['call_emergency', 'find_alternative'],
+    );
+
+    _rules.add(
+      NotificationRule(
+        id: 'emergency_alert',
+        channel: NotificationChannel.emergency,
+        priority: NotificationPriority.critical,
+        condition: (context) => context.hasEmergency,
+        template: NotificationTemplate(
+          title: 'تحذير طوارئ',
+          body: 'حالة طوارئ على طريقك: {emergency_type}',
+          icon: 'emergency',
+          actions: ['call_emergency', 'find_alternative'],
+        ),
+        cooldown: const Duration(minutes: 5),
       ),
-      cooldown: const Duration(minutes: 5),
-    ));
+    );
   }
 
   void _startNotificationEngine() {
@@ -177,11 +202,15 @@ class SmartNotificationService {
 
   Future<void> _processNotificationRules() async {
     try {
-      final context = await _buildNotificationContext();
-      
+      // استخدام متغير مؤقت لتخزين السياق بدلاً من استخدام BuildContext مباشرة
+      final notificationContext = await _buildNotificationContext();
+
+      // التحقق من أن الخدمة لا تزال نشطة قبل معالجة القواعد
+      if (_isDisposed) return;
+
       for (final rule in _rules) {
-        if (_shouldProcessRule(rule, context)) {
-          await _processRule(rule, context);
+        if (_shouldProcessRule(rule, notificationContext)) {
+          await _processRule(rule, notificationContext);
         }
       }
     } catch (e) {
@@ -195,12 +224,13 @@ class SmartNotificationService {
     // This would normally gather real-time data
     // For demo purposes, we'll simulate some data
     final random = math.Random();
-    
+
     return NotificationContext(
       timestamp: DateTime.now(),
       riskLevel: RiskLevel.values[random.nextInt(RiskLevel.values.length)],
       riskScore: random.nextDouble(),
-      weatherCondition: WeatherCondition.values[random.nextInt(WeatherCondition.values.length)],
+      weatherCondition: WeatherCondition
+          .values[random.nextInt(WeatherCondition.values.length)],
       trafficDensity: random.nextDouble(),
       aiConfidence: 0.7 + random.nextDouble() * 0.3,
       hasAlternativeRoute: random.nextBool(),
@@ -215,53 +245,53 @@ class SmartNotificationService {
   bool _shouldProcessRule(NotificationRule rule, NotificationContext context) {
     // Check if channel is enabled
     if (!_channelStates[rule.channel]!) return false;
-    
+
     // Check user preferences
     final preference = _userPreferences[rule.channel.name];
     if (preference == null || !preference.enabled) return false;
-    
+
     // Check quiet hours
     if (_isInQuietHours(preference.quietHours)) {
       return rule.priority == NotificationPriority.critical;
     }
-    
+
     // Check cooldown
     if (_isInCooldown(rule)) return false;
-    
+
     // Check condition
     return rule.condition(context);
   }
 
   bool _isInQuietHours(QuietHours quietHours) {
     if (!quietHours.enabled) return false;
-    
+
     final now = DateTime.now();
     final currentTime = TimeOfDay(hour: now.hour, minute: now.minute);
-    
+
     // Handle overnight quiet hours
     if (quietHours.startTime.hour > quietHours.endTime.hour) {
       return _isTimeAfter(currentTime, quietHours.startTime) ||
-             _isTimeBefore(currentTime, quietHours.endTime);
+          _isTimeBefore(currentTime, quietHours.endTime);
     } else {
       return _isTimeAfter(currentTime, quietHours.startTime) &&
-             _isTimeBefore(currentTime, quietHours.endTime);
+          _isTimeBefore(currentTime, quietHours.endTime);
     }
   }
 
   bool _isTimeAfter(TimeOfDay time, TimeOfDay reference) {
     return time.hour > reference.hour ||
-           (time.hour == reference.hour && time.minute >= reference.minute);
+        (time.hour == reference.hour && time.minute >= reference.minute);
   }
 
   bool _isTimeBefore(TimeOfDay time, TimeOfDay reference) {
     return time.hour < reference.hour ||
-           (time.hour == reference.hour && time.minute <= reference.minute);
+        (time.hour == reference.hour && time.minute <= reference.minute);
   }
 
   bool _isInCooldown(NotificationRule rule) {
     final lastSent = _getLastNotificationTime(rule.id);
     if (lastSent == null) return false;
-    
+
     return DateTime.now().difference(lastSent) < rule.cooldown;
   }
 
@@ -270,11 +300,14 @@ class SmartNotificationService {
     return cached != null ? DateTime.parse(cached) : null;
   }
 
-  Future<void> _processRule(NotificationRule rule, NotificationContext context) async {
+  Future<void> _processRule(
+    NotificationRule rule,
+    NotificationContext context,
+  ) async {
     try {
       final notification = await _createNotification(rule, context);
       await _sendNotification(notification);
-      
+
       // Update last sent time
       CacheManager().put(
         'last_notification_${rule.id}',
@@ -293,11 +326,11 @@ class SmartNotificationService {
     NotificationContext context,
   ) async {
     final template = rule.template;
-    
+
     // Replace placeholders in template
     String title = template.title;
     String body = _replacePlaceholders(template.body, context);
-    
+
     return SmartNotification(
       id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -307,10 +340,7 @@ class SmartNotificationService {
       icon: template.icon,
       actions: template.actions,
       timestamp: DateTime.now(),
-      data: {
-        'rule_id': rule.id,
-        'context': context.toJson(),
-      },
+      data: {'rule_id': rule.id, 'context': context.toJson()},
       expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
   }
@@ -328,16 +358,16 @@ class SmartNotificationService {
   Future<void> _sendNotification(SmartNotification notification) async {
     // Add to active notifications
     _activeNotifications.add(notification);
-    
+
     // Trigger haptic feedback based on priority
     await _triggerHapticFeedback(notification.priority);
-    
+
     // Send to stream
     _notificationController.add(notification);
-    
+
     // Log analytics
     _logNotificationAnalytics(notification);
-    
+
     if (kDebugMode) {
       print('Sent notification: ${notification.title}');
     }
@@ -369,7 +399,7 @@ class SmartNotificationService {
       'timestamp': notification.timestamp.toIso8601String(),
       'rule_id': notification.data['rule_id'],
     };
-    
+
     CacheManager().put(
       'notification_analytics_${notification.id}',
       analytics,
@@ -405,7 +435,7 @@ class SmartNotificationService {
       data: data,
       expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
-    
+
     await _sendNotification(notification);
   }
 
@@ -426,7 +456,10 @@ class SmartNotificationService {
     return _channelStates[channel] ?? true;
   }
 
-  void updateUserPreference(String channelName, NotificationPreference preference) {
+  void updateUserPreference(
+    String channelName,
+    NotificationPreference preference,
+  ) {
     _userPreferences[channelName] = preference;
     _saveUserPreferences();
   }
@@ -436,36 +469,54 @@ class SmartNotificationService {
   }
 
   Future<void> _saveChannelStates() async {
-    final states = _channelStates.map((key, value) => MapEntry(key.name, value));
-    CacheManager().put('notification_channels', states, ttl: const Duration(days: 365));
+    final states = _channelStates.map(
+      (key, value) => MapEntry(key.name, value),
+    );
+    CacheManager().put(
+      'notification_channels',
+      states,
+      ttl: const Duration(days: 365),
+    );
   }
 
   Future<void> _saveUserPreferences() async {
-    final prefs = _userPreferences.map((key, value) => MapEntry(key, value.toJson()));
-    CacheManager().put('notification_preferences', prefs, ttl: const Duration(days: 365));
+    final prefs = _userPreferences.map(
+      (key, value) => MapEntry(key, value.toJson()),
+    );
+    CacheManager().put(
+      'notification_preferences',
+      prefs,
+      ttl: const Duration(days: 365),
+    );
   }
 
   // Analytics and insights
   Map<String, dynamic> getNotificationStats() {
     final now = DateTime.now();
     final last24h = now.subtract(const Duration(hours: 24));
-    
-    final recent = _activeNotifications.where((n) => n.timestamp.isAfter(last24h)).toList();
-    
+
+    final recent = _activeNotifications
+        .where((n) => n.timestamp.isAfter(last24h))
+        .toList();
+
     final byChannel = <String, int>{};
     final byPriority = <String, int>{};
-    
+
     for (final notification in recent) {
-      byChannel[notification.channel.name] = (byChannel[notification.channel.name] ?? 0) + 1;
-      byPriority[notification.priority.name] = (byPriority[notification.priority.name] ?? 0) + 1;
+      byChannel[notification.channel.name] =
+          (byChannel[notification.channel.name] ?? 0) + 1;
+      byPriority[notification.priority.name] =
+          (byPriority[notification.priority.name] ?? 0) + 1;
     }
-    
+
     return {
       'total_active': _activeNotifications.length,
       'last_24h': recent.length,
       'by_channel': byChannel,
       'by_priority': byPriority,
-      'channels_enabled': _channelStates.values.where((enabled) => enabled).length,
+      'channels_enabled': _channelStates.values
+          .where((enabled) => enabled)
+          .length,
       'total_channels': _channelStates.length,
     };
   }
@@ -476,24 +527,29 @@ class SmartNotificationService {
     DateTime? since,
   }) {
     var notifications = _activeNotifications.toList();
-    
+
     if (channel != null) {
       notifications = notifications.where((n) => n.channel == channel).toList();
     }
-    
+
     if (priority != null) {
-      notifications = notifications.where((n) => n.priority == priority).toList();
+      notifications = notifications
+          .where((n) => n.priority == priority)
+          .toList();
     }
-    
+
     if (since != null) {
-      notifications = notifications.where((n) => n.timestamp.isAfter(since)).toList();
+      notifications = notifications
+          .where((n) => n.timestamp.isAfter(since))
+          .toList();
     }
-    
+
     notifications.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return notifications;
   }
 
   void dispose() {
+    _isDisposed = true;
     _notificationTimer?.cancel();
     _notificationController.close();
     _activeNotifications.clear();
@@ -549,8 +605,12 @@ class SmartNotification {
       id: json['id'],
       title: json['title'],
       body: json['body'],
-      channel: NotificationChannel.values.firstWhere((c) => c.name == json['channel']),
-      priority: NotificationPriority.values.firstWhere((p) => p.name == json['priority']),
+      channel: NotificationChannel.values.firstWhere(
+        (c) => c.name == json['channel'],
+      ),
+      priority: NotificationPriority.values.firstWhere(
+        (p) => p.name == json['priority'],
+      ),
       icon: json['icon'],
       actions: List<String>.from(json['actions']),
       timestamp: DateTime.parse(json['timestamp']),
@@ -670,9 +730,13 @@ class NotificationPreference {
 
   factory NotificationPreference.fromJson(Map<String, dynamic> json) {
     return NotificationPreference(
-      channel: NotificationChannel.values.firstWhere((c) => c.name == json['channel']),
+      channel: NotificationChannel.values.firstWhere(
+        (c) => c.name == json['channel'],
+      ),
       enabled: json['enabled'],
-      priority: NotificationPriority.values.firstWhere((p) => p.name == json['priority']),
+      priority: NotificationPriority.values.firstWhere(
+        (p) => p.name == json['priority'],
+      ),
       soundEnabled: json['sound_enabled'],
       vibrationEnabled: json['vibration_enabled'],
       quietHours: QuietHours.fromJson(json['quiet_hours']),
@@ -704,7 +768,10 @@ class QuietHours {
   factory QuietHours.fromJson(Map<String, dynamic> json) {
     return QuietHours(
       enabled: json['enabled'],
-      startTime: TimeOfDay(hour: json['start_hour'], minute: json['start_minute']),
+      startTime: TimeOfDay(
+        hour: json['start_hour'],
+        minute: json['start_minute'],
+      ),
       endTime: TimeOfDay(hour: json['end_hour'], minute: json['end_minute']),
     );
   }
@@ -718,34 +785,11 @@ class TimeOfDay {
 }
 
 // Enums
-enum NotificationChannel {
-  safety,
-  traffic,
-  weather,
-  route,
-  ai,
-  emergency,
-}
+enum NotificationChannel { safety, traffic, weather, route, ai, emergency }
 
-enum NotificationPriority {
-  low,
-  medium,
-  high,
-  critical,
-}
+enum NotificationPriority { low, medium, high, critical }
 
 // Import required enums from AI service
-enum RiskLevel {
-  low,
-  medium,
-  high,
-  critical,
-}
+enum RiskLevel { low, medium, high, critical }
 
-enum WeatherCondition {
-  clear,
-  rain,
-  snow,
-  fog,
-  storm,
-}
+enum WeatherCondition { clear, rain, snow, fog, storm }
