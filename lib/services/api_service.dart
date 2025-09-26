@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:saferoute/models/chat_message.dart';
 import 'package:saferoute/models/incident_report.dart';
 import 'package:saferoute/models/leaderboard_user.dart';
+import 'package:saferoute/models/community_post.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -25,18 +26,20 @@ class ApiService {
     };
 
     // إضافة interceptors للتعامل مع الأخطاء والتوثيق
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // يمكن إضافة توكن المصادقة هنا
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        return handler.next(response);
-      },
-      onError: (DioException e, handler) {
-        return handler.next(e);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // يمكن إضافة توكن المصادقة هنا
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          return handler.next(response);
+        },
+        onError: (DioException e, handler) {
+          return handler.next(e);
+        },
+      ),
+    );
   }
 
   // الحصول على رسائل الدردشة
@@ -65,11 +68,11 @@ class ApiService {
         'message': message,
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
       if (userAvatar != null) {
         data['userAvatar'] = userAvatar;
       }
-      
+
       final response = await _dio.post('/chat/messages', data: data);
       return ChatMessage.fromJson(response.data['data']);
     } catch (e) {
@@ -126,7 +129,7 @@ class ApiService {
       throw 'Failed to load leaderboard';
     }
   }
-  
+
   // الحصول على عدد المستخدمين المتصلين
   Future<int> getOnlineUsersCount() async {
     try {
@@ -135,6 +138,75 @@ class ApiService {
     } catch (e) {
       debugPrint('Error getting online users count: $e');
       throw 'Failed to get online users count';
+    }
+  }
+
+  // الحصول على المنشورات
+  Future<List<CommunityPost>> getPosts() async {
+    try {
+      final response = await _dio.get('/community/posts');
+      final List<dynamic> data = response.data['data'];
+      return data.map((json) => CommunityPost.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error getting posts: $e');
+      throw 'Failed to load posts';
+    }
+  }
+
+  // إنشاء منشور جديد
+  Future<void> createPost(CommunityPost post) async {
+    try {
+      final Map<String, dynamic> data = {
+        'userId': post.userId,
+        'userName': post.userName,
+        'title': post.title,
+        'content': post.content,
+        'category': post.category,
+        'imageUrls': post.imageUrls,
+        'timestamp': post.createdAt.toIso8601String(),
+      };
+
+      await _dio.post('/community/posts', data: data);
+    } catch (e) {
+      debugPrint('Error creating post: $e');
+      throw 'Failed to create post';
+    }
+  }
+
+  // الإعجاب بمنشور
+  Future<void> likePost(String postId, String userId) async {
+    try {
+      await _dio.post(
+        '/community/posts/$postId/like',
+        data: {'userId': userId},
+      );
+    } catch (e) {
+      debugPrint('Error liking post: $e');
+      throw 'Failed to like post';
+    }
+  }
+
+  // رفع صور المنشورات
+  Future<List<String>> uploadPostImages(List<XFile> images) async {
+    try {
+      List<String> imageUrls = [];
+
+      for (final image in images) {
+        final formData = FormData.fromMap({
+          'image': await MultipartFile.fromFile(
+            image.path,
+            filename: image.name,
+          ),
+        });
+
+        final response = await _dio.post('/upload/images', data: formData);
+        imageUrls.add(response.data['url'] as String);
+      }
+
+      return imageUrls;
+    } catch (e) {
+      debugPrint('Error uploading images: $e');
+      throw 'Failed to upload images';
     }
   }
 }
