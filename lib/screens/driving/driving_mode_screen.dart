@@ -79,7 +79,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     _warningAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _warningAnimationController,
@@ -101,21 +101,21 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       }
     });
 
-    _navigationSubscription = _navigationService.navigationStateStream.listen(
-      (state) {
-        if (mounted) {
-          setState(() {
-            _navigationState = state;
-            _isNavigating = state.isNavigating;
-          });
-        }
-      },
-    );
+    _navigationSubscription = _navigationService.navigationStateStream.listen((
+      state,
+    ) {
+      if (mounted) {
+        setState(() {
+          _navigationState = state;
+          _isNavigating = state.isNavigating;
+        });
+      }
+    });
 
     _voiceInstructionSubscription = _navigationService.voiceInstructionStream
         .listen((instruction) {
-      _showVoiceInstruction(instruction);
-    });
+          _showVoiceInstruction(instruction);
+        });
   }
 
   Future<void> _initializeLocation() async {
@@ -217,7 +217,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
     if (mounted) {
       setState(() {
-        _markers.removeWhere((marker) => marker.markerId.value.startsWith('warning_'));
+        _markers.removeWhere(
+          (marker) => marker.markerId.value.startsWith('warning_'),
+        );
         _markers.addAll(warningMarkers);
       });
     }
@@ -247,11 +249,19 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       case ReportType.jam:
         return 'traffic';
       case ReportType.carBreakdown:
-        return 'roadwork';
+        return 'breakdown';
       case ReportType.bump:
         return 'police';
       case ReportType.closedRoad:
         return 'roadwork';
+      case ReportType.hazard:
+        return 'hazard';
+      case ReportType.police:
+        return 'police';
+      case ReportType.traffic:
+        return 'traffic';
+      case ReportType.other:
+        return 'other';
     }
   }
 
@@ -322,7 +332,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   void _showVoiceInstruction(String instruction) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -424,36 +434,39 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
     // Simulate search suggestions (in real app, use Google Places API)
     setState(() {
-      _searchSuggestions = [
-        {
-          'name': 'مول العرب',
-          'address': 'الرياض، المملكة العربية السعودية',
-          'lat': 24.7136,
-          'lng': 46.6753,
-        },
-        {
-          'name': 'مطار الملك خالد الدولي',
-          'address': 'الرياض، المملكة العربية السعودية',
-          'lat': 24.9576,
-          'lng': 46.6988,
-        },
-        {
-          'name': 'برج المملكة',
-          'address': 'الرياض، المملكة العربية السعودية',
-          'lat': 24.7119,
-          'lng': 46.6758,
-        },
-        {
-          'name': 'جامعة الملك سعود',
-          'address': 'الرياض، المملكة العربية السعودية',
-          'lat': 24.7277,
-          'lng': 46.6219,
-        },
-      ].where(
-        (place) =>
-            place['name'].toString().contains(query) ||
-            place['address'].toString().contains(query),
-      ).toList();
+      _searchSuggestions =
+          [
+                {
+                  'name': 'مول العرب',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7136,
+                  'lng': 46.6753,
+                },
+                {
+                  'name': 'مطار الملك خالد الدولي',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.9576,
+                  'lng': 46.6988,
+                },
+                {
+                  'name': 'برج المملكة',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7119,
+                  'lng': 46.6758,
+                },
+                {
+                  'name': 'جامعة الملك سعود',
+                  'address': 'الرياض، المملكة العربية السعودية',
+                  'lat': 24.7277,
+                  'lng': 46.6219,
+                },
+              ]
+              .where(
+                (place) =>
+                    place['name'].toString().contains(query) ||
+                    place['address'].toString().contains(query),
+              )
+              .toList();
     });
   }
 
@@ -461,8 +474,8 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     setState(() {
       _selectedDestination = destination['name'];
       final destinationLatLng = LatLng(
-        destination['lat'] as double, 
-        destination['lng'] as double
+        destination['lat'] as double,
+        destination['lng'] as double,
       );
       _startNavigation(destinationLatLng);
       _isSearching = false;
@@ -471,14 +484,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   void _startNavigation(LatLng destination) {
     if (_currentPosition == null) return;
-    
+
     final origin = LatLng(
       _currentPosition!.latitude,
       _currentPosition!.longitude,
     );
-    
+
     _navigationService.startNavigation(destination: destination);
-    
+
     setState(() {
       _isNavigating = true;
     });
@@ -503,7 +516,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   String _formatDuration(Duration? duration) {
     if (duration == null) return '0 دقيقة';
-    
+
     final minutes = duration.inMinutes;
     if (minutes < 60) {
       return '$minutes دقيقة';
@@ -516,7 +529,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   String _formatDistance(double? distance) {
     if (distance == null) return '0 كم';
-    
+
     if (distance < 1) {
       final meters = (distance * 1000).round();
       return '$meters متر';
@@ -545,7 +558,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             polylines: _polylines,
             mapType: MapType.normal,
           ),
-          
+
           // Top bar with search
           Positioned(
             top: MediaQuery.of(context).padding.top,
@@ -553,13 +566,13 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             right: 0,
             child: _buildTopBar(),
           ),
-          
+
           // Warning overlay
           if (_activeWarnings.isNotEmpty) _buildWarningOverlay(),
-          
+
           // Navigation info
           if (_isNavigating) _buildNavigationInfo(),
-          
+
           // Bottom controls
           Positioned(
             bottom: 16,
@@ -567,7 +580,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             right: 16,
             child: _buildBottomControls(),
           ),
-          
+
           // Search overlay
           if (_isSearching) _buildSearchOverlay(),
         ],
@@ -601,13 +614,13 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             child: GestureDetector(
               onTap: _startDestinationSearch,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 16,
+                ),
                 child: Text(
                   _selectedDestination ?? 'إلى أين تريد الذهاب؟',
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
-                  ),
+                  style: const TextStyle(color: Colors.black87, fontSize: 16),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -626,7 +639,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
 
   Widget _buildWarningOverlay() {
     final warning = _activeWarnings.first;
-    
+
     return Positioned(
       top: MediaQuery.of(context).padding.top + 70,
       left: 16,
@@ -636,7 +649,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _warningService.getWarningColor(warning.type).withOpacity(0.9),
+            color: _warningService
+                .getWarningColor(warning.type)
+                .withOpacity(0.9),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -669,10 +684,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                     const SizedBox(height: 4),
                     Text(
                       warning.message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
                     ),
                   ],
                 ),
@@ -694,9 +706,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     if (!_isNavigating || _navigationState.route == null) {
       return const SizedBox.shrink();
     }
-    
+
     final route = _navigationState.route!;
-    
+
     return Positioned(
       top: 100,
       left: 0,
@@ -719,10 +731,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
           children: [
             Text(
               "جاري التنقل...",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Row(
@@ -750,7 +759,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       ),
     );
   }
-  
+
   Widget _buildInfoItem({
     required IconData icon,
     required String label,
@@ -760,19 +769,10 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       children: [
         Icon(icon, size: 24),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -917,7 +917,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   void _showReportDialog() {
     String reportType = 'accident';
     String description = '';
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -930,8 +930,14 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 value: reportType,
                 items: const [
                   DropdownMenuItem(value: 'accident', child: Text('حادث')),
-                  DropdownMenuItem(value: 'traffic', child: Text('ازدحام مروري')),
-                  DropdownMenuItem(value: 'hazard', child: Text('خطر على الطريق')),
+                  DropdownMenuItem(
+                    value: 'traffic',
+                    child: Text('ازدحام مروري'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'hazard',
+                    child: Text('خطر على الطريق'),
+                  ),
                   DropdownMenuItem(value: 'police', child: Text('نقطة تفتيش')),
                 ],
                 onChanged: (value) {
@@ -941,9 +947,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
                 },
               ),
               TextField(
-                decoration: const InputDecoration(
-                  hintText: 'وصف (اختياري)',
-                ),
+                decoration: const InputDecoration(hintText: 'وصف (اختياري)'),
                 maxLines: 3,
                 onChanged: (value) {
                   description = value;
@@ -970,12 +974,18 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   }
 
   void _submitReport(String type, String description) {
-    final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
-    
+    final reportsProvider = Provider.of<ReportsProvider>(
+      context,
+      listen: false,
+    );
+
     if (_currentPosition != null) {
       final report = ReportModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        type: ReportType.values.firstWhere((t) => t.toString() == 'ReportType.$type', orElse: () => ReportType.accident),
+        type: ReportType.values.firstWhere(
+          (t) => t.toString() == 'ReportType.$type',
+          orElse: () => ReportType.accident,
+        ),
         description: description,
         location: ReportLocation(
           lat: _currentPosition!.latitude,
@@ -989,17 +999,17 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         confirmedBy: [],
         deniedBy: [],
       );
-      
+
       reportsProvider.createReport(
         type: report.type,
         description: report.description,
         createdBy: 'current_user',
       );
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم إرسال البلاغ بنجاح')),
-      );
-      
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم إرسال البلاغ بنجاح')));
+
       _updateMapMarkers();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

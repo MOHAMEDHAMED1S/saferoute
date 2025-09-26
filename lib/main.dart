@@ -29,26 +29,28 @@ import 'screens/driving/driving_mode_screen.dart';
 import 'theme/enhanced_theme.dart';
 import 'utils/performance_utils.dart';
 import 'utils/network_utils.dart';
+import 'services/firebase_schema_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Firestore schema (ensure base collections exist)
+  await FirebaseSchemaService().initializeDatabase();
+
   // Initialize performance monitoring
   PerformanceMonitor.startPeriodicReporting();
   MemoryOptimizer.startPeriodicCleanup();
-  
+
   // Initialize network manager
   NetworkManager().initialize();
   BandwidthMonitor().startMonitoring();
-  
+
   // Warm up shaders for better performance
   PerformanceUtils.warmUpShaders();
-  
+
   runApp(const SafeRouteApp());
 }
 
@@ -93,52 +95,36 @@ class SafeRouteApp extends StatelessWidget {
               extensions: [CustomColors.dark],
             ),
             themeMode: ThemeMode.system,
-            home: const NetworkAwareWidget(
-              child: SplashScreen(),
-            ),
+            home: const NetworkAwareWidget(child: SplashScreen()),
             routes: {
-              '/login': (context) => const NetworkAwareWidget(
-                child: LoginScreen(),
-              ),
-              '/register': (context) => const NetworkAwareWidget(
-                child: RegisterScreen(),
-              ),
-              '/dashboard': (context) => const NetworkAwareWidget(
-                child: DashboardScreen(),
-              ),
-              '/home': (context) => const NetworkAwareWidget(
-                child: HomeScreen(),
-              ),
-              '/add-report': (context) => const NetworkAwareWidget(
-                child: AddReportScreen(),
-              ),
-              '/profile': (context) => const NetworkAwareWidget(
-                child: ProfileScreen(),
-              ),
-              '/driving-mode': (context) => const NetworkAwareWidget(
-                child: DrivingModeScreen(),
-              ),
-              '/advanced-reports': (context) => const NetworkAwareWidget(
-                child: AdvancedReportsScreen(),
-              ),
-        '/security-monitor': (context) => const NetworkAwareWidget(
-          child: SecurityMonitorScreen(),
-        ),
-        '/security-settings': (context) => const NetworkAwareWidget(
-          child: SecuritySettingsScreen(),
-        ),
-        '/threat-management': (context) => const NetworkAwareWidget(
-          child: ThreatManagementScreen(),
-        ),
-        '/ai-prediction': (context) => NetworkAwareWidget(
-            child: const AIPredictionScreen(),
-          ),
-          '/smart-notifications': (context) => NetworkAwareWidget(
-            child: const SmartNotificationsScreen(),
-          ),
-          '/3d-maps': (context) => NetworkAwareWidget(
-            child: const Maps3DScreen(),
-          ),
+              '/login': (context) =>
+                  const NetworkAwareWidget(child: LoginScreen()),
+              '/register': (context) =>
+                  const NetworkAwareWidget(child: RegisterScreen()),
+              '/dashboard': (context) =>
+                  const NetworkAwareWidget(child: DashboardScreen()),
+              '/home': (context) =>
+                  const NetworkAwareWidget(child: HomeScreen()),
+              '/add-report': (context) =>
+                  const NetworkAwareWidget(child: AddReportScreen()),
+              '/profile': (context) =>
+                  const NetworkAwareWidget(child: ProfileScreen()),
+              '/driving-mode': (context) =>
+                  const NetworkAwareWidget(child: DrivingModeScreen()),
+              '/advanced-reports': (context) =>
+                  const NetworkAwareWidget(child: AdvancedReportsScreen()),
+              '/security-monitor': (context) =>
+                  const NetworkAwareWidget(child: SecurityMonitorScreen()),
+              '/security-settings': (context) =>
+                  const NetworkAwareWidget(child: SecuritySettingsScreen()),
+              '/threat-management': (context) =>
+                  const NetworkAwareWidget(child: ThreatManagementScreen()),
+              '/ai-prediction': (context) =>
+                  NetworkAwareWidget(child: const AIPredictionScreen()),
+              '/smart-notifications': (context) =>
+                  NetworkAwareWidget(child: const SmartNotificationsScreen()),
+              '/3d-maps': (context) =>
+                  NetworkAwareWidget(child: const Maps3DScreen()),
             },
             builder: (context, child) {
               return Directionality(

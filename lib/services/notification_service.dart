@@ -6,7 +6,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/notification_model.dart';
 import '../models/report_model.dart';
-import 'firestore_service.dart';
 
 // Top-level function for background message handling
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -19,9 +18,9 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final FirestoreService _firestoreService = FirestoreService();
 
   String? _fcmToken;
   bool _isInitialized = false;
@@ -41,10 +40,10 @@ class NotificationService {
     try {
       // Initialize local notifications
       await _initializeLocalNotifications();
-      
+
       // Initialize Firebase messaging
       await _initializeFirebaseMessaging();
-      
+
       _isInitialized = true;
       print('Notification service initialized successfully');
     } catch (e) {
@@ -57,19 +56,19 @@ class NotificationService {
   Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
+
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _localNotifications.initialize(
       initializationSettings,
@@ -94,19 +93,24 @@ class NotificationService {
       vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
     );
 
-    const AndroidNotificationChannel generalChannel = AndroidNotificationChannel(
-      'general',
-      'إشعارات عامة',
-      description: 'الإشعارات العامة للتطبيق',
-      importance: Importance.defaultImportance,
-    );
+    const AndroidNotificationChannel generalChannel =
+        AndroidNotificationChannel(
+          'general',
+          'إشعارات عامة',
+          description: 'الإشعارات العامة للتطبيق',
+          importance: Importance.defaultImportance,
+        );
 
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(alertChannel);
-    
+
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(generalChannel);
   }
 
@@ -141,7 +145,8 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
     // Handle notification tap when app is terminated
-    RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+    RemoteMessage? initialMessage = await _firebaseMessaging
+        .getInitialMessage();
     if (initialMessage != null) {
       _handleNotificationTap(initialMessage);
     }
@@ -158,7 +163,7 @@ class NotificationService {
   // Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
     print('Received foreground message: ${message.messageId}');
-    
+
     // Show local notification
     _showLocalNotification(
       title: message.notification?.title ?? 'تنبيه مروري',
@@ -191,21 +196,25 @@ class NotificationService {
     String? payload,
     bool isAlert = false,
   }) async {
-    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-    
+    final int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+      100000,
+    );
+
     AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       isAlert ? 'traffic_alerts' : 'general',
       isAlert ? 'تنبيهات المرور' : 'إشعارات عامة',
-      channelDescription: isAlert 
+      channelDescription: isAlert
           ? 'إشعارات تنبيهات المخاطر المرورية'
           : 'الإشعارات العامة للتطبيق',
       importance: isAlert ? Importance.high : Importance.defaultImportance,
       priority: isAlert ? Priority.high : Priority.defaultPriority,
-      sound: _soundEnabled 
-          ? (isAlert ? const RawResourceAndroidNotificationSound('alert_sound') : null)
+      sound: _soundEnabled
+          ? (isAlert
+                ? const RawResourceAndroidNotificationSound('alert_sound')
+                : null)
           : null,
       enableVibration: _vibrationEnabled,
-      vibrationPattern: isAlert && _vibrationEnabled 
+      vibrationPattern: isAlert && _vibrationEnabled
           ? Int64List.fromList([0, 1000, 500, 1000])
           : null,
       icon: '@mipmap/ic_launcher',
@@ -251,13 +260,14 @@ class NotificationService {
     required ReportModel report,
     required double distanceInMeters,
   }) async {
-    String distanceText = distanceInMeters < 1000 
+    String distanceText = distanceInMeters < 1000
         ? '${distanceInMeters.round()} متر'
         : '${(distanceInMeters / 1000).toStringAsFixed(1)} كم';
-    
+
     String title = 'تحذير: ${_getReportTypeInArabic(report.type)}';
-    String body = 'يوجد ${_getReportTypeInArabic(report.type)} على بعد $distanceText';
-    
+    String body =
+        'يوجد ${_getReportTypeInArabic(report.type)} على بعد $distanceText';
+
     await _showLocalNotification(
       title: title,
       body: body,
@@ -269,7 +279,7 @@ class NotificationService {
     await _saveNotificationToFirestore(
       NotificationModel.createAlert(
         userId: 'current_user', // This should be the current user ID
-        reportId: report.id!,
+        reportId: report.id,
         type: _getNotificationTypeFromReportType(report.type),
         hazardType: _getReportTypeInArabic(report.type),
         distanceInMeters: distanceInMeters.round(),
@@ -284,10 +294,10 @@ class NotificationService {
     required bool isConfirmed,
   }) async {
     String title = isConfirmed ? 'تم تأكيد البلاغ' : 'تم رفض البلاغ';
-    String body = isConfirmed 
+    String body = isConfirmed
         ? 'تم تأكيد بلاغ $reportType من قبل مستخدم آخر'
         : 'تم رفض بلاغ $reportType من قبل مستخدم آخر';
-    
+
     await _showLocalNotification(
       title: title,
       body: body,
@@ -306,7 +316,9 @@ class NotificationService {
   }
 
   // Save notification to Firestore
-  Future<void> _saveNotificationToFirestore(NotificationModel notification) async {
+  Future<void> _saveNotificationToFirestore(
+    NotificationModel notification,
+  ) async {
     try {
       // TODO: Implement addNotification method in FirestoreService
       // await _firestoreService.addNotification(notification);
@@ -323,12 +335,20 @@ class NotificationService {
         return 'حادث';
       case ReportType.jam:
         return 'ازدحام';
+      case ReportType.traffic:
+        return 'حركة مرور';
       case ReportType.carBreakdown:
         return 'سيارة معطلة';
       case ReportType.bump:
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
+      case ReportType.hazard:
+        return 'خطر';
+      case ReportType.police:
+        return 'شرطة';
+      case ReportType.other:
+        return 'أخرى';
     }
   }
 
@@ -345,6 +365,14 @@ class NotificationService {
         return NotificationType.bumpAlert;
       case ReportType.closedRoad:
         return NotificationType.closedRoadAlert;
+      case ReportType.traffic:
+        return NotificationType.jamAlert;
+      case ReportType.hazard:
+        return NotificationType.bumpAlert;
+      case ReportType.police:
+        return NotificationType.closedRoadAlert;
+      case ReportType.other:
+        return NotificationType.accidentAlert;
     }
   }
 
@@ -361,8 +389,8 @@ class NotificationService {
   // Handle notification navigation
   void _handleNotificationNavigation(Map<String, dynamic> data) {
     String? type = data['type'];
-    String? reportId = data['reportId'];
-    
+    // String? reportId = data['reportId'];
+
     switch (type) {
       case 'traffic_alert':
         // Navigate to map with report highlighted
@@ -425,13 +453,17 @@ class NotificationService {
   Future<bool> areNotificationsEnabled() async {
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+          _localNotifications
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
       return await androidImplementation?.areNotificationsEnabled() ?? false;
     } else if (Platform.isIOS) {
       final IOSFlutterLocalNotificationsPlugin? iosImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+          _localNotifications
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >();
       final settings = await iosImplementation?.requestPermissions(
         alert: true,
         badge: true,
@@ -446,18 +478,24 @@ class NotificationService {
   Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-      return await androidImplementation?.requestNotificationsPermission() ?? false;
+          _localNotifications
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
+      return await androidImplementation?.requestNotificationsPermission() ??
+          false;
     } else if (Platform.isIOS) {
       final IOSFlutterLocalNotificationsPlugin? iosImplementation =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>();
+          _localNotifications
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >();
       return await iosImplementation?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      ) ?? false;
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
     }
     return false;
   }

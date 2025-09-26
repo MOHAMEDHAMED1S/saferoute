@@ -6,13 +6,13 @@ enum ReportType {
   carBreakdown,
   bump,
   closedRoad,
+  hazard,
+  police,
+  traffic,
+  other,
 }
 
-enum ReportStatus {
-  active,
-  expired,
-  removed,
-}
+enum ReportStatus { active, expired, removed, pending, verified, rejected }
 
 class ReportModel {
   final String id;
@@ -20,12 +20,14 @@ class ReportModel {
   final String description;
   final ReportLocation location;
   final DateTime createdAt;
-  final DateTime expiresAt;
+  final DateTime? expiresAt;
   final String createdBy;
   final ReportStatus status;
-  final ReportConfirmations confirmations;
+  final ReportConfirmations? confirmations;
   final List<String> confirmedBy;
   final List<String> deniedBy;
+  final List<String>? imageUrls;
+  final DateTime? updatedAt;
 
   ReportModel({
     required this.id,
@@ -33,47 +35,75 @@ class ReportModel {
     required this.description,
     required this.location,
     required this.createdAt,
-    required this.expiresAt,
+    this.expiresAt,
     required this.createdBy,
     this.status = ReportStatus.active,
-    required this.confirmations,
+    this.confirmations,
     this.confirmedBy = const [],
     this.deniedBy = const [],
+    this.imageUrls,
+    this.updatedAt,
   });
 
   // Convert from Firestore document
   factory ReportModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    
+
     return ReportModel(
       id: doc.id,
       type: _stringToReportType(data['type']),
       description: data['description'] ?? '',
       location: ReportLocation.fromMap(data['location']),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      expiresAt: (data['expiresAt'] as Timestamp).toDate(),
+      expiresAt: data['expiresAt'] != null
+          ? (data['expiresAt'] as Timestamp).toDate()
+          : null,
       createdBy: data['createdBy'],
       status: _stringToReportStatus(data['status']),
-      confirmations: ReportConfirmations.fromMap(data['confirmations']),
-      confirmedBy: List<String>.from(data['confirmedBy'] ?? []),
-      deniedBy: List<String>.from(data['deniedBy'] ?? []),
+      confirmations: data['confirmations'] != null
+          ? ReportConfirmations.fromMap(data['confirmations'])
+          : null,
+      confirmedBy: List<String>.from(data['verifiedBy'] ?? []),
+      deniedBy: List<String>.from(data['rejectedBy'] ?? []),
+      imageUrls: data['imageUrls'] != null
+          ? List<String>.from(data['imageUrls'])
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
   // Convert to Firestore document
   Map<String, dynamic> toFirestore() {
-    return {
+    final Map<String, dynamic> data = {
       'type': _reportTypeToString(type),
       'description': description,
       'location': location.toMap(),
       'createdAt': Timestamp.fromDate(createdAt),
-      'expiresAt': Timestamp.fromDate(expiresAt),
       'createdBy': createdBy,
       'status': _reportStatusToString(status),
-      'confirmations': confirmations.toMap(),
-      'confirmedBy': confirmedBy,
-      'deniedBy': deniedBy,
+      'verifiedBy': confirmedBy,
+      'rejectedBy': deniedBy,
+      'updatedAt': updatedAt != null
+          ? Timestamp.fromDate(updatedAt!)
+          : FieldValue.serverTimestamp(),
     };
+
+    // Add optional fields if they exist
+    if (expiresAt != null) {
+      data['expiresAt'] = Timestamp.fromDate(expiresAt!);
+    }
+
+    if (confirmations != null) {
+      data['confirmations'] = confirmations!.toMap();
+    }
+
+    if (imageUrls != null && imageUrls!.isNotEmpty) {
+      data['imageUrls'] = imageUrls;
+    }
+
+    return data;
   }
 
   // Helper methods for enum conversion
@@ -89,6 +119,14 @@ class ReportModel {
         return ReportType.bump;
       case 'closed_road':
         return ReportType.closedRoad;
+      case 'hazard':
+        return ReportType.hazard;
+      case 'police':
+        return ReportType.police;
+      case 'traffic':
+        return ReportType.traffic;
+      case 'other':
+        return ReportType.other;
       default:
         return ReportType.accident;
     }
@@ -106,6 +144,14 @@ class ReportModel {
         return 'bump';
       case ReportType.closedRoad:
         return 'closed_road';
+      case ReportType.hazard:
+        return 'hazard';
+      case ReportType.police:
+        return 'police';
+      case ReportType.traffic:
+        return 'traffic';
+      case ReportType.other:
+        return 'other';
     }
   }
 
@@ -117,6 +163,12 @@ class ReportModel {
         return ReportStatus.expired;
       case 'removed':
         return ReportStatus.removed;
+      case 'pending':
+        return ReportStatus.pending;
+      case 'verified':
+        return ReportStatus.verified;
+      case 'rejected':
+        return ReportStatus.rejected;
       default:
         return ReportStatus.active;
     }
@@ -130,6 +182,12 @@ class ReportModel {
         return 'expired';
       case ReportStatus.removed:
         return 'removed';
+      case ReportStatus.pending:
+        return 'pending';
+      case ReportStatus.verified:
+        return 'verified';
+      case ReportStatus.rejected:
+        return 'rejected';
     }
   }
 
@@ -146,17 +204,27 @@ class ReportModel {
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
+      case ReportType.hazard:
+        return 'خطر';
+      case ReportType.police:
+        return 'شرطة';
+      case ReportType.traffic:
+        return 'حركة مرور';
+      case ReportType.other:
+        return 'أخرى';
     }
   }
 
   // Check if report is expired
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   // Get trust score based on confirmations
   double get trustScore {
-    int total = confirmations.trueVotes + confirmations.falseVotes;
+    final int trueVotes = confirmations?.trueVotes ?? 0;
+    final int falseVotes = confirmations?.falseVotes ?? 0;
+    final int total = trueVotes + falseVotes;
     if (total == 0) return 0.5;
-    return confirmations.trueVotes / total;
+    return trueVotes / total;
   }
 
   // Copy with method for updates
@@ -186,10 +254,7 @@ class ReportLocation {
   final double lat;
   final double lng;
 
-  ReportLocation({
-    required this.lat,
-    required this.lng,
-  });
+  ReportLocation({required this.lat, required this.lng});
 
   factory ReportLocation.fromMap(Map<String, dynamic> map) {
     return ReportLocation(
@@ -199,10 +264,7 @@ class ReportLocation {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'lat': lat,
-      'lng': lng,
-    };
+    return {'lat': lat, 'lng': lng};
   }
 }
 
@@ -210,10 +272,7 @@ class ReportConfirmations {
   final int trueVotes;
   final int falseVotes;
 
-  ReportConfirmations({
-    this.trueVotes = 0,
-    this.falseVotes = 0,
-  });
+  ReportConfirmations({this.trueVotes = 0, this.falseVotes = 0});
 
   factory ReportConfirmations.fromMap(Map<String, dynamic> map) {
     return ReportConfirmations(
@@ -223,16 +282,10 @@ class ReportConfirmations {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'trueVotes': trueVotes,
-      'falseVotes': falseVotes,
-    };
+    return {'trueVotes': trueVotes, 'falseVotes': falseVotes};
   }
 
-  ReportConfirmations copyWith({
-    int? trueVotes,
-    int? falseVotes,
-  }) {
+  ReportConfirmations copyWith({int? trueVotes, int? falseVotes}) {
     return ReportConfirmations(
       trueVotes: trueVotes ?? this.trueVotes,
       falseVotes: falseVotes ?? this.falseVotes,

@@ -40,17 +40,25 @@ class ReportsProvider with ChangeNotifier {
 
   // Get active reports
   List<ReportModel> get activeReports {
-    return _reports.where((report) => 
-      report.status == ReportStatus.active && 
-      report.expiresAt.isAfter(DateTime.now())
-    ).toList();
+    return _reports
+        .where(
+          (report) =>
+              report.status == ReportStatus.active &&
+              (report.expiresAt != null &&
+                  report.expiresAt!.isAfter(DateTime.now())),
+        )
+        .toList();
   }
 
   // Get expired reports
   List<ReportModel> get expiredReports {
-    return _reports.where((report) => 
-      report.expiresAt.isBefore(DateTime.now())
-    ).toList();
+    return _reports
+        .where(
+          (report) =>
+              report.expiresAt != null &&
+              report.expiresAt!.isBefore(DateTime.now()),
+        )
+        .toList();
   }
 
   // Initialize reports provider
@@ -99,29 +107,35 @@ class ReportsProvider with ChangeNotifier {
     }
 
     _nearbyReports = _reports.where((report) {
-      double distance = _locationService.calculateDistance(
-        startLatitude: _currentLocation!.lat,
-        startLongitude: _currentLocation!.lng,
-        endLatitude: report.location.lat,
-        endLongitude: report.location.lng,
-      ) / 1000; // Convert to kilometers
+      double distance =
+          _locationService.calculateDistance(
+            startLatitude: _currentLocation!.lat,
+            startLongitude: _currentLocation!.lng,
+            endLatitude: report.location.lat,
+            endLongitude: report.location.lng,
+          ) /
+          1000; // Convert to kilometers
       return distance <= _searchRadius;
     }).toList();
 
     // Sort by distance
     _nearbyReports.sort((a, b) {
-      double distanceA = _locationService.calculateDistance(
-        startLatitude: _currentLocation!.lat,
-        startLongitude: _currentLocation!.lng,
-        endLatitude: a.location.lat,
-        endLongitude: a.location.lng,
-      ) / 1000; // Convert to kilometers
-      double distanceB = _locationService.calculateDistance(
-        startLatitude: _currentLocation!.lat,
-        startLongitude: _currentLocation!.lng,
-        endLatitude: b.location.lat,
-        endLongitude: b.location.lng,
-      ) / 1000; // Convert to kilometers
+      double distanceA =
+          _locationService.calculateDistance(
+            startLatitude: _currentLocation!.lat,
+            startLongitude: _currentLocation!.lng,
+            endLatitude: a.location.lat,
+            endLongitude: a.location.lng,
+          ) /
+          1000; // Convert to kilometers
+      double distanceB =
+          _locationService.calculateDistance(
+            startLatitude: _currentLocation!.lat,
+            startLongitude: _currentLocation!.lng,
+            endLatitude: b.location.lat,
+            endLongitude: b.location.lng,
+          ) /
+          1000; // Convert to kilometers
       return distanceA.compareTo(distanceB);
     });
   }
@@ -156,23 +170,22 @@ class ReportsProvider with ChangeNotifier {
         ),
         createdBy: createdBy,
         createdAt: DateTime.now(),
-        expiresAt: DateTime.now().add(Duration(hours: _getReportDuration(type))),
+        expiresAt: DateTime.now().add(
+          Duration(hours: _getReportDuration(type)),
+        ),
         status: ReportStatus.active,
         // Note: severity and imageUrl not available in current ReportModel
-        confirmations: ReportConfirmations(
-          trueVotes: 0,
-          falseVotes: 0,
-        ),
+        confirmations: ReportConfirmations(trueVotes: 0, falseVotes: 0),
         confirmedBy: [],
         deniedBy: [],
       );
 
       // Save to Firestore
       await _firestoreService.createReport(report);
-      
+
       // Send notifications to nearby users
       await _sendReportNotifications(report);
-      
+
       return true;
     } catch (e) {
       _setError('خطأ في إنشاء البلاغ: ${e.toString()}');
@@ -193,10 +206,10 @@ class ReportsProvider with ChangeNotifier {
       _clearError();
 
       await _firestoreService.confirmReport(reportId, userId, isTrue);
-      
+
       // Refresh reports
       await _refreshReports();
-      
+
       return true;
     } catch (e) {
       _setError('خطأ في التصويت على البلاغ: ${e.toString()}');
@@ -265,6 +278,14 @@ class ReportsProvider with ChangeNotifier {
         return 24; // 24 hours
       case ReportType.closedRoad:
         return 12; // 12 hours
+      case ReportType.hazard:
+        return 8; // 8 hours
+      case ReportType.police:
+        return 6; // 6 hours
+      case ReportType.traffic:
+        return 2; // 2 hours
+      case ReportType.other:
+        return 6; // default duration
     }
   }
 
@@ -275,14 +296,17 @@ class ReportsProvider with ChangeNotifier {
 
       // Get nearby users
       // TODO: Implement getNearbyUsers method in FirestoreService
-      List<UserModel> nearbyUsers = []; // await _firestoreService.getNearbyUsers(
+      List<UserModel> nearbyUsers =
+          []; // await _firestoreService.getNearbyUsers(
       //   _currentLocation!.lat,
       //   _currentLocation!.lng,
       //   10.0, // Notification radius
       // );
 
       // Filter out the report creator
-      nearbyUsers = nearbyUsers.where((user) => user.id != report.createdBy).toList();
+      nearbyUsers = nearbyUsers
+          .where((user) => user.id != report.createdBy)
+          .toList();
 
       // Send notifications
       // TODO: Implement sendReportNotification method in NotificationService
@@ -308,30 +332,33 @@ class ReportsProvider with ChangeNotifier {
   // Get distance to report
   double? getDistanceToReport(ReportModel report) {
     if (_currentLocation == null) return null;
-    
+
     return _locationService.calculateDistance(
-      startLatitude: _currentLocation!.lat,
-      startLongitude: _currentLocation!.lng,
-      endLatitude: report.location.lat,
-      endLongitude: report.location.lng,
-    ) / 1000; // Convert to kilometers
+          startLatitude: _currentLocation!.lat,
+          startLongitude: _currentLocation!.lng,
+          endLatitude: report.location.lat,
+          endLongitude: report.location.lng,
+        ) /
+        1000; // Convert to kilometers
   }
 
   // Check if user can vote on report
   bool canUserVoteOnReport(ReportModel report, String userId) {
-    return !report.confirmedBy.contains(userId) && 
-           !report.deniedBy.contains(userId) &&
-           report.createdBy != userId &&
-           report.status == ReportStatus.active &&
-           report.expiresAt.isAfter(DateTime.now());
+    return !report.confirmedBy.contains(userId) &&
+        !report.deniedBy.contains(userId) &&
+        report.createdBy != userId &&
+        report.status == ReportStatus.active &&
+        report.expiresAt != null &&
+        report.expiresAt!.isAfter(DateTime.now());
   }
 
   // Get report reliability score
   double getReportReliabilityScore(ReportModel report) {
-    int totalVotes = report.confirmations.trueVotes + report.confirmations.falseVotes;
+    final int trueVotes = report.confirmations?.trueVotes ?? 0;
+    final int falseVotes = report.confirmations?.falseVotes ?? 0;
+    int totalVotes = trueVotes + falseVotes;
     if (totalVotes == 0) return 0.5; // Neutral score for new reports
-    
-    return report.confirmations.trueVotes / totalVotes;
+    return trueVotes / totalVotes;
   }
 
   // Filter reports by criteria
@@ -345,7 +372,9 @@ class ReportsProvider with ChangeNotifier {
     List<ReportModel> filtered = List.from(_reports);
 
     if (types != null && types.isNotEmpty) {
-      filtered = filtered.where((report) => types.contains(report.type)).toList();
+      filtered = filtered
+          .where((report) => types.contains(report.type))
+          .toList();
     }
 
     if (status != null) {
@@ -363,12 +392,14 @@ class ReportsProvider with ChangeNotifier {
 
     if (maxDistance != null && _currentLocation != null) {
       filtered = filtered.where((report) {
-        double distance = _locationService.calculateDistance(
-          startLatitude: _currentLocation!.lat,
-          startLongitude: _currentLocation!.lng,
-          endLatitude: report.location.lat,
-          endLongitude: report.location.lng,
-        ) / 1000; // Convert to kilometers
+        double distance =
+            _locationService.calculateDistance(
+              startLatitude: _currentLocation!.lat,
+              startLongitude: _currentLocation!.lng,
+              endLatitude: report.location.lat,
+              endLongitude: report.location.lng,
+            ) /
+            1000; // Convert to kilometers
         return distance <= maxDistance;
       }).toList();
     }
@@ -379,7 +410,7 @@ class ReportsProvider with ChangeNotifier {
   // Search reports by description
   List<ReportModel> searchReports(String query) {
     if (query.isEmpty) return _reports;
-    
+
     String lowerQuery = query.toLowerCase();
     return _reports.where((report) {
       return report.description.toLowerCase().contains(lowerQuery);

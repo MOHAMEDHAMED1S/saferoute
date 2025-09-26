@@ -170,6 +170,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
       case ReportType.closedRoad:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+      case ReportType.hazard:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
+      case ReportType.police:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
+      case ReportType.traffic:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      case ReportType.other:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
     }
   }
 
@@ -185,6 +193,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
+      case ReportType.hazard:
+        return 'خطر';
+      case ReportType.police:
+        return 'شرطة';
+      case ReportType.traffic:
+        return 'حركة مرور';
+      case ReportType.other:
+        return 'بلاغ';
     }
   }
 
@@ -277,6 +293,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return Icons.warning;
       case ReportType.closedRoad:
         return Icons.block;
+      case ReportType.hazard:
+        return Icons.warning_amber;
+      case ReportType.police:
+        return Icons.local_police;
+      case ReportType.traffic:
+        return Icons.traffic;
+      case ReportType.other:
+        return Icons.report;
     }
   }
 

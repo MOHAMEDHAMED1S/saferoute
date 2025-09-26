@@ -1,14 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import '../models/report_model.dart';
 import '../models/analytics_report_model.dart';
+import '../services/firebase_schema_service.dart';
 
 class ReportsFirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   
   // Collection references
-  CollectionReference get _reportsCollection => _firestore.collection('reports');
+  CollectionReference get _reportsCollection => _firestore.collection(FirebaseSchemaService.reportsCollection);
   CollectionReference get _analyticsCollection => _firestore.collection('analytics');
   
   // Get all reports
@@ -56,6 +60,18 @@ class ReportsFirebaseService {
       case ReportType.closedRoad:
         typeString = 'closed_road';
         break;
+      case ReportType.hazard:
+        typeString = 'hazard';
+        break;
+      case ReportType.police:
+        typeString = 'police';
+        break;
+      case ReportType.traffic:
+        typeString = 'traffic';
+        break;
+      case ReportType.other:
+        typeString = 'other';
+        break;
     }
     
     return _reportsCollection
@@ -72,8 +88,15 @@ class ReportsFirebaseService {
   
   // Get reports by location (within radius)
   Stream<List<ReportModel>> getReportsByLocation(double latitude, double longitude, double radiusKm) {
-    // Convert km to degrees (approximate)
+    // تحويل نصف القطر من كيلومتر إلى درجات تقريبية
+    // 1 درجة = حوالي 111 كيلومتر
     double radiusDegrees = radiusKm / 111.0;
+    
+    // حساب الحدود الجغرافية
+    double minLat = latitude - radiusDegrees;
+    double maxLat = latitude + radiusDegrees;
+    double minLng = longitude - radiusDegrees;
+    double maxLng = longitude + radiusDegrees;
     
     return _reportsCollection
         .where('status', isEqualTo: 'active')
@@ -86,13 +109,50 @@ class ReportsFirebaseService {
                 double lng = report.location.lng;
                 
                 // Simple distance check (square area)
-                return (lat >= latitude - radiusDegrees &&
-                        lat <= latitude + radiusDegrees &&
-                        lng >= longitude - radiusDegrees &&
-                        lng <= longitude + radiusDegrees);
+                return (lat >= minLat &&
+                        lat <= maxLat &&
+                        lng >= minLng &&
+                        lng <= maxLng);
               })
               .toList();
         });
+  }
+  
+  // Upload image and get URL
+  Future<List<String>> uploadReportImages(List<File> images, String reportId) async {
+    List<String> imageUrls = [];
+    
+    for (var image in images) {
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
+      Reference storageRef = _storage.ref().child('reports/$reportId/$fileName');
+      
+      UploadTask uploadTask = storageRef.putFile(image);
+      TaskSnapshot snapshot = await uploadTask;
+      String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      imageUrls.add(downloadUrl);
+    }
+    
+    return imageUrls;
+  }
+  
+  // Create report with images
+  Future<String> createReportWithImages(ReportModel report, List<File> images) async {
+    // 1. إنشاء الإبلاغ أولاً للحصول على معرف
+    String reportId = await createReport(report);
+    
+    // 2. رفع الصور إذا وجدت
+    if (images.isNotEmpty) {
+      List<String> imageUrls = await uploadReportImages(images, reportId);
+      
+      // 3. تحديث الإبلاغ بروابط الصور
+      await _reportsCollection.doc(reportId).update({
+        'imageUrls': imageUrls,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    
+    return reportId;
   }
   
   // Create a new report

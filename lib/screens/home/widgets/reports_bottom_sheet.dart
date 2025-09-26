@@ -3,16 +3,12 @@ import '../../../theme/liquid_glass_theme.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/reports_provider.dart';
 import '../../../models/report_model.dart';
-import '../../../widgets/custom_button.dart';
 import '../../../widgets/liquid_glass_widgets.dart';
 
 class ReportsBottomSheet extends StatefulWidget {
   final VoidCallback onClose;
 
-  const ReportsBottomSheet({
-    Key? key,
-    required this.onClose,
-  }) : super(key: key);
+  const ReportsBottomSheet({Key? key, required this.onClose}) : super(key: key);
 
   @override
   State<ReportsBottomSheet> createState() => _ReportsBottomSheetState();
@@ -31,20 +27,12 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _slideAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 0.5,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _slideAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
   }
 
@@ -70,19 +58,26 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
             GestureDetector(
               onTap: _closeSheet,
               child: Container(
-                color: LiquidGlassTheme.getGradientByName('shadow').colors.first.withOpacity(_fadeAnimation.value),
+                color: LiquidGlassTheme.getGradientByName(
+                  'shadow',
+                ).colors.first.withOpacity(_fadeAnimation.value),
                 width: double.infinity,
                 height: double.infinity,
               ),
             ),
-            
+
             // Bottom sheet
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Transform.translate(
-                offset: Offset(0, MediaQuery.of(context).size.height * 0.6 * _slideAnimation.value),
+                offset: Offset(
+                  0,
+                  MediaQuery.of(context).size.height *
+                      0.6 *
+                      _slideAnimation.value,
+                ),
                 child: LiquidGlassContainer(
                   type: LiquidGlassType.secondary,
                   borderRadius: const BorderRadius.vertical(
@@ -97,11 +92,13 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
+                          color: LiquidGlassTheme.getTextColor(
+                            'secondary',
+                          ).withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      
+
                       // Header
                       Padding(
                         padding: const EdgeInsets.all(20),
@@ -110,23 +107,26 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                             Expanded(
                               child: Text(
                                 'البلاغات القريبة',
-                                style: LiquidGlassTheme.headerTextStyle.copyWith(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: LiquidGlassTheme.headerTextStyle
+                                    .copyWith(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                             ),
                             IconButton(
                               onPressed: _closeSheet,
                               icon: Icon(
                                 Icons.close,
-                                color: LiquidGlassTheme.getTextColor('secondary'),
+                                color: LiquidGlassTheme.getTextColor(
+                                  'secondary',
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       // Reports list
                       Expanded(
                         child: Consumer<ReportsProvider>(
@@ -134,11 +134,13 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                             if (reportsProvider.isLoading) {
                               return Center(
                                 child: CircularProgressIndicator(
-                                  color: LiquidGlassTheme.getTextColor('primary'),
+                                  color: LiquidGlassTheme.getTextColor(
+                                    'primary',
+                                  ),
                                 ),
                               );
                             }
-                            
+
                             if (reportsProvider.errorMessage != null) {
                               return Center(
                                 child: Column(
@@ -147,14 +149,15 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     Icon(
                                       Icons.error_outline,
                                       size: 48,
-                                      color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.6),
+                                      color: LiquidGlassTheme.getTextColor(
+                                        'secondary',
+                                      ).withOpacity(0.6),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       reportsProvider.errorMessage!,
-                                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                                        fontSize: 16,
-                                      ),
+                                      style: LiquidGlassTheme.bodyTextStyle
+                                          .copyWith(fontSize: 16),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 16),
@@ -165,15 +168,18 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                       },
                                       type: LiquidGlassType.primary,
                                       borderRadius: 12,
-                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 24,
+                                      ),
                                     ),
                                   ],
                                 ),
                               );
                             }
-                            
+
                             final reports = reportsProvider.nearbyReports;
-                            
+
                             if (reports.isEmpty) {
                               return Center(
                                 child: Column(
@@ -182,22 +188,26 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                     Icon(
                                       Icons.report_off,
                                       size: 48,
-                                      color: LiquidGlassTheme.secondaryTextStyle.color?.withOpacity(0.6),
+                                      color: LiquidGlassTheme
+                                          .secondaryTextStyle
+                                          .color
+                                          ?.withOpacity(0.6),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
                                       'لا توجد بلاغات قريبة',
-                                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                                        fontSize: 16,
-                                      ),
+                                      style: LiquidGlassTheme.bodyTextStyle
+                                          .copyWith(fontSize: 16),
                                     ),
                                   ],
                                 ),
                               );
                             }
-                            
+
                             return ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
                               itemCount: reports.length,
                               itemBuilder: (context, index) {
                                 final report = reports[index];
@@ -252,9 +262,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                 const SizedBox(height: 6),
                 Text(
                   '${_calculateDistance(report)} كم • ${_formatDateTime(report.createdAt)}',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 13,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 13),
                 ),
               ],
             ),
@@ -264,7 +272,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             borderRadius: BorderRadius.circular(8),
             child: Text(
-              '${report.confirmations.trueVotes}',
+              '${report.confirmations?.trueVotes ?? 0}',
               style: LiquidGlassTheme.bodyTextStyle.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -349,7 +357,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               ),
               const SizedBox(width: 4),
               Text(
-                '${report.confirmations.trueVotes}',
+                '${report.confirmations?.trueVotes ?? 0}',
                 style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
                 ),
@@ -362,7 +370,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
               ),
               const SizedBox(width: 4),
               Text(
-                '${report.confirmations.falseVotes}',
+                '${report.confirmations?.falseVotes ?? 0}',
                 style: LiquidGlassTheme.secondaryTextStyle.copyWith(
                   fontSize: 12,
                 ),
@@ -428,7 +436,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inMinutes < 60) {
       return 'منذ ${difference.inMinutes} دقيقة';
     } else if (difference.inHours < 24) {

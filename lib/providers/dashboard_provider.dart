@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/dashboard_models.dart';
+import 'package:saferoute/services/firebase_schema_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math' as math;
 
 class DashboardProvider extends ChangeNotifier {
   DashboardStats _stats = DashboardStats(
@@ -81,16 +85,15 @@ class DashboardProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Simulate API calls
-      await Future.delayed(const Duration(seconds: 1));
-
-      // In a real app, you would fetch data from your backend/Firebase
+      // Load data from Firebase
       await _loadStats();
-      await _loadNearbyReports();
+      await _loadNearbyReportsFromFirebase();
       await _loadWeather();
       await _loadDailyTip();
       await _checkEmergencyAlerts();
-      _filteredReports = List.from(_nearbyReports); // Initialize filtered reports
+      _filteredReports = List.from(
+        _nearbyReports,
+      ); // Initialize filtered reports
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
@@ -105,19 +108,37 @@ class DashboardProvider extends ChangeNotifier {
         _filteredReports = List.from(_nearbyReports);
         break;
       case '500م':
-        _filteredReports = _nearbyReports.where((report) => report.distance.contains('م') && double.parse(report.distance.replaceAll('م', '')) <= 500).toList();
+        _filteredReports = _nearbyReports
+            .where(
+              (report) =>
+                  report.distance.contains('م') &&
+                  double.parse(report.distance.replaceAll('م', '')) <= 500,
+            )
+            .toList();
         break;
       case '1كم':
-        _filteredReports = _nearbyReports.where((report) => report.distance.contains('كم') && double.parse(report.distance.replaceAll('كم', '')) <= 1).toList();
+        _filteredReports = _nearbyReports
+            .where(
+              (report) =>
+                  report.distance.contains('كم') &&
+                  double.parse(report.distance.replaceAll('كم', '')) <= 1,
+            )
+            .toList();
         break;
       case 'حوادث':
-        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.accident).toList();
+        _filteredReports = _nearbyReports
+            .where((report) => report.type == ReportType.accident)
+            .toList();
         break;
       case 'ازدحام':
-        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.traffic).toList();
+        _filteredReports = _nearbyReports
+            .where((report) => report.type == ReportType.traffic)
+            .toList();
         break;
       case 'صيانة':
-        _filteredReports = _nearbyReports.where((report) => report.type == ReportType.maintenance).toList();
+        _filteredReports = _nearbyReports
+            .where((report) => report.type == ReportType.maintenance)
+            .toList();
         break;
       default:
         _filteredReports = List.from(_nearbyReports);
@@ -135,9 +156,144 @@ class DashboardProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _loadNearbyReports() async {
-    // In a real app, fetch from Firebase/API based on user location
-    // This is mock data
+  Future<void> _loadNearbyReportsFromFirebase() async {
+    try {
+      final firebaseService = FirebaseSchemaService();
+      final reportsCollection = firebaseService.reports;
+
+      // Get current location
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // Query reports within 5km radius
+      final querySnapshot = await reportsCollection
+          .where('status', isEqualTo: 'verified')
+          .get();
+
+      final List<NearbyReport> reports = [];
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final location = data['location'] as Map<String, dynamic>;
+        final double reportLat = (location['latitude'] as num).toDouble();
+        final double reportLng = (location['longitude'] as num).toDouble();
+
+        // Calculate distance
+        final distanceInMeters = Geolocator.distanceBetween(
+          position.latitude,
+          position.longitude,
+          reportLat,
+          reportLng,
+        );
+
+        // Only include reports within 5km
+        if (distanceInMeters <= 5000) {
+          final createdAt = (data['createdAt'] as Timestamp).toDate();
+          final timeAgo = _getTimeAgo(createdAt);
+          final distance = _formatDistance(distanceInMeters);
+
+          reports.add(
+            NearbyReport(
+              id: doc.id,
+              title:
+                  '${_getReportTypeNameArabic(data['type'])} - ${data['description'].substring(0, math.min(20, data['description'].length))}...',
+              description: data['description'],
+              distance: distance,
+              timeAgo: timeAgo,
+              confirmations: (data['verifiedBy'] as List?)?.length ?? 0,
+              type: _mapFirebaseTypeToReportType(data['type']),
+              latitude: reportLat,
+              longitude: reportLng,
+            ),
+          );
+        }
+      }
+
+      // Sort by distance
+      reports.sort(
+        (a, b) =>
+            _parseDistance(a.distance).compareTo(_parseDistance(b.distance)),
+      );
+
+      _nearbyReports.clear();
+      _nearbyReports.addAll(reports);
+    } catch (e) {
+      debugPrint('Error loading reports from Firebase: $e');
+    }
+  }
+
+  // Helper methods for report loading
+  String _formatDistance(double meters) {
+    if (meters < 1000) {
+      return '${meters.round()}م';
+    } else {
+      return '${(meters / 1000).toStringAsFixed(1)}كم';
+    }
+  }
+
+  double _parseDistance(String distanceStr) {
+    if (distanceStr.contains('كم')) {
+      return double.parse(distanceStr.replaceAll('كم', '')) * 1000;
+    } else {
+      return double.parse(distanceStr.replaceAll('م', ''));
+    }
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} دقيقة';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} ساعة';
+    } else {
+      return '${difference.inDays} يوم';
+    }
+  }
+
+  ReportType _mapFirebaseTypeToReportType(String type) {
+    switch (type) {
+      case 'accident':
+        return ReportType.accident;
+      case 'jam':
+        return ReportType.traffic;
+      case 'car_breakdown':
+        return ReportType.maintenance;
+      case 'bump':
+        return ReportType.pothole;
+      case 'closed_road':
+        return ReportType.roadwork;
+      case 'hazard':
+        return ReportType.other;
+      case 'police':
+        return ReportType.other;
+      default:
+        return ReportType.other;
+    }
+  }
+
+  String _getReportTypeNameArabic(String type) {
+    switch (type) {
+      case 'accident':
+        return 'حادث';
+      case 'jam':
+        return 'ازدحام';
+      case 'car_breakdown':
+        return 'سيارة معطلة';
+      case 'bump':
+        return 'مطب';
+      case 'closed_road':
+        return 'طريق مغلق';
+      case 'hazard':
+        return 'خطر';
+      case 'police':
+        return 'شرطة';
+      case 'traffic':
+        return 'حركة مرور';
+      default:
+        return 'أخرى';
+    }
   }
 
   Future<void> _loadWeather() async {

@@ -188,15 +188,25 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      UserCredential? userCredential = await _authService.signInWithGoogle();
-
-      final user = userCredential?.user;
-      if (user != null) {
-        await _loadUserData(user.uid);
+      final userCredential = await _authService.signInWithGoogle();
+      if (userCredential != null && userCredential.user != null) {
+        _firebaseUser = userCredential.user;
+        
+        // Check if user exists in Firestore
+        final existingUser = await _firestoreService.getUser(_firebaseUser!.uid);
+        
+        if (existingUser == null) {
+          // Create new user document if it doesn't exist
+          await _createUserDocumentFromFirebaseUser(_firebaseUser!);
+        }
+        
+        // Load user data
+        await _loadUserData(_firebaseUser!.uid);
         return true;
+      } else {
+        _setError('فشل في تسجيل الدخول بـ Google');
+        return false;
       }
-
-      return false;
     } catch (e) {
       _setError('خطأ في تسجيل الدخول بـ Google: ${e.toString()}');
       return false;
@@ -227,10 +237,10 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      await _authService.resetPassword(email);
+      await _authService.sendPasswordResetEmail(email);
       return true;
     } catch (e) {
-      _setError('خطأ في إعادة تعيين كلمة المرور: ${e.toString()}');
+      _setError('خطأ في استعادة كلمة المرور: ${e.toString()}');
       return false;
     } finally {
       _setLoading(false);

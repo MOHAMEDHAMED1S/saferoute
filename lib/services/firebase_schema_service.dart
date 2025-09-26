@@ -98,15 +98,11 @@ class FirebaseSchemaService {
       'routeId': {
         'userId': 'String',
         'startLocation': {
-          'latitude': 'double',
-          'longitude': 'double',
+          'lat': 'double',
+          'lng': 'double',
           'address': 'String',
         },
-        'endLocation': {
-          'latitude': 'double',
-          'longitude': 'double',
-          'address': 'String',
-        },
+        'endLocation': {'lat': 'double', 'lng': 'double', 'address': 'String'},
         'waypoints': [
           {'latitude': 'double', 'longitude': 'double', 'address': 'String?'},
         ],
@@ -124,16 +120,13 @@ class FirebaseSchemaService {
       'reportId': {
         'userId': 'String',
         'type': 'String', // accident, hazard, police, traffic, other
-        'location': {
-          'latitude': 'double',
-          'longitude': 'double',
-          'address': 'String?',
-        },
+        'location': {'lat': 'double', 'lng': 'double', 'address': 'String?'},
         'description': 'String',
         'imageUrls': 'List<String>?',
         'createdAt': 'Timestamp',
         'updatedAt': 'Timestamp',
-        'status': 'String', // pending, verified, rejected
+        'status':
+            'String', // active, pending, verified, rejected, expired, removed
         'verifiedBy': 'List<String>', // List of user IDs who verified
         'rejectedBy': 'List<String>', // List of user IDs who rejected
       },
@@ -144,11 +137,7 @@ class FirebaseSchemaService {
         'routeId': 'String?',
         'type': 'String', // accident, hazard, police, traffic, other
         'severity': 'int', // 1-5
-        'location': {
-          'latitude': 'double',
-          'longitude': 'double',
-          'address': 'String?',
-        },
+        'location': {'lat': 'double', 'lng': 'double', 'address': 'String?'},
         'description': 'String',
         'imageUrls': 'List<String>?',
         'createdAt': 'Timestamp',

@@ -3,14 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../providers/reports_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/report_model.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/common/bottom_navigation_widget.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
+import '../../services/reports_firebase_service.dart';
+import '../../services/location_service.dart';
 
 class AddReportScreen extends StatefulWidget {
   static const String routeName = '/add-report';
@@ -20,25 +18,35 @@ class AddReportScreen extends StatefulWidget {
   State<AddReportScreen> createState() => _AddReportScreenState();
 }
 
-class _AddReportScreenState extends State<AddReportScreen> with TickerProviderStateMixin {
+class _AddReportScreenState extends State<AddReportScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   ReportType? _selectedType;
   bool _isSubmitting = false;
   int _currentStep = 0; // 0: نوع البلاغ، 1: التفاصيل، 2: المراجعة
   double _selectedDistance = 100; // المسافة بالمتر
-  
+
   // إضافة متغيرات للصور
   final ImagePicker _picker = ImagePicker();
   List<File> _reportImages = [];
-  bool _isUploading = false;
 
-  final List<String> _stepTitles = ['اختر نوع البلاغ', 'أضف التفاصيل', 'راجع البلاغ'];
-  final List<double> _distanceOptions = [50, 100, 200, 500, 1000]; // خيارات المسافة بالمتر
+  final List<String> _stepTitles = [
+    'اختر نوع البلاغ',
+    'أضف التفاصيل',
+    'راجع البلاغ',
+  ];
+  final List<double> _distanceOptions = [
+    50,
+    100,
+    200,
+    500,
+    1000,
+  ]; // خيارات المسافة بالمتر
 
   @override
   void initState() {
@@ -50,11 +58,11 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
-    
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
+
     _animationController.forward();
   }
 
@@ -110,7 +118,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
       );
       if (images != null && images.isNotEmpty) {
         setState(() {
-          _reportImages.addAll(images.map((image) => File(image.path)).toList());
+          _reportImages.addAll(
+            images.map((image) => File(image.path)).toList(),
+          );
           // تحديد الحد الأقصى للصور (3 صور)
           if (_reportImages.length > 3) {
             _reportImages = _reportImages.sublist(0, 3);
@@ -137,7 +147,10 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     }
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+    final locationService = Provider.of<LocationService>(
+      context,
+      listen: false,
+    );
 
     if (!authProvider.isLoggedIn) {
       _showErrorSnackBar('يجب تسجيل الدخول أولاً');
@@ -149,21 +162,54 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     });
 
     try {
-      // في الواقع هنا يجب رفع الصور أولاً ثم الحصول على روابطها
-      // لكن سنفترض أن الـ Provider يتعامل مع ذلك
-      final success = await reportsProvider.createReport(
+      // الحصول على الموقع الحالي
+      final currentLocation = await locationService.getCurrentLocation();
+      // currentLocation is non-null when permission is granted
+
+      // إنشاء كائن ReportsFirebaseService
+      final reportsFirebaseService = ReportsFirebaseService();
+
+      // إنشاء نموذج الإبلاغ
+      final report = ReportModel(
+        id: '', // سيتم تعيينه بواسطة Firestore
         type: _selectedType!,
         description: _descriptionController.text.trim(),
+        location: ReportLocation(
+          lat: currentLocation.latitude,
+          lng: currentLocation.longitude,
+        ),
         createdBy: authProvider.userModel!.id,
-        imageUrl: _reportImages.isNotEmpty ? _reportImages.first.path : null,
-        // يمكن إضافة قائمة الصور كاملة إذا كان النموذج يدعم ذلك
-        // images: _reportImages.map((file) => file.path).toList(),
+        createdAt: DateTime.now(),
+        expiresAt: DateTime.now().add(Duration(hours: 24)), // صلاحية 24 ساعة
+        status: ReportStatus.pending,
+        confirmations: ReportConfirmations(trueVotes: 0, falseVotes: 0),
+        confirmedBy: [],
+        deniedBy: [],
+        imageUrls: [],
+        updatedAt: DateTime.now(),
       );
 
-      if (success) {
-        _showSuccessDialog();
+      // رفع الصور وإنشاء الإبلاغ
+      if (_reportImages.isNotEmpty) {
+        // استخدام الدالة الجديدة لرفع الصور وإنشاء الإبلاغ
+        final success = await reportsFirebaseService.createReportWithImages(
+          report,
+          _reportImages,
+        );
+
+        if (success == true) {
+          _showSuccessDialog();
+        } else {
+          _showErrorSnackBar('خطأ في إرسال البلاغ');
+        }
       } else {
-        _showErrorSnackBar(reportsProvider.errorMessage ?? 'خطأ في إرسال البلاغ');
+        // إنشاء إبلاغ بدون صور
+        final reportId = await reportsFirebaseService.createReport(report);
+        if (reportId.isNotEmpty) {
+          _showSuccessDialog();
+        } else {
+          _showErrorSnackBar('خطأ في إرسال البلاغ');
+        }
       }
     } catch (e) {
       _showErrorSnackBar('خطأ في إرسال البلاغ: ${e.toString()}');
@@ -184,7 +230,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+        backgroundColor: LiquidGlassTheme.getGradientByName(
+          'danger',
+        ).colors.first,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -204,13 +252,17 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.1),
+                color: LiquidGlassTheme.getGradientByName(
+                  'success',
+                ).colors.first.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.check_circle,
                 size: 48,
-                color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                color: LiquidGlassTheme.getGradientByName(
+                  'success',
+                ).colors.first,
               ),
             ),
             const SizedBox(height: 16),
@@ -277,7 +329,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                               _stepTitles[_currentStep],
                               style: LiquidGlassTheme.bodyTextStyle.copyWith(
                                 fontSize: 14,
-                                color: LiquidGlassTheme.getTextColor('secondary'),
+                                color: LiquidGlassTheme.getTextColor(
+                                  'secondary',
+                                ),
                               ),
                             ),
                           ],
@@ -285,15 +339,15 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // شريط التقدم
                   _buildProgressBar(),
                 ],
               ),
             ),
-            
+
             // المحتوى الأساسي
             Expanded(
               child: Form(
@@ -312,7 +366,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 ),
               ),
             ),
-            
+
             // الأزرار السفلية
             _buildBottomButtons(),
           ],
@@ -325,8 +379,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
     return Row(
       children: List.generate(3, (index) {
         final isActive = index <= _currentStep;
-        final isCompleted = index < _currentStep;
-        
+
         return Expanded(
           child: Row(
             children: [
@@ -335,9 +388,13 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                   height: 4,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    color: isActive 
-                      ? LiquidGlassTheme.getGradientByName('primary').colors.first
-                      : LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
+                    color: isActive
+                        ? LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first
+                        : LiquidGlassTheme.getTextColor(
+                            'secondary',
+                          ).withOpacity(0.3),
                   ),
                 ),
               ),
@@ -377,12 +434,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: LiquidGlassTheme.getGradientByName('info').colors.first.withOpacity(0.1),
+                    color: LiquidGlassTheme.getGradientByName(
+                      'info',
+                    ).colors.first.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.info_outline,
-                    color: LiquidGlassTheme.getGradientByName('info').colors.first,
+                    color: LiquidGlassTheme.getGradientByName(
+                      'info',
+                    ).colors.first,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -392,11 +453,15 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     children: [
                       Text(
                         'اختر نوع المخطر',
-                        style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+                        style: LiquidGlassTheme.headerTextStyle.copyWith(
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         'حدد نوع المخطر الذي تريد الإبلاغ عنه',
-                        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -404,9 +469,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           _buildReportTypeGrid(),
         ],
       ),
@@ -452,7 +517,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       ),
                       Text(
                         'تم اختيار هذا النوع من البلاغات',
-                        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -462,27 +529,33 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                   icon: Icon(
                     Icons.edit,
                     size: 16,
-                    color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                    color: LiquidGlassTheme.getGradientByName(
+                      'primary',
+                    ).colors.first,
                   ),
                   label: Text(
                     'تغيير',
                     style: TextStyle(
-                      color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                      color: LiquidGlassTheme.getGradientByName(
+                        'primary',
+                      ).colors.first,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // حقل الوصف مع تصميم محسن
           Row(
             children: [
               Icon(
                 Icons.description_outlined,
-                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -501,7 +574,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
-          
+
           LiquidGlassContainer(
             type: LiquidGlassType.ultraLight,
             isInteractive: true,
@@ -529,15 +602,17 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               },
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // إضافة صور للبلاغ
           Row(
             children: [
               Icon(
                 Icons.photo_camera_outlined,
-                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -564,7 +639,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
-          
+
           // عرض الصور المختارة
           if (_reportImages.isNotEmpty)
             Container(
@@ -612,14 +687,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 },
               ),
             ),
-          
+
           // أزرار إضافة الصور
           Row(
             children: [
               Expanded(
                 child: LiquidGlassButton(
                   text: 'التقاط صورة',
-                  onPressed: _reportImages.length >= 3 ? null : _pickImageFromCamera,
+                  onPressed: _reportImages.length >= 3
+                      ? null
+                      : _pickImageFromCamera,
                   type: LiquidGlassType.secondary,
                   borderRadius: 12,
                   icon: Icons.camera_alt,
@@ -629,7 +706,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               Expanded(
                 child: LiquidGlassButton(
                   text: ' من المعرض',
-                  onPressed: _reportImages.length >= 3 ? null : _pickImagesFromGallery,
+                  onPressed: _reportImages.length >= 3
+                      ? null
+                      : _pickImagesFromGallery,
                   type: LiquidGlassType.secondary,
                   borderRadius: 12,
                   icon: Icons.photo_library,
@@ -637,15 +716,17 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // تحديد المسافة
           Row(
             children: [
               Icon(
                 Icons.straighten_outlined,
-                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -664,11 +745,11 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 16),
-          
+
           _buildDistanceSelector(),
-          
+
           const SizedBox(height: 24),
-          
+
           // معلومات الموقع مع تصميم محسن
           LiquidGlassContainer(
             type: LiquidGlassType.primary,
@@ -679,12 +760,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.15),
+                    color: LiquidGlassTheme.getGradientByName(
+                      'success',
+                    ).colors.first.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.location_on,
-                    color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                    color: LiquidGlassTheme.getGradientByName(
+                      'success',
+                    ).colors.first,
                     size: 22,
                   ),
                 ),
@@ -702,14 +787,18 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       ),
                       Text(
                         'سيتم استخدام موقعك الحالي للبلاغ',
-                        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Icon(
                   Icons.check_circle,
-                  color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                  color: LiquidGlassTheme.getGradientByName(
+                    'success',
+                  ).colors.first,
                   size: 20,
                 ),
               ],
@@ -731,7 +820,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             children: [
               Icon(
                 Icons.fact_check_outlined,
-                color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -750,7 +841,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 24),
-          
+
           // عرض نوع البلاغ بتصميم محسن
           LiquidGlassContainer(
             type: LiquidGlassType.ultraLight,
@@ -772,7 +863,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                   children: [
                     Icon(
                       Icons.category_outlined,
-                      color: _getReportColor(_selectedType ?? ReportType.accident),
+                      color: _getReportColor(
+                        _selectedType ?? ReportType.accident,
+                      ),
                       size: 16,
                     ),
                     const SizedBox(width: 6),
@@ -789,7 +882,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       child: Text(
                         'تعديل',
                         style: TextStyle(
-                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          color: LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first,
                           fontSize: 12,
                         ),
                       ),
@@ -802,7 +897,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: _getReportColor(_selectedType!).withOpacity(0.15),
+                        color: _getReportColor(
+                          _selectedType!,
+                        ).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -824,9 +921,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // عرض الوصف بتصميم محسن
           LiquidGlassContainer(
             type: LiquidGlassType.ultraLight,
@@ -864,7 +961,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       child: Text(
                         'تعديل',
                         style: TextStyle(
-                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          color: LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first,
                           fontSize: 12,
                         ),
                       ),
@@ -879,9 +978,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ],
             ),
           ),
-          
+
           // عرض الصور المرفقة إذا وجدت
-          if (_reportImages.isNotEmpty) ...[  
+          if (_reportImages.isNotEmpty) ...[
             const SizedBox(height: 16),
             LiquidGlassContainer(
               type: LiquidGlassType.ultraLight,
@@ -919,7 +1018,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                         child: Text(
                           'تعديل',
                           style: TextStyle(
-                            color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                            color: LiquidGlassTheme.getGradientByName(
+                              'primary',
+                            ).colors.first,
                             fontSize: 12,
                           ),
                         ),
@@ -952,9 +1053,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ),
             ),
           ],
-          
+
           const SizedBox(height: 16),
-          
+
           // عرض المسافة بتصميم محسن
           Container(
             decoration: BoxDecoration(
@@ -993,7 +1094,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       child: Text(
                         'تعديل',
                         style: TextStyle(
-                          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                          color: LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first,
                           fontSize: 12,
                         ),
                       ),
@@ -1006,12 +1109,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: LiquidGlassTheme.getGradientByName('info').colors.first.withOpacity(0.15),
+                        color: LiquidGlassTheme.getGradientByName(
+                          'info',
+                        ).colors.first.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.route,
-                        color: LiquidGlassTheme.getGradientByName('info').colors.first,
+                        color: LiquidGlassTheme.getGradientByName(
+                          'info',
+                        ).colors.first,
                         size: 18,
                       ),
                     ),
@@ -1027,9 +1134,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // عرض الموقع بتصميم محسن
           Container(
             decoration: BoxDecoration(
@@ -1070,12 +1177,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: LiquidGlassTheme.getGradientByName('success').colors.first.withOpacity(0.15),
+                        color: LiquidGlassTheme.getGradientByName(
+                          'success',
+                        ).colors.first.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.location_on,
-                        color: LiquidGlassTheme.getGradientByName('success').colors.first,
+                        color: LiquidGlassTheme.getGradientByName(
+                          'success',
+                        ).colors.first,
                         size: 18,
                       ),
                     ),
@@ -1103,8 +1214,8 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
               ],
             ),
           ),
-          
-          if (_isSubmitting) ...[  
+
+          if (_isSubmitting) ...[
             const SizedBox(height: 24),
             Center(
               child: Column(
@@ -1169,14 +1280,16 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
 
   VoidCallback? _getButtonAction() {
     if (_isSubmitting) return null;
-    
+
     switch (_currentStep) {
       case 0:
         return _selectedType == null ? null : _nextStep;
       case 1:
-        return _formKey.currentState?.validate() == true ? _nextStep : () {
-          _formKey.currentState?.validate();
-        };
+        return _formKey.currentState?.validate() == true
+            ? _nextStep
+            : () {
+                _formKey.currentState?.validate();
+              };
       case 2:
         return _submitReport;
       default:
@@ -1206,10 +1319,14 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutQuart,
             // تكبير الكارد عند الاختيار
-            transform: isSelected ? (Matrix4.identity()..scale(1.05)) : Matrix4.identity(),
+            transform: isSelected
+                ? (Matrix4.identity()..scale(1.05))
+                : Matrix4.identity(),
             transformAlignment: Alignment.center,
             child: LiquidGlassContainer(
-              type: isSelected ? LiquidGlassType.primary : LiquidGlassType.ultraLight,
+              type: isSelected
+                  ? LiquidGlassType.primary
+                  : LiquidGlassType.ultraLight,
               isInteractive: true,
               borderRadius: BorderRadius.circular(16),
               padding: const EdgeInsets.all(14), // تقليل الحشو الداخلي
@@ -1218,20 +1335,26 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10), // تقليل الحشو الداخلي للأيقونة
+                    padding: const EdgeInsets.all(
+                      10,
+                    ), // تقليل الحشو الداخلي للأيقونة
                     decoration: BoxDecoration(
-                      color: _getReportColor(type).withOpacity(isSelected ? 0.25 : 0.1),
+                      color: _getReportColor(
+                        type,
+                      ).withOpacity(isSelected ? 0.25 : 0.1),
                       borderRadius: BorderRadius.circular(14),
-                      border: isSelected 
+                      border: isSelected
                           ? Border.all(color: _getReportColor(type), width: 2)
                           : null,
-                      boxShadow: isSelected ? [
-                        BoxShadow(
-                          color: _getReportColor(type).withOpacity(0.4),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        )
-                      ] : null,
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: _getReportColor(type).withOpacity(0.4),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Icon(
                       _getReportIcon(type),
@@ -1243,18 +1366,29 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                   Text(
                     _getReportTypeTitle(type),
                     style: LiquidGlassTheme.headerTextStyle.copyWith(
-                      fontSize: isSelected ? 15 : 14, // زيادة حجم النص عند الاختيار
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected 
-                        ? _getReportColor(type) // تغيير لون النص ليكون بنفس لون نوع التقرير عند الاختيار
-                        : LiquidGlassTheme.primaryTextColor.withOpacity(0.9), // تعتيم النص قليلاً عند عدم الاختيار
+                      fontSize: isSelected
+                          ? 15
+                          : 14, // زيادة حجم النص عند الاختيار
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? _getReportColor(
+                              type,
+                            ) // تغيير لون النص ليكون بنفس لون نوع التقرير عند الاختيار
+                          : LiquidGlassTheme.primaryTextColor.withOpacity(
+                              0.9,
+                            ), // تعتيم النص قليلاً عند عدم الاختيار
                     ),
                     textAlign: TextAlign.center,
                   ),
                   if (isSelected)
                     Container(
                       margin: const EdgeInsets.only(top: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -1324,7 +1458,7 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
       case ReportType.closedRoad:
         return LiquidGlassTheme.getGradientByName('primary').colors.first;
       default:
-        return LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey;
+        return LiquidGlassTheme.getTextColor('secondary');
     }
   }
 
@@ -1360,16 +1494,23 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withOpacity(0.1),
+                  color: LiquidGlassTheme.getGradientByName(
+                    'primary',
+                  ).colors.first.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   _getDistanceDescription(_selectedDistance),
                   style: LiquidGlassTheme.bodyTextStyle.copyWith(
                     fontSize: 12,
-                    color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                    color: LiquidGlassTheme.getGradientByName(
+                      'primary',
+                    ).colors.first,
                   ),
                 ),
               ),
@@ -1389,16 +1530,25 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? LiquidGlassTheme.getGradientByName('primary').colors.first
-                        : LiquidGlassTheme.backgroundColor?.withOpacity(0.5),
+                        ? LiquidGlassTheme.getGradientByName(
+                            'primary',
+                          ).colors.first
+                        : LiquidGlassTheme.backgroundColor.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
-                          ? LiquidGlassTheme.getGradientByName('primary').colors.first
-                          : LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3) ?? Colors.grey,
+                          ? LiquidGlassTheme.getGradientByName(
+                              'primary',
+                            ).colors.first
+                          : LiquidGlassTheme.getTextColor(
+                              'secondary',
+                            ).withOpacity(0.3),
                     ),
                   ),
                   child: Text(
@@ -1408,7 +1558,9 @@ class _AddReportScreenState extends State<AddReportScreen> with TickerProviderSt
                       color: isSelected
                           ? Colors.white
                           : LiquidGlassTheme.getTextColor('primary'),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ),

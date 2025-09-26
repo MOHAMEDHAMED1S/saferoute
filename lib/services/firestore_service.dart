@@ -10,9 +10,12 @@ class FirestoreService {
 
   // Collections
   CollectionReference get _usersCollection => _firestore.collection('users');
-  CollectionReference get _reportsCollection => _firestore.collection('reports');
-  CollectionReference get _notificationsCollection => _firestore.collection('notifications');
-  CollectionReference get _settingsCollection => _firestore.collection('settings');
+  CollectionReference get _reportsCollection =>
+      _firestore.collection('reports');
+  CollectionReference get _notificationsCollection =>
+      _firestore.collection('notifications');
+  CollectionReference get _settingsCollection =>
+      _firestore.collection('settings');
 
   // ========== USER OPERATIONS ==========
 
@@ -50,9 +53,7 @@ class FirestoreService {
   // Update user location
   Future<void> updateUserLocation(String userId, LocationData location) async {
     try {
-      await _usersCollection.doc(userId).update({
-        'location': location.toMap(),
-      });
+      await _usersCollection.doc(userId).update({'location': location.toMap()});
     } catch (e) {
       throw 'خطأ في تحديث موقع المستخدم: ${e.toString()}';
     }
@@ -61,9 +62,7 @@ class FirestoreService {
   // Update user driver mode
   Future<void> updateDriverMode(String userId, bool isDriverMode) async {
     try {
-      await _usersCollection.doc(userId).update({
-        'isDriverMode': isDriverMode,
-      });
+      await _usersCollection.doc(userId).update({'isDriverMode': isDriverMode});
     } catch (e) {
       throw 'خطأ في تحديث وضع القيادة: ${e.toString()}';
     }
@@ -88,7 +87,7 @@ class FirestoreService {
       QuerySnapshot snapshot = await _usersCollection
           .where('location', isNotEqualTo: null)
           .get();
-      
+
       List<UserModel> users = snapshot.docs
           .map((doc) => UserModel.fromFirestore(doc))
           .where((user) {
@@ -102,7 +101,7 @@ class FirestoreService {
             return distance <= radiusInKm;
           })
           .toList();
-      
+
       return users;
     } catch (e) {
       throw 'خطأ في جلب المستخدمين القريبين: ${e.toString()}';
@@ -114,13 +113,15 @@ class FirestoreService {
   // Create report
   Future<String> createReport(ReportModel report) async {
     try {
-      DocumentReference docRef = await _reportsCollection.add(report.toFirestore());
-      
+      DocumentReference docRef = await _reportsCollection.add(
+        report.toFirestore(),
+      );
+
       // Update user's total reports count
       await _usersCollection.doc(report.createdBy).update({
         'totalReports': FieldValue.increment(1),
       });
-      
+
       return docRef.id;
     } catch (e) {
       throw 'خطأ في إنشاء البلاغ: ${e.toString()}';
@@ -147,8 +148,10 @@ class FirestoreService {
         .where('expiresAt', isGreaterThan: Timestamp.now())
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => ReportModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Get nearby reports
@@ -162,7 +165,7 @@ class FirestoreService {
           .where('status', isEqualTo: 'active')
           .where('expiresAt', isGreaterThan: Timestamp.now())
           .get();
-      
+
       List<ReportModel> reports = snapshot.docs
           .map((doc) => ReportModel.fromFirestore(doc))
           .where((report) {
@@ -175,7 +178,7 @@ class FirestoreService {
             return distance <= radiusInKm;
           })
           .toList();
-      
+
       return reports;
     } catch (e) {
       throw 'خطأ في جلب البلاغات القريبة: ${e.toString()}';
@@ -183,63 +186,70 @@ class FirestoreService {
   }
 
   // Confirm report
-  Future<void> confirmReport(String reportId, String userId, bool isTrue) async {
+  Future<void> confirmReport(
+    String reportId,
+    String userId,
+    bool isTrue,
+  ) async {
     try {
       DocumentReference reportRef = _reportsCollection.doc(reportId);
-      
+
       await _firestore.runTransaction((transaction) async {
         DocumentSnapshot reportSnapshot = await transaction.get(reportRef);
-        
+
         if (!reportSnapshot.exists) {
           throw 'البلاغ غير موجود';
         }
-        
+
         ReportModel report = ReportModel.fromFirestore(reportSnapshot);
-        
+
         // Check if user already confirmed/denied this report
         if (report.confirmedBy.contains(userId) ||
             report.deniedBy.contains(userId)) {
           throw 'لقد قمت بالتصويت على هذا البلاغ من قبل';
         }
-        
-        // Update confirmations
+
+        // Update confirmations (handle null confirmations safely)
         ReportConfirmations updatedConfirmations;
+        final ReportConfirmations currentConfirmations =
+            report.confirmations ?? ReportConfirmations();
         List<String> updatedConfirmedBy;
         List<String> updatedDeniedBy;
-        
+
         if (isTrue) {
-          updatedConfirmations = report.confirmations.copyWith(
-            trueVotes: report.confirmations.trueVotes + 1,
+          updatedConfirmations = currentConfirmations.copyWith(
+            trueVotes: currentConfirmations.trueVotes + 1,
           );
           updatedConfirmedBy = [...report.confirmedBy, userId];
           updatedDeniedBy = report.deniedBy;
         } else {
-          updatedConfirmations = report.confirmations.copyWith(
-            falseVotes: report.confirmations.falseVotes + 1,
+          updatedConfirmations = currentConfirmations.copyWith(
+            falseVotes: currentConfirmations.falseVotes + 1,
           );
           updatedConfirmedBy = report.confirmedBy;
           updatedDeniedBy = [...report.deniedBy, userId];
         }
-        
+
         // Update report
         transaction.update(reportRef, {
           'confirmations': updatedConfirmations.toMap(),
           'confirmedBy': updatedConfirmedBy,
           'deniedBy': updatedDeniedBy,
         });
-        
+
         // Award points to the user who confirmed
         DocumentReference userRef = _usersCollection.doc(userId);
         transaction.update(userRef, {
           'points': FieldValue.increment(isTrue ? 5 : 2),
         });
-        
+
         // Update trust score of report creator if enough votes
-        int totalVotes = updatedConfirmations.trueVotes + updatedConfirmations.falseVotes;
+        int totalVotes =
+            updatedConfirmations.trueVotes + updatedConfirmations.falseVotes;
         if (totalVotes >= 5) {
           double accuracy = updatedConfirmations.trueVotes / totalVotes;
           DocumentReference creatorRef = _usersCollection.doc(report.createdBy);
-          
+
           // Simple trust score update (can be made more sophisticated)
           if (accuracy >= 0.7) {
             transaction.update(creatorRef, {
@@ -261,9 +271,7 @@ class FirestoreService {
   // Delete report
   Future<void> deleteReport(String reportId) async {
     try {
-      await _reportsCollection.doc(reportId).update({
-        'status': 'removed',
-      });
+      await _reportsCollection.doc(reportId).update({'status': 'removed'});
     } catch (e) {
       throw 'خطأ في حذف البلاغ: ${e.toString()}';
     }
@@ -276,8 +284,10 @@ class FirestoreService {
           .where('createdBy', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
-      
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       throw 'خطأ في جلب بلاغات المستخدم: ${e.toString()}';
     }
@@ -288,7 +298,9 @@ class FirestoreService {
   // Create notification
   Future<String> createNotification(NotificationModel notification) async {
     try {
-      DocumentReference docRef = await _notificationsCollection.add(notification.toFirestore());
+      DocumentReference docRef = await _notificationsCollection.add(
+        notification.toFirestore(),
+      );
       return docRef.id;
     } catch (e) {
       throw 'خطأ في إنشاء الإشعار: ${e.toString()}';
@@ -303,8 +315,10 @@ class FirestoreService {
         .limit(50)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => NotificationModel.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => NotificationModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Mark notification as read
@@ -325,12 +339,12 @@ class FirestoreService {
           .where('userId', isEqualTo: userId)
           .where('isRead', isEqualTo: false)
           .get();
-      
+
       WriteBatch batch = _firestore.batch();
       for (DocumentSnapshot doc in snapshot.docs) {
         batch.update(doc.reference, {'isRead': true});
       }
-      
+
       await batch.commit();
     } catch (e) {
       throw 'خطأ في تحديث حالة الإشعارات: ${e.toString()}';
@@ -368,17 +382,26 @@ class FirestoreService {
   // ========== UTILITY METHODS ==========
 
   // Calculate distance between two points (Haversine formula)
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double earthRadius = 6371; // Earth's radius in kilometers
-    
+
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
-    
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
-    
+
+    double a =
+        sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
     double c = 2 * asin(sqrt(a));
-    
+
     return earthRadius * c;
   }
 
@@ -393,12 +416,12 @@ class FirestoreService {
           .where('expiresAt', isLessThan: Timestamp.now())
           .where('status', isEqualTo: 'active')
           .get();
-      
+
       WriteBatch batch = _firestore.batch();
       for (DocumentSnapshot doc in snapshot.docs) {
         batch.update(doc.reference, {'status': 'expired'});
       }
-      
+
       await batch.commit();
     } catch (e) {
       throw 'خطأ في تنظيف البلاغات المنتهية الصلاحية: ${e.toString()}';
@@ -412,7 +435,7 @@ class FirestoreService {
           .orderBy('points', descending: true)
           .limit(limit)
           .get();
-      
+
       return snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
     } catch (e) {
       throw 'خطأ في جلب لوحة المتصدرين: ${e.toString()}';

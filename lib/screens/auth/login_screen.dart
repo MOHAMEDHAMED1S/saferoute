@@ -150,6 +150,105 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+  
+  void _showForgotPasswordDialog() {
+    final TextEditingController emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('استرداد كلمة المرور'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور'),
+                    SizedBox(height: 16),
+                    CustomTextField(
+                      controller: emailController,
+                      label: 'البريد الإلكتروني',
+                      keyboardType: TextInputType.emailAddress,
+                      validator: Validators.validateEmail,
+                      prefixIcon: Icons.email_outlined,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('إلغاء'),
+                ),
+                isLoading
+                    ? CircularProgressIndicator()
+                    : TextButton(
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            
+                            try {
+                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              bool success = await authProvider.resetPassword(emailController.text.trim());
+                              
+                              if (mounted) {
+                                Navigator.of(context).pop();
+                                
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني'),
+                                      backgroundColor: LiquidGlassTheme.getGradientByName('success').colors.first,
+                                      duration: const Duration(seconds: 4),
+                                    ),
+                                  );
+                                } else {
+                                  String errorMessage = authProvider.errorMessage ?? 'فشل في إرسال رابط إعادة تعيين كلمة المرور';
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(errorMessage),
+                                      backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+                                      duration: const Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('خطأ في إرسال رابط إعادة تعيين كلمة المرور: ${e.toString()}'),
+                                    backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
+                            }
+                          }
+                        },
+                        child: Text('إرسال'),
+                      ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // Forgot Password
                 TextButton(
                   onPressed: () {
-                    // TODO: Implement forgot password
+                    _showForgotPasswordDialog();
                   },
                   child: Text(
                     'نسيت كلمة المرور؟',
