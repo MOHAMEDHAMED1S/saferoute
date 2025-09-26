@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 import '../models/user_model.dart';
 
 class AuthService {
@@ -10,13 +11,26 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   AuthService() {
-    // Initialize Google Sign-In safely for web
+    // Initialize Google Sign-In safely for all platforms
     try {
       if (kIsWeb) {
-        // Disable Google Sign-In for web temporarily to avoid errors
-        _googleSignIn = null;
+        // For web, use GoogleSignIn with specific configuration
+        _googleSignIn = GoogleSignIn(
+          clientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
+          scopes: ['email', 'profile'],
+        );
       } else {
-        _googleSignIn = GoogleSignIn();
+        // For mobile platforms
+        if (!kIsWeb && Platform.isIOS) {
+          // For iOS platform
+          _googleSignIn = GoogleSignIn(
+            scopes: ['email', 'profile'],
+            clientId: '74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com',
+          );
+        } else {
+          // For Android and other platforms
+          _googleSignIn = GoogleSignIn();
+        }
       }
     } catch (e) {
       print('Google Sign-In initialization failed: $e');
@@ -97,11 +111,37 @@ class AuthService {
 
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
-    if (_googleSignIn == null) {
-      throw 'Google Sign-In غير متاح في هذه البيئة';
-    }
-    
     try {
+      if (_googleSignIn == null) {
+        if (kIsWeb) {
+          // For web, use Firebase Auth directly with Google provider
+          GoogleAuthProvider googleProvider = GoogleAuthProvider();
+          googleProvider.addScope('email');
+          googleProvider.addScope('profile');
+          // Add client ID for web
+          googleProvider.setCustomParameters({
+            'client_id': '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com'
+          });
+          
+          // Sign in with popup for better user experience
+          UserCredential result = await _auth.signInWithPopup(googleProvider);
+          
+          if (result.user != null) {
+            await _createOrUpdateUserDocument(
+              uid: result.user!.uid,
+              email: result.user!.email ?? '',
+              name: result.user!.displayName ?? 'مستخدم',
+              photoUrl: result.user!.photoURL,
+            );
+          }
+          
+          return result;
+        } else {
+          throw 'Google Sign-In غير متاح في هذه البيئة';
+        }
+      }
+      
+      // For mobile platforms
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
       
@@ -133,8 +173,10 @@ class AuthService {
       
       return result;
     } on FirebaseAuthException catch (e) {
+      print('خطأ Firebase Auth في تسجيل الدخول بـ Google: ${e.code} - ${e.message}');
       throw _handleAuthException(e);
     } catch (e) {
+      print('خطأ غير متوقع في تسجيل الدخول بـ Google: $e');
       throw 'حدث خطأ في تسجيل الدخول بـ Google: ${e.toString()}';
     }
   }

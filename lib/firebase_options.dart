@@ -49,6 +49,8 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://saferoute-11-default-rtdb.firebaseio.com',
     storageBucket: 'saferoute-11.firebasestorage.app',
     measurementId: 'G-QCG5HCSVXJ',
+    androidClientId: '74153425042-ua7d62hg572jun7u1vmbfcpbjm37sape.apps.googleusercontent.com',
+    iosClientId: '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

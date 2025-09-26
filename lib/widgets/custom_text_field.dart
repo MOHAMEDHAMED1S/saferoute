@@ -24,6 +24,7 @@ class CustomTextField extends StatelessWidget {
   final Color? fillColor;
   final Color? borderColor;
   final double borderRadius;
+  final InputDecoration? decoration;
 
   const CustomTextField({
     Key? key,
@@ -48,6 +49,7 @@ class CustomTextField extends StatelessWidget {
     this.fillColor,
     this.borderColor,
     this.borderRadius = 12.0,
+    this.decoration,
   }) : super(key: key);
 
   @override
@@ -78,65 +80,65 @@ class CustomTextField extends StatelessWidget {
           onFieldSubmitted: onSubmitted,
           focusNode: focusNode,
           textCapitalization: textCapitalization,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF2E3A59),
-          ),
-          decoration: InputDecoration(
-            hintText: hintText ?? label,
-            hintStyle: const TextStyle(
-              color: Color(0xFF8B9DC3),
-              fontSize: 16,
-            ),
-            prefixIcon: prefixIcon != null
-                ? Icon(
-                    prefixIcon,
-                    color: const Color(0xFF8B9DC3),
-                    size: 20,
-                  )
-                : null,
-            suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: fillColor ?? const Color(0xFFF8F9FA),
-            contentPadding: contentPadding ??
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(
-                color: borderColor ?? const Color(0xFFE0E6ED),
-                width: 1,
+          style: const TextStyle(fontSize: 16, color: Color(0xFF2E3A59)),
+          decoration:
+              decoration ??
+              InputDecoration(
+                hintText: hintText ?? label,
+                hintStyle: const TextStyle(
+                  color: Color(0xFF8B9DC3),
+                  fontSize: 16,
+                ),
+                prefixIcon: prefixIcon != null
+                    ? Icon(prefixIcon, color: const Color(0xFF8B9DC3), size: 20)
+                    : null,
+                suffixIcon: suffixIcon,
+                filled: true,
+                fillColor: fillColor ?? const Color(0xFFF8F9FA),
+                contentPadding:
+                    contentPadding ??
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: borderColor ?? const Color(0xFFE0E6ED),
+                    width: 1,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: borderColor ?? const Color(0xFFE0E6ED),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF4A90E2),
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: LiquidGlassTheme.getGradientByName(
+                      'danger',
+                    ).colors.first,
+                    width: 1,
+                  ),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderSide: BorderSide(
+                    color: LiquidGlassTheme.getGradientByName(
+                      'danger',
+                    ).colors.first,
+                    width: 2,
+                  ),
+                ),
+                counterText: maxLength != null ? null : '',
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(
-                color: borderColor ?? const Color(0xFFE0E6ED),
-                width: 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: const BorderSide(
-                color: Color(0xFF4A90E2),
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(
-                color: LiquidGlassTheme.getGradientByName('danger').colors.first,
-                width: 1,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(borderRadius),
-              borderSide: BorderSide(
-                color: LiquidGlassTheme.getGradientByName('danger').colors.first,
-                width: 2,
-              ),
-            ),
-            counterText: maxLength != null ? null : '',
-          ),
         ),
       ],
     );
@@ -165,24 +167,15 @@ class CustomSearchField extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE0E6ED),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFFE0E6ED), width: 1),
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Color(0xFF2E3A59),
-        ),
+        style: const TextStyle(fontSize: 16, color: Color(0xFF2E3A59)),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
-            color: Color(0xFF8B9DC3),
-            fontSize: 16,
-          ),
+          hintStyle: const TextStyle(color: Color(0xFF8B9DC3), fontSize: 16),
           prefixIcon: const Icon(
             Icons.search,
             color: Color(0xFF8B9DC3),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
 import 'register_screen.dart';
@@ -49,8 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
         if (success && authProvider.isLoggedIn) {
           Navigator.of(context).pushReplacementNamed('/dashboard');
         } else {
-          String errorMessage = authProvider.errorMessage ?? 'فشل في تسجيل الدخول';
-          
+          String errorMessage =
+              authProvider.errorMessage ?? 'فشل في تسجيل الدخول';
+
           // Show more helpful error dialog for authentication issues
           showDialog(
             context: context,
@@ -63,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Text(errorMessage),
                     SizedBox(height: 16),
-                    if (errorMessage.contains('بيانات تسجيل الدخول غير صحيحة') || 
+                    if (errorMessage.contains(
+                          'بيانات تسجيل الدخول غير صحيحة',
+                        ) ||
                         errorMessage.contains('INVALID_LOGIN_CREDENTIALS'))
                       Text(
                         'تأكد من:\n• صحة البريد الإلكتروني\n• صحة كلمة المرور\n• أن الحساب موجود بالفعل',
@@ -95,7 +97,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تسجيل الدخول: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+            backgroundColor: LiquidGlassTheme.getGradientByName(
+              'danger',
+            ).colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -122,11 +126,14 @@ class _LoginScreenState extends State<LoginScreen> {
         if (success && authProvider.isLoggedIn) {
           Navigator.of(context).pushReplacementNamed('/dashboard');
         } else {
-          String errorMessage = authProvider.errorMessage ?? 'فشل في تسجيل الدخول بـ Google';
+          String errorMessage =
+              authProvider.errorMessage ?? 'فشل في تسجيل الدخول بـ Google';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMessage),
-              backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+              backgroundColor: LiquidGlassTheme.getGradientByName(
+                'danger',
+              ).colors.first,
               duration: const Duration(seconds: 4),
             ),
           );
@@ -137,7 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تسجيل الدخول بـ Google: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+            backgroundColor: LiquidGlassTheme.getGradientByName(
+              'danger',
+            ).colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -150,101 +159,327 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-  
+
   void _showForgotPasswordDialog() {
     final TextEditingController emailController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     bool isLoading = false;
-    
+
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('استرداد كلمة المرور'),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور'),
-                    SizedBox(height: 16),
-                    CustomTextField(
-                      controller: emailController,
-                      label: 'البريد الإلكتروني',
-                      keyboardType: TextInputType.emailAddress,
-                      validator: Validators.validateEmail,
-                      prefixIcon: Icons.email_outlined,
-                    ),
-                  ],
+              backgroundColor: LiquidGlassTheme.cardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+                side: BorderSide(
+                  color: LiquidGlassTheme.getGradientByName(
+                    'primary',
+                  ).colors.first.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              title: Text(
+                'استرداد كلمة المرور',
+                style: LiquidGlassTheme.headerTextStyle.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              content: Container(
+                width: double.maxFinite,
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: LiquidGlassTheme.getGradientByName(
+                            'info',
+                          ).colors.first.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: LiquidGlassTheme.getGradientByName(
+                                'info',
+                              ).colors.first,
+                              size: 24,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور',
+                                style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      CustomTextField(
+                        controller: emailController,
+                        label: 'البريد الإلكتروني',
+                        keyboardType: TextInputType.emailAddress,
+                        validator: Validators.validateEmail,
+                        prefixIcon: Icons.email_outlined,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: LiquidGlassTheme.primaryGlass,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: LiquidGlassTheme.getGradientByName(
+                                'primary',
+                              ).colors.first.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: LiquidGlassTheme.getGradientByName(
+                                'primary',
+                              ).colors.first,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('إلغاء'),
-                ),
-                isLoading
-                    ? CircularProgressIndicator()
-                    : TextButton(
-                        onPressed: () async {
-                          if (formKey.currentState!.validate()) {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            
-                            try {
-                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                              bool success = await authProvider.resetPassword(emailController.text.trim());
-                              
-                              if (mounted) {
-                                Navigator.of(context).pop();
-                                
-                                if (success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني'),
-                                      backgroundColor: LiquidGlassTheme.getGradientByName('success').colors.first,
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                } else {
-                                  String errorMessage = authProvider.errorMessage ?? 'فشل في إرسال رابط إعادة تعيين كلمة المرور';
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(errorMessage),
-                                      backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('خطأ في إرسال رابط إعادة تعيين كلمة المرور: ${e.toString()}'),
-                                    backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
-                                    duration: const Duration(seconds: 4),
-                                  ),
-                                );
-                              }
-                            } finally {
-                              if (mounted) {
-                                setState(() {
-                                  isLoading = false;
-                                });
-                              }
-                            }
-                          }
-                        },
-                        child: Text('إرسال'),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: LiquidGlassTheme.getTextColor(
+                            'secondary',
+                          ),
+                        ),
+                        child: Text(
+                          'إلغاء',
+                          style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                            fontSize: 16,
+                          ),
+                        ),
                       ),
+                      isLoading
+                          ? Container(
+                              width: 100,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: LiquidGlassTheme.getGradientByName(
+                                  'primary',
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 3,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: () async {
+                                if (formKey.currentState!.validate()) {
+                                  setState(() {
+                                    isLoading = true;
+                                  });
+
+                                  try {
+                                    final authProvider =
+                                        Provider.of<AuthProvider>(
+                                          context,
+                                          listen: false,
+                                        );
+                                    bool success = await authProvider
+                                        .resetPassword(
+                                          emailController.text.trim(),
+                                        );
+
+                                    if (mounted) {
+                                      Navigator.of(context).pop();
+
+                                      if (success) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.white,
+                                                ),
+                                                SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor:
+                                                LiquidGlassTheme.getGradientByName(
+                                                  'success',
+                                                ).colors.first,
+                                            duration: const Duration(
+                                              seconds: 4,
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        String errorMessage =
+                                            authProvider.errorMessage ??
+                                            'فشل في إرسال رابط إعادة تعيين كلمة المرور';
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.error_outline,
+                                                  color: Colors.white,
+                                                ),
+                                                SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(errorMessage),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor:
+                                                LiquidGlassTheme.getGradientByName(
+                                                  'danger',
+                                                ).colors.first,
+                                            duration: const Duration(
+                                              seconds: 4,
+                                            ),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    if (mounted) {
+                                      Navigator.of(context).pop();
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.error_outline,
+                                                color: Colors.white,
+                                              ),
+                                              SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  'خطأ في إرسال رابط إعادة تعيين كلمة المرور: ${e.toString()}',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          backgroundColor:
+                                              LiquidGlassTheme.getGradientByName(
+                                                'danger',
+                                              ).colors.first,
+                                          duration: const Duration(seconds: 4),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    }
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
+                                backgroundColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  gradient: LiquidGlassTheme.getGradientByName(
+                                    'primary',
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
+                                  child: Text(
+                                    'إرسال',
+                                    style: LiquidGlassTheme.headerTextStyle
+                                        .copyWith(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: LiquidGlassTheme.whiteTextColor,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
               ],
             );
-          }
+          },
         );
       },
     );
@@ -294,9 +529,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'سجل دخولك للمتابعة',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 16,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -345,10 +578,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider()),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'أو',
-                        style: LiquidGlassTheme.bodyTextStyle,
-                      ),
+                      child: Text('أو', style: LiquidGlassTheme.bodyTextStyle),
                     ),
                     const Expanded(child: Divider()),
                   ],
@@ -390,12 +620,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pushNamed(RegisterScreen.routeName);
+                        Navigator.of(
+                          context,
+                        ).pushNamed(RegisterScreen.routeName);
                       },
                       child: Text(
                         'إنشاء حساب',
                         style: LiquidGlassTheme.headerTextStyle.copyWith(
-          color: LiquidGlassTheme.getTextColor('primary'),
+                          color: LiquidGlassTheme.getTextColor('primary'),
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
