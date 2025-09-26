@@ -18,6 +18,7 @@ class FirebaseSchemaService {
   static const String drivingCollection = 'driving';
   static const String weatherCollection = 'weather';
   static const String communityCollection = 'community';
+  static const String communityChatCollection = 'community_chat';
   static const String rewardsCollection = 'rewards';
 
   // الحصول على مرجع للمستخدم
@@ -35,6 +36,10 @@ class FirebaseSchemaService {
   // الحصول على مرجع للمجتمع
   CollectionReference get community =>
       _firestore.collection(communityCollection);
+
+  // الحصول على مرجع لشات المجتمع
+  CollectionReference get communityChat =>
+      _firestore.collection(communityChatCollection);
 
   // الحصول على مرجع للمكافآت
   CollectionReference get rewards => _firestore.collection(rewardsCollection);
@@ -301,6 +306,24 @@ class FirebaseSchemaService {
         'category': 'String',
       },
     },
+    FirebaseSchemaService.communityChatCollection: {
+      'messageId': {
+        'userId': 'String',
+        'userName': 'String',
+        'userAvatar': 'String?',
+        'message': 'String',
+        'timestamp': 'Timestamp',
+        'isDelivered': 'bool',
+        'isRead': 'bool',
+        'messageType': 'String', // text, image, location, incident_report
+        'metadata':
+            'Map<String, dynamic>?', // Additional data for different message types
+        'editedAt': 'Timestamp?',
+        'deletedAt': 'Timestamp?',
+        'replyTo': 'String?', // Reference to another message ID
+        'reactions': 'Map<String, List<String>>', // emoji -> list of user IDs
+      },
+    },
     FirebaseSchemaService.rewardsCollection: {
       'userId': {
         'points': 'int',
@@ -332,6 +355,9 @@ class FirebaseSchemaService {
       _createCollectionIfNotExists(FirebaseSchemaService.drivingCollection),
       _createCollectionIfNotExists(FirebaseSchemaService.weatherCollection),
       _createCollectionIfNotExists(FirebaseSchemaService.communityCollection),
+      _createCollectionIfNotExists(
+        FirebaseSchemaService.communityChatCollection,
+      ),
       _createCollectionIfNotExists(FirebaseSchemaService.rewardsCollection),
     ]);
   }

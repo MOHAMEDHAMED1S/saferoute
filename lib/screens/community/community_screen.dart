@@ -20,19 +20,18 @@ class _CommunityScreenState extends State<CommunityScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
-  bool _showFabMenu = false;
   bool _isLoading = true;
   bool _isSendingMessage = false;
-  
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _chatScrollController = ScrollController();
   final FocusNode _messageFocusNode = FocusNode();
-  
+
   // Data from Backend
   List<ChatMessage> _messages = [];
   List<LeaderboardUser> _leaderboardUsers = [];
   int _onlineUsersCount = 0;
-  
+
   // Services
   final CommunityService _communityService = CommunityService();
 
@@ -58,30 +57,33 @@ class _CommunityScreenState extends State<CommunityScreen>
     });
 
     // تهيئة خدمة المجتمع
-    _communityService.initialize().then((_) {
-      // الاستماع إلى تحديثات الرسائل في الوقت الحقيقي
-      _communityService.messageStream.listen((newMessage) {
-        if (mounted) {
-          setState(() {
-            _messages.add(newMessage);
+    _communityService
+        .initialize()
+        .then((_) {
+          // الاستماع إلى تحديثات الرسائل في الوقت الحقيقي
+          _communityService.messageStream.listen((newMessage) {
+            if (mounted) {
+              setState(() {
+                _messages.add(newMessage);
+              });
+              _scrollToBottom();
+            }
           });
-          _scrollToBottom();
-        }
-      });
 
-      // الاستماع إلى تحديثات عدد المستخدمين المتصلين
-      _communityService.onlineCountStream.listen((count) {
-        if (mounted) {
-          setState(() {
-            _onlineUsersCount = count;
+          // الاستماع إلى تحديثات عدد المستخدمين المتصلين
+          _communityService.onlineCountStream.listen((count) {
+            if (mounted) {
+              setState(() {
+                _onlineUsersCount = count;
+              });
+            }
           });
-        }
-      });
-    }).catchError((error) {
-      if (mounted) {
-        _showErrorSnackBar('فشل في الاتصال بخدمة المجتمع');
-      }
-    });
+        })
+        .catchError((error) {
+          if (mounted) {
+            _showErrorSnackBar('فشل في الاتصال بخدمة المجتمع');
+          }
+        });
   }
 
   Future<void> _loadInitialData() async {
@@ -92,10 +94,10 @@ class _CommunityScreenState extends State<CommunityScreen>
     try {
       // Load chat messages
       final messages = await _communityService.getChatMessages();
-      
+
       // Load leaderboard
       final leaderboard = await _communityService.getLeaderboard();
-      
+
       // Get online users count
       final onlineCount = await _communityService.getOnlineUsersCount();
 
@@ -128,7 +130,7 @@ class _CommunityScreenState extends State<CommunityScreen>
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       await _communityService.sendChatMessage(
         userId: authProvider.userModel?.id ?? '',
         userName: authProvider.userModel?.name ?? 'مستخدم',
@@ -137,7 +139,6 @@ class _CommunityScreenState extends State<CommunityScreen>
       );
 
       _messageController.clear();
-      
     } catch (e) {
       _showErrorSnackBar('فشل في إرسال الرسالة');
     } finally {
@@ -150,7 +151,7 @@ class _CommunityScreenState extends State<CommunityScreen>
   Future<void> _sendIncidentReport(IncidentType type) async {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+
       await _communityService.sendIncidentReport(
         userId: authProvider.userModel?.id ?? '',
         userName: authProvider.userModel?.name ?? 'مستخدم',
@@ -159,12 +160,7 @@ class _CommunityScreenState extends State<CommunityScreen>
         // location: {'lat': latitude, 'lng': longitude},
       );
 
-      setState(() {
-        _showFabMenu = false;
-      });
-
       _showSuccessSnackBar('تم إرسال البلاغ بنجاح');
-      
     } catch (e) {
       _showErrorSnackBar('فشل في إرسال البلاغ');
     }
@@ -194,19 +190,13 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
@@ -228,16 +218,11 @@ class _CommunityScreenState extends State<CommunityScreen>
                       ? _buildLoadingWidget()
                       : TabBarView(
                           controller: _tabController,
-                          children: [
-                            _buildChatTab(),
-                            _buildLeaderboardTab(),
-                          ],
+                          children: [_buildChatTab(), _buildLeaderboardTab()],
                         ),
                 ),
               ],
             ),
-            // عرض قائمة التحذير فقط في قسم التواصل وليس في قسم المتصدرين
-            if (_selectedTab == 0) _buildFloatingReportMenu(),
           ],
         ),
       ),
@@ -270,7 +255,9 @@ class _CommunityScreenState extends State<CommunityScreen>
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                        color: LiquidGlassTheme.getGradientByName(
+                          'primary',
+                        ).colors.first,
                         child: const Icon(
                           Icons.people,
                           color: Colors.white,
@@ -314,7 +301,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                   // Navigate to notifications
                   Navigator.pushNamed(context, '/notifications');
                 },
-              )
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -341,14 +328,8 @@ class _CommunityScreenState extends State<CommunityScreen>
                 fontSize: 14,
               ),
               tabs: const [
-                Tab(
-                  icon: Icon(Icons.chat, size: 20),
-                  text: 'مجتمع التواصل',
-                ),
-                Tab(
-                  icon: Icon(Icons.leaderboard, size: 20),
-                  text: 'المتصدرين',
-                ),
+                Tab(icon: Icon(Icons.chat, size: 20), text: 'مجتمع التواصل'),
+                Tab(icon: Icon(Icons.leaderboard, size: 20), text: 'المتصدرين'),
               ],
             ),
           ),
@@ -368,10 +349,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            'جاري تحميل البيانات...',
-            style: LiquidGlassTheme.bodyTextStyle,
-          ),
+          Text('جاري تحميل البيانات...', style: LiquidGlassTheme.bodyTextStyle),
         ],
       ),
     );
@@ -467,10 +445,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             color: LiquidGlassTheme.secondaryTextColor,
           ),
           const SizedBox(height: 16),
-          Text(
-            'لا توجد رسائل بعد',
-            style: LiquidGlassTheme.headerTextStyle,
-          ),
+          Text('لا توجد رسائل بعد', style: LiquidGlassTheme.headerTextStyle),
           const SizedBox(height: 8),
           Text(
             'كن أول من يبدأ المحادثة',
@@ -497,10 +472,10 @@ class _CommunityScreenState extends State<CommunityScreen>
             CircleAvatar(
               radius: 16,
               backgroundColor: Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
-              backgroundImage: message.userAvatar != null 
-                  ? NetworkImage(message.userAvatar!) 
+              backgroundImage: message.userAvatar != null
+                  ? NetworkImage(message.userAvatar!)
                   : null,
-              child: message.userAvatar == null 
+              child: message.userAvatar == null
                   ? Text(
                       message.userName.substring(0, 1),
                       style: const TextStyle(
@@ -535,7 +510,10 @@ class _CommunityScreenState extends State<CommunityScreen>
                   type: isCurrentUser
                       ? LiquidGlassType.secondary
                       : LiquidGlassType.ultraLight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -574,11 +552,15 @@ class _CommunityScreenState extends State<CommunityScreen>
                           if (isCurrentUser) ...[
                             const SizedBox(width: 4),
                             Icon(
-                              message.isDelivered 
-                                  ? (message.isRead ? Icons.done_all : Icons.done)
+                              message.isDelivered
+                                  ? (message.isRead
+                                        ? Icons.done_all
+                                        : Icons.done)
                                   : Icons.access_time,
                               size: 12,
-                              color: message.isRead ? Colors.blue : Colors.white60,
+                              color: message.isRead
+                                  ? Colors.blue
+                                  : Colors.white60,
                             ),
                           ],
                         ],
@@ -609,14 +591,10 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   Widget _buildMessageInput() {
     return Container(
-      // تعديل المارجن لمنع التداخل مع القائمة السفلية
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 85),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF667eea),
-            Color(0xFF764ba2),
-          ],
+          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -632,59 +610,14 @@ class _CommunityScreenState extends State<CommunityScreen>
       ),
       child: Row(
         children: [
-          // Location sharing button
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(255, 255, 255, 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.location_on, color: Colors.white, size: 20),
-                onPressed: () async {
-                  // Share location
-                  // await LocationService.shareCurrentLocation();
-                },
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          
-          // Attachment button
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Color.fromRGBO(255, 255, 255, 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.attach_file, color: Colors.white, size: 20),
-                onPressed: () {
-                  // Show attachment options
-                  _showAttachmentOptions();
-                },
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          
-          // Text input
+          // Text input فقط
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: TextField(
                 controller: _messageController,
                 focusNode: _messageFocusNode,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'اكتب رسالة...',
                   hintStyle: TextStyle(
@@ -701,8 +634,7 @@ class _CommunityScreenState extends State<CommunityScreen>
               ),
             ),
           ),
-          
-          // Send button
+          // زر الإرسال فقط
           Padding(
             padding: const EdgeInsets.all(8),
             child: Container(
@@ -769,10 +701,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                 final user = entry.value;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildLeaderboardItem(
-                    rank: index + 1,
-                    user: user,
-                  ),
+                  child: _buildLeaderboardItem(rank: index + 1, user: user),
                 );
               }),
             const SizedBox(height: 100),
@@ -820,8 +749,12 @@ class _CommunityScreenState extends State<CommunityScreen>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: rank <= 3 
-                  ? (rank == 1 ? Colors.amber : rank == 2 ? Colors.grey[300] : Colors.orange[300])
+              color: rank <= 3
+                  ? (rank == 1
+                        ? Colors.amber
+                        : rank == 2
+                        ? Colors.grey[300]
+                        : Colors.orange[300])
                   : Colors.blueAccent.withAlpha((255 * 0.15).toInt()),
               shape: BoxShape.circle,
             ),
@@ -846,10 +779,10 @@ class _CommunityScreenState extends State<CommunityScreen>
           CircleAvatar(
             radius: 20,
             backgroundColor: Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
-            backgroundImage: user.avatarUrl != null 
-                ? NetworkImage(user.avatarUrl!) 
+            backgroundImage: user.avatarUrl != null
+                ? NetworkImage(user.avatarUrl!)
                 : null,
-            child: user.avatarUrl == null 
+            child: user.avatarUrl == null
                 ? Text(
                     user.name.substring(0, 1),
                     style: const TextStyle(
@@ -868,16 +801,16 @@ class _CommunityScreenState extends State<CommunityScreen>
                   user.name,
                   style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontSize: 15,
-                    fontWeight: isCurrentUser ? FontWeight.bold : FontWeight.w600,
+                    fontWeight: isCurrentUser
+                        ? FontWeight.bold
+                        : FontWeight.w600,
                     color: isCurrentUser ? Colors.blueAccent : null,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '${user.points} نقطة',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 13,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 13),
                 ),
               ],
             ),
@@ -898,251 +831,6 @@ class _CommunityScreenState extends State<CommunityScreen>
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingReportMenu() {
-    return Positioned(
-      // رفع قائمة التحذيرات لتكون فوق شريط الكتابة مباشرة
-      bottom: 200,
-      right: 20,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (_showFabMenu) ...[
-            _buildFabOption(
-              icon: Icons.warning_amber_rounded,
-              label: "حادث",
-              color: Colors.red,
-              onTap: () => _sendIncidentReport(IncidentType.accident),
-            ),
-            const SizedBox(height: 12),
-            _buildFabOption(
-              icon: Icons.traffic_rounded,
-              label: "ازدحام",
-              color: Colors.orange,
-              onTap: () => _sendIncidentReport(IncidentType.traffic),
-            ),
-            const SizedBox(height: 12),
-            _buildFabOption(
-              icon: Icons.speed_rounded,
-              label: "مطب",
-              color: Colors.green,
-              onTap: () => _sendIncidentReport(IncidentType.speedBump),
-            ),
-            const SizedBox(height: 12),
-            _buildFabOption(
-              icon: Icons.construction_rounded,
-              label: "أعمال صيانة",
-              color: Colors.blue,
-              onTap: () => _sendIncidentReport(IncidentType.construction),
-            ),
-            const SizedBox(height: 20),
-          ],
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.3),
-                  blurRadius: 15,
-                  offset: Offset(0, 8),
-                  spreadRadius: -3,
-                ),
-              ],
-            ),
-            child: FloatingActionButton(
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              onPressed: () {
-                setState(() {
-                  _showFabMenu = !_showFabMenu;
-                });
-              },
-              child: AnimatedRotation(
-                turns: _showFabMenu ? 0.125 : 0,
-                duration: Duration(milliseconds: 200),
-                child: Icon(
-                  _showFabMenu ? Icons.close_rounded : Icons.add_rounded,
-                  size: 28,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFabOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(color.red, color.green, color.blue, 0.9),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromRGBO(color.red, color.green, color.blue, 0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Color.fromRGBO(color.red, color.green, color.blue, 0.4),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: FloatingActionButton(
-              heroTag: label,
-              mini: true,
-              backgroundColor: Colors.transparent,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              onPressed: onTap,
-              child: Icon(icon, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LiquidGlassTheme.mainBackgroundGradient,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Color.fromRGBO(255, 255, 255, 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'إرفاق ملف',
-                style: LiquidGlassTheme.headerTextStyle.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildAttachmentOption(
-                    icon: Icons.photo_camera,
-                    label: 'كاميرا',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Open camera
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: Icons.photo_library,
-                    label: 'المعرض',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Open gallery
-                    },
-                  ),
-                  _buildAttachmentOption(
-                    icon: Icons.insert_drive_file,
-                    label: 'ملف',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Open file picker
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LiquidGlassTheme.communityActionGradient,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: LiquidGlassTheme.bodyTextStyle.copyWith(
-              fontSize: 12,
-            ),
-          ),
         ],
       ),
     );

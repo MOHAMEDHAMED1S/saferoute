@@ -1,4 +1,4 @@
-// لا حاجة لاستيراد foundation.dart بعد استبدال hashValues بـ Object.hash
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LeaderboardUser {
   final String id;
@@ -9,7 +9,7 @@ class LeaderboardUser {
   final int safetyReports;
   final int helpfulTips;
   final String? badge;
-  
+
   // إضافة الحقول المفقودة
   String get userId => id;
   String? get avatarUrl => photoUrl;
@@ -35,6 +35,20 @@ class LeaderboardUser {
       safetyReports: json['safetyReports'] as int? ?? 0,
       helpfulTips: json['helpfulTips'] as int? ?? 0,
       badge: json['badge'] as String?,
+    );
+  }
+
+  factory LeaderboardUser.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return LeaderboardUser(
+      id: doc.id,
+      name: data['name'] as String,
+      photoUrl: data['photoUrl'] as String?,
+      points: data['points'] as int? ?? 0,
+      rank: 0, // سيتم حساب الترتيب منفصل
+      safetyReports: data['totalReports'] as int? ?? 0,
+      helpfulTips: 0, // سيتم إضافة هذا الحقل لاحقاً
+      badge: data['badge'] as String?,
     );
   }
 
