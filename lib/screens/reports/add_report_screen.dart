@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -346,28 +345,34 @@ class _AddReportScreenState extends State<AddReportScreen>
                   // إغلاق الحوار أولاً
                   Navigator.of(context).pop();
 
-                  // العودة للصفحة الرئيسية بدلاً من الصفحة السابقة
-                  Future.delayed(const Duration(milliseconds: 200), () {
-                    if (mounted) {
-                      try {
-                        // استخدام pushReplacementNamed للعودة للصفحة الرئيسية
-                        Navigator.of(
-                          context,
-                        ).pushReplacementNamed('/dashboard');
-                      } catch (e) {
-                        debugPrint('AddReportScreen: خطأ في التنقل: $e');
-                        // محاولة بديلة للعودة
-                        if (mounted) {
+                  // العودة للصفحة الرئيسية مباشرة
+                  if (mounted) {
+                    try {
+                      // استخدام pushReplacementNamed للعودة للصفحة الرئيسية
+                      Navigator.of(context).pushReplacementNamed('/dashboard');
+                    } catch (e) {
+                      debugPrint('AddReportScreen: خطأ في التنقل: $e');
+                      // محاولة بديلة للعودة
+                      if (mounted) {
+                        try {
                           Navigator.of(context).pop();
+                        } catch (popError) {
+                          debugPrint('AddReportScreen: خطأ في pop: $popError');
                         }
                       }
                     }
-                  });
+                  }
                 } catch (e) {
                   debugPrint('AddReportScreen: خطأ في إغلاق الحوار: $e');
                   // محاولة إغلاق الحوار بطريقة بديلة
                   if (mounted) {
-                    Navigator.of(context).pop();
+                    try {
+                      Navigator.of(context).pop();
+                    } catch (popError) {
+                      debugPrint(
+                        'AddReportScreen: خطأ في pop البديل: $popError',
+                      );
+                    }
                   }
                 }
               },
@@ -744,22 +749,61 @@ class _AddReportScreenState extends State<AddReportScreen>
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: FileImage(_reportImages[index]),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            _reportImages[index],
                             fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'خطأ في الصورة',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
                       Positioned(
                         top: 4,
-                        right: 12,
+                        right: 4,
                         child: GestureDetector(
                           onTap: () => _removeImage(index),
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
+                              color: Colors.red.withValues(alpha: 0.8),
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.close,
@@ -1066,7 +1110,7 @@ class _AddReportScreenState extends State<AddReportScreen>
             ),
           ),
 
-          // عرض الصور المرفقة إذا وجدت
+          // عرض الصور المرفقة
           if (_reportImages.isNotEmpty) ...[
             const SizedBox(height: 16),
             LiquidGlassContainer(
@@ -1127,13 +1171,125 @@ class _AddReportScreenState extends State<AddReportScreen>
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(
-                              image: FileImage(_reportImages[index]),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              _reportImages[index],
                               fit: BoxFit.cover,
+                              width: 100,
+                              height: 100,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'خطأ في الصورة',
+                                        style: TextStyle(
+                                          color: Colors.red,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         );
                       },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // رسالة عندما لا توجد صور مرفقة
+            const SizedBox(height: 16),
+            LiquidGlassContainer(
+              type: LiquidGlassType.ultraLight,
+              borderRadius: BorderRadius.circular(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              backgroundColor: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        color: Colors.grey.shade400,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'الصور المرفقة',
+                        style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => setState(() => _currentStep = 1),
+                        child: Text(
+                          'إضافة',
+                          style: TextStyle(
+                            color: LiquidGlassTheme.getGradientByName(
+                              'primary',
+                            ).colors.first,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200, width: 1),
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate_outlined,
+                            color: Colors.grey.shade400,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'لا توجد صور مرفقة',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

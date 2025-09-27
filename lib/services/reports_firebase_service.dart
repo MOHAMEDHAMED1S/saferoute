@@ -5,11 +5,14 @@ import 'dart:io';
 import '../models/report_model.dart';
 import '../models/analytics_report_model.dart';
 import '../services/firebase_schema_service.dart';
+import 'external_image_upload_service.dart';
 
 class ReportsFirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ExternalImageUploadService _externalUploadService =
+      ExternalImageUploadService();
 
   // Collection references
   CollectionReference get _reportsCollection =>
@@ -129,23 +132,40 @@ class ReportsFirebaseService {
     List<File> images,
     String reportId,
   ) async {
-    List<String> imageUrls = [];
-
-    for (var image in images) {
-      String fileName =
-          '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
-      Reference storageRef = _storage.ref().child(
-        'reports/$reportId/$fileName',
+    try {
+      // Use external image upload service
+      List<String> imageUrls = await _externalUploadService.uploadImages(
+        images,
+      );
+      print(
+        'ReportsFirebaseService: تم رفع ${imageUrls.length} صورة عبر الخدمة الخارجية',
+      );
+      return imageUrls;
+    } catch (e) {
+      print('ReportsFirebaseService: فشل في رفع الصور عبر الخدمة الخارجية: $e');
+      print(
+        'ReportsFirebaseService: محاولة رفع الصور عبر Firebase Storage كبديل',
       );
 
-      UploadTask uploadTask = storageRef.putFile(image);
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
+      // Fallback to Firebase Storage if external service fails
+      List<String> imageUrls = [];
 
-      imageUrls.add(downloadUrl);
+      for (var image in images) {
+        String fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
+        Reference storageRef = _storage.ref().child(
+          'reports/$reportId/$fileName',
+        );
+
+        UploadTask uploadTask = storageRef.putFile(image);
+        TaskSnapshot snapshot = await uploadTask;
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        imageUrls.add(downloadUrl);
+      }
+
+      return imageUrls;
     }
-
-    return imageUrls;
   }
 
   // Create report with images
