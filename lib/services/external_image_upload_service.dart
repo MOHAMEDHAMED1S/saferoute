@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ExternalImageUploadService {
   static const String _uploadEndpoint =
@@ -9,7 +11,7 @@ class ExternalImageUploadService {
 
   /// Upload a single image file to the external API
   /// Returns the uploaded image URL on success
-  Future<String> uploadImage(File imageFile) async {
+  Future<String> uploadImage(XFile imageFile) async {
     try {
       // Validate file size (5MB limit)
       final fileSize = await imageFile.length();
@@ -20,7 +22,7 @@ class ExternalImageUploadService {
       }
 
       // Validate file type
-      final fileName = imageFile.path.split('/').last.toLowerCase();
+      final fileName = imageFile.name.toLowerCase();
       final allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       final hasValidExtension = allowedExtensions.any(
         (ext) => fileName.endsWith(ext),
@@ -35,10 +37,18 @@ class ExternalImageUploadService {
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(_uploadEndpoint));
 
-      // Add the file to the request
-      request.files.add(
-        await http.MultipartFile.fromPath('file', imageFile.path),
-      );
+      if (kIsWeb) {
+        // للويب: استخدم bytes
+        Uint8List bytes = await imageFile.readAsBytes();
+        request.files.add(
+          http.MultipartFile.fromBytes('file', bytes, filename: imageFile.name),
+        );
+      } else {
+        // للموبايل: استخدم المسار
+        request.files.add(
+          await http.MultipartFile.fromPath('file', imageFile.path),
+        );
+      }
 
       // Send the request
       var streamedResponse = await request.send();
@@ -66,7 +76,7 @@ class ExternalImageUploadService {
   }
 
   /// Upload multiple images and return their URLs
-  Future<List<String>> uploadImages(List<File> images) async {
+  Future<List<String>> uploadImages(List<XFile> images) async {
     List<String> imageUrls = [];
 
     for (var image in images) {
@@ -74,10 +84,7 @@ class ExternalImageUploadService {
         final url = await uploadImage(image);
         imageUrls.add(url);
       } catch (e) {
-        // Log the error but continue with other images
-        debugPrint('Failed to upload image ${image.path}: $e');
-        // Optionally, you could rethrow the exception to stop the entire process
-        // throw e;
+        debugPrint('Failed to upload image ${image.name}: $e');
       }
     }
 
@@ -86,7 +93,7 @@ class ExternalImageUploadService {
 
   /// Upload images with progress callback
   Future<List<String>> uploadImagesWithProgress(
-    List<File> images,
+    List<XFile> images,
     Function(int current, int total)? onProgress,
   ) async {
     List<String> imageUrls = [];
@@ -95,12 +102,9 @@ class ExternalImageUploadService {
       try {
         final url = await uploadImage(images[i]);
         imageUrls.add(url);
-
-        // Call progress callback if provided
         onProgress?.call(i + 1, images.length);
       } catch (e) {
-        debugPrint('Failed to upload image ${images[i].path}: $e');
-        // Continue with other images
+        debugPrint('Failed to upload image ${images[i].name}: $e');
       }
     }
 

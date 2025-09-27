@@ -6,6 +6,9 @@ import '../models/report_model.dart';
 import '../models/analytics_report_model.dart';
 import '../services/firebase_schema_service.dart';
 import 'external_image_upload_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class ReportsFirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -129,7 +132,7 @@ class ReportsFirebaseService {
 
   // Upload image and get URL
   Future<List<String>> uploadReportImages(
-    List<File> images,
+    List<XFile> images,
     String reportId,
   ) async {
     try {
@@ -149,21 +152,23 @@ class ReportsFirebaseService {
 
       // Fallback to Firebase Storage if external service fails
       List<String> imageUrls = [];
-
-      for (var image in images) {
+      for (var xfile in images) {
         String fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${image.path.split('/').last}';
+            '${DateTime.now().millisecondsSinceEpoch}_${xfile.name}';
         Reference storageRef = _storage.ref().child(
           'reports/$reportId/$fileName',
         );
-
-        UploadTask uploadTask = storageRef.putFile(image);
+        UploadTask uploadTask;
+        if (kIsWeb) {
+          Uint8List bytes = await xfile.readAsBytes();
+          uploadTask = storageRef.putData(bytes);
+        } else {
+          uploadTask = storageRef.putFile(File(xfile.path));
+        }
         TaskSnapshot snapshot = await uploadTask;
         String downloadUrl = await snapshot.ref.getDownloadURL();
-
         imageUrls.add(downloadUrl);
       }
-
       return imageUrls;
     }
   }
@@ -171,7 +176,7 @@ class ReportsFirebaseService {
   // Create report with images
   Future<String> createReportWithImages(
     ReportModel report,
-    List<File> images,
+    List<XFile> images,
   ) async {
     print('ReportsFirebaseService: بدء إنشاء البلاغ مع الصور');
 

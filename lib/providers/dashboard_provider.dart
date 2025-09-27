@@ -14,41 +14,8 @@ class DashboardProvider extends ChangeNotifier {
     trustLevel: 'مساهم نشط',
   );
 
-  final List<NearbyReport> _nearbyReports = [
-    NearbyReport(
-      id: '1',
-      title: 'حادث - شارع التحرير',
-      description: 'حادث مروري بسيط',
-      distance: '800م',
-      timeAgo: '15 دقيقة',
-      confirmations: 12,
-      type: ReportType.accident,
-      latitude: 30.0444,
-      longitude: 31.2357,
-    ),
-    NearbyReport(
-      id: '2',
-      title: 'مطب - كوبري أكتوبر',
-      description: 'مطب كبير في الطريق',
-      distance: '1.2كم',
-      timeAgo: '45 دقيقة',
-      confirmations: 8,
-      type: ReportType.bump,
-      latitude: 30.0626,
-      longitude: 31.2497,
-    ),
-    NearbyReport(
-      id: '3',
-      title: 'ازدحام - ميدان رمسيس',
-      description: 'ازدحام مروري شديد',
-      distance: '2كم',
-      timeAgo: 'ساعة',
-      confirmations: 25,
-      type: ReportType.traffic,
-      latitude: 30.0626,
-      longitude: 31.2497,
-    ),
-  ];
+  // حذف البيانات الافتراضية
+  final List<NearbyReport> _nearbyReports = [];
 
   WeatherInfo _weather = WeatherInfo(
     condition: 'مشمس',
@@ -66,7 +33,6 @@ class DashboardProvider extends ChangeNotifier {
   );
 
   EmergencyAlert? _currentAlert;
-
   bool _isLoading = false;
 
   // Getters

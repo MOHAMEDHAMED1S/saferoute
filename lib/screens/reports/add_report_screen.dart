@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -35,7 +36,7 @@ class _AddReportScreenState extends State<AddReportScreen>
 
   // إضافة متغيرات للصور
   final ImagePicker _picker = ImagePicker();
-  List<File> _reportImages = [];
+  List<XFile> _reportImages = [];
 
   // خدمة Realtime Database للبلاغات
   final CommunityRealtimeService _realtimeService = CommunityRealtimeService();
@@ -108,7 +109,7 @@ class _AddReportScreenState extends State<AddReportScreen>
       );
       if (image != null) {
         setState(() {
-          _reportImages.add(File(image.path));
+          _reportImages.add(image);
         });
       }
     } catch (e) {
@@ -124,10 +125,7 @@ class _AddReportScreenState extends State<AddReportScreen>
       );
       if (images != null && images.isNotEmpty) {
         setState(() {
-          _reportImages.addAll(
-            images.map((image) => File(image.path)).toList(),
-          );
-          // تحديد الحد الأقصى للصور (3 صور)
+          _reportImages.addAll(images);
           if (_reportImages.length > 3) {
             _reportImages = _reportImages.sublist(0, 3);
             _showErrorSnackBar('يمكنك إضافة 3 صور كحد أقصى');
@@ -756,35 +754,7 @@ class _AddReportScreenState extends State<AddReportScreen>
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            _reportImages[index],
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red,
-                                      size: 24,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'خطأ في الصورة',
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                          child: _buildImageWidget(_reportImages[index]),
                         ),
                       ),
                       Positioned(
@@ -1178,35 +1148,7 @@ class _AddReportScreenState extends State<AddReportScreen>
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              _reportImages[index],
-                              fit: BoxFit.cover,
-                              width: 100,
-                              height: 100,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade200,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: Colors.red,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'خطأ في الصورة',
-                                        style: TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                            child: _buildImageWidget(_reportImages[index]),
                           ),
                         );
                       },
@@ -1851,5 +1793,60 @@ class _AddReportScreenState extends State<AddReportScreen>
       case ReportType.other:
         return IncidentType.other;
     }
+  }
+
+  // عند رفع الصور
+  Future<Uint8List> _readImageBytes(XFile xfile) async {
+    return xfile.readAsBytes();
+  }
+
+  // عند العرض:
+  Widget _buildImageWidget(XFile xfile) {
+    if (kIsWeb) {
+      return FutureBuilder<Uint8List>(
+        future: _readImageBytes(xfile),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done &&
+              snapshot.hasData) {
+            return Image.memory(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              width: 100,
+              height: 100,
+              errorBuilder: (context, error, stackTrace) => _errorImageWidget(),
+            );
+          } else if (snapshot.hasError) {
+            return _errorImageWidget();
+          } else {
+            return Center(child: CircularProgressIndicator(strokeWidth: 2));
+          }
+        },
+      );
+    } else {
+      return Image.file(
+        File(xfile.path),
+        fit: BoxFit.cover,
+        width: 100,
+        height: 100,
+        errorBuilder: (context, error, stackTrace) => _errorImageWidget(),
+      );
+    }
+  }
+
+  Widget _errorImageWidget() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 24),
+          const SizedBox(height: 4),
+          Text(
+            'خطأ في الصورة',
+            style: TextStyle(color: Colors.red, fontSize: 10),
+          ),
+        ],
+      ),
+    );
   }
 }
