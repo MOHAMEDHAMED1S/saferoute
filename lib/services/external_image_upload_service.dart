@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ExternalImageUploadService {
   static const String _uploadEndpoint =
@@ -29,24 +31,58 @@ class ExternalImageUploadService {
       );
 
       if (!hasValidExtension) {
+        debugPrint('نوع الصورة غير مدعوم. فقط JPEG, PNG, GIF, WebP مسموح بها.');
         throw Exception(
-          'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.',
+          'نوع الصورة غير مدعوم. فقط JPEG, PNG, GIF, WebP مسموح بها.',
         );
       }
 
       // Create multipart request
       var request = http.MultipartRequest('POST', Uri.parse(_uploadEndpoint));
 
+      // Determine content type based on file extension
+      String? contentType = lookupMimeType(imageFile.name);
+      if (contentType == null) {
+        // Fallback based on file extension
+        final extension = fileName.split('.').last.toLowerCase();
+        switch (extension) {
+          case 'jpg':
+          case 'jpeg':
+            contentType = 'image/jpeg';
+            break;
+          case 'png':
+            contentType = 'image/png';
+            break;
+          case 'gif':
+            contentType = 'image/gif';
+            break;
+          case 'webp':
+            contentType = 'image/webp';
+            break;
+          default:
+            contentType = 'application/octet-stream';
+        }
+      }
+
       if (kIsWeb) {
         // للويب: استخدم bytes
         Uint8List bytes = await imageFile.readAsBytes();
         request.files.add(
-          http.MultipartFile.fromBytes('file', bytes, filename: imageFile.name),
+          http.MultipartFile.fromBytes(
+            'file', 
+            bytes, 
+            filename: imageFile.name,
+            contentType: MediaType.parse(contentType),
+          ),
         );
       } else {
         // للموبايل: استخدم المسار
         request.files.add(
-          await http.MultipartFile.fromPath('file', imageFile.path),
+          await http.MultipartFile.fromPath(
+            'file', 
+            imageFile.path,
+            contentType: MediaType.parse(contentType),
+          ),
         );
       }
 

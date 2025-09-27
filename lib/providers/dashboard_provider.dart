@@ -135,7 +135,7 @@ class DashboardProvider extends ChangeNotifier {
 
       // Query reports within 5km radius
       final querySnapshot = await reportsCollection
-          .where('status', isEqualTo: 'verified')
+          // .where('status', isEqualTo: 'verified') // مؤقتًا علق هذا السطر
           .get();
 
       final List<NearbyReport> reports = [];
@@ -176,6 +176,7 @@ class DashboardProvider extends ChangeNotifier {
           );
         }
       }
+      debugPrint('عدد البلاغات المحملة من Firebase: ${reports.length}');
 
       // Sort by distance
       reports.sort(

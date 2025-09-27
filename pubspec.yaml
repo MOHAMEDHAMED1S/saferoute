@@ -88,6 +88,8 @@ dependencies:
   dio: ^5.4.0
   web_socket_channel: ^2.4.0
   json_annotation: ^4.8.1
+  mime: ^1.0.4
+  http_parser: ^4.0.2
   
   # Security
   local_auth: ^2.3.0

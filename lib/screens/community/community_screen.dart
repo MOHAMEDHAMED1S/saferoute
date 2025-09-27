@@ -34,6 +34,11 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   // Services
   final CommunityRealtimeService _communityService = CommunityRealtimeService();
+  
+  // Stream subscriptions
+  StreamSubscription<ChatMessage>? _messageSubscription;
+  StreamSubscription<int>? _onlineCountSubscription;
+  StreamSubscription<List<LeaderboardUser>>? _leaderboardSubscription;
 
   String _getIncidentTypeString(IncidentType type) {
     switch (type) {
@@ -94,7 +99,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           }
 
           // الاستماع إلى تحديثات الرسائل في الوقت الحقيقي
-          _communityService.messageStream.listen((newMessage) {
+          _messageSubscription = _communityService.messageStream.listen((newMessage) {
             if (mounted) {
               setState(() {
                 // استخدم Map مؤقت لتفادي التكرار
@@ -110,7 +115,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           });
 
           // الاستماع إلى تحديثات عدد المستخدمين المتصلين
-          _communityService.onlineCountStream.listen((count) {
+          _onlineCountSubscription = _communityService.onlineCountStream.listen((count) {
             if (mounted) {
               setState(() {
                 _onlineUsersCount = count;
@@ -119,7 +124,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           });
 
           // الاستماع إلى تحديثات المتصدرين في الوقت الحقيقي
-          _communityService.leaderboardStream.listen((leaderboard) {
+          _leaderboardSubscription = _communityService.leaderboardStream.listen((leaderboard) {
             if (mounted) {
               setState(() {
                 _leaderboardUsers = leaderboard;
@@ -217,6 +222,11 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   @override
   void dispose() {
+    // Cancel all stream subscriptions to prevent setState on disposed widget
+    _messageSubscription?.cancel();
+    _onlineCountSubscription?.cancel();
+    _leaderboardSubscription?.cancel();
+    
     // تعيين المستخدم كغير متصل عند الخروج
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.userModel != null) {

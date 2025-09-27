@@ -4,14 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:math' as math;
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../providers/reports_provider.dart';
 import '../../models/report_model.dart';
+import '../../models/dashboard_models.dart';
 import '../../models/incident_report.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 import '../../services/reports_firebase_service.dart';
 import '../../services/location_service.dart';
-import '../../services/community_realtime_service.dart';
 
 class AddReportScreen extends StatefulWidget {
   static const String routeName = '/add-report';
@@ -37,9 +40,6 @@ class _AddReportScreenState extends State<AddReportScreen>
   // إضافة متغيرات للصور
   final ImagePicker _picker = ImagePicker();
   List<XFile> _reportImages = [];
-
-  // خدمة Realtime Database للبلاغات
-  final CommunityRealtimeService _realtimeService = CommunityRealtimeService();
 
   final List<String> _stepTitles = [
     'اختر نوع البلاغ',
@@ -76,7 +76,6 @@ class _AddReportScreenState extends State<AddReportScreen>
   void dispose() {
     _descriptionController.dispose();
     _animationController.dispose();
-    _realtimeService.dispose();
     super.dispose();
   }
 
@@ -244,24 +243,32 @@ class _AddReportScreenState extends State<AddReportScreen>
         );
       }
 
-      // إرسال البلاغ إلى Realtime Database للظهور المباشر على الخريطة
+      // إضافة البلاغ إلى Dashboard و Map بدلاً من المجتمع
       try {
-        debugPrint('AddReportScreen: إرسال البلاغ إلى Realtime Database');
-        await _realtimeService.sendIncidentReport(
-          authProvider.userModel!.id,
-          authProvider.userModel!.name,
-          _convertReportTypeToIncidentType(_selectedType!),
-          _descriptionController.text.trim(),
-          currentLocation.latitude,
-          currentLocation.longitude,
+        debugPrint('AddReportScreen: إضافة البلاغ إلى Dashboard والخريطة');
+        
+        // إضافة البلاغ إلى Dashboard Provider
+        final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+        final nearbyReport = NearbyReport(
+          id: reportId,
+          title: '${_getReportTypeNameArabic(_selectedType!)} - ${_descriptionController.text.trim().substring(0, math.min(20, _descriptionController.text.trim().length))}...',
+          description: _descriptionController.text.trim(),
+          distance: '0م', // سيتم حساب المسافة الفعلية في Dashboard Provider
+          timeAgo: 'الآن',
+          confirmations: 0,
+          type: _selectedType!,
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
         );
-        debugPrint(
-          'AddReportScreen: تم إرسال البلاغ إلى Realtime Database بنجاح',
-        );
+        dashboardProvider.addNearbyReport(nearbyReport);
+        
+        // تحديث Reports Provider لإظهار البلاغ على الخريطة
+        final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+        await reportsProvider.refreshLocation();
+        
+        debugPrint('AddReportScreen: تم إضافة البلاغ إلى Dashboard والخريطة بنجاح');
       } catch (e) {
-        debugPrint(
-          'AddReportScreen: خطأ في إرسال البلاغ إلى Realtime Database: $e',
-        );
+        debugPrint('AddReportScreen: خطأ في إضافة البلاغ إلى Dashboard والخريطة: $e');
         // لا نوقف العملية هنا، البلاغ تم حفظه في Firestore
       }
 
@@ -1771,7 +1778,7 @@ class _AddReportScreenState extends State<AddReportScreen>
     }
   }
 
-  // تحويل نوع البلاغ من Firestore إلى Realtime Database
+  // تحويل نوع البلاغ من ReportType إلى IncidentType
   IncidentType _convertReportTypeToIncidentType(ReportType reportType) {
     switch (reportType) {
       case ReportType.accident:
@@ -1848,5 +1855,29 @@ class _AddReportScreenState extends State<AddReportScreen>
         ],
       ),
     );
+  }
+
+  // دالة للحصول على اسم نوع الإبلاغ بالعربية
+  String _getReportTypeNameArabic(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return 'حادث';
+      case ReportType.jam:
+        return 'ازدحام';
+      case ReportType.carBreakdown:
+        return 'عطل سيارة';
+      case ReportType.bump:
+        return 'مطب';
+      case ReportType.closedRoad:
+        return 'طريق مغلق';
+      case ReportType.hazard:
+        return 'خطر';
+      case ReportType.police:
+        return 'شرطة';
+      case ReportType.traffic:
+        return 'إشارة مرور';
+      case ReportType.other:
+        return 'أخرى';
+    }
   }
 }
