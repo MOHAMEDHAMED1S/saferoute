@@ -86,3 +86,4 @@ class _DefaultLoadingWidget extends StatelessWidget {
     );
   }
 }
+

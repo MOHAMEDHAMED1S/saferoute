@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/community_service.dart';
+import '../services/community_realtime_service.dart';
 import '../models/chat_message.dart';
 import '../services/auth_service.dart';
 
@@ -14,7 +14,7 @@ class CommunityChatScreen extends StatefulWidget {
 class _CommunityChatScreenState extends State<CommunityChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late CommunityService _communityService;
+  late CommunityRealtimeService _communityService;
   late AuthService _authService;
   List<ChatMessage> _messages = [];
   int _onlineUsersCount = 0;
@@ -28,57 +28,66 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
 
   void _initializeServices() async {
     _authService = Provider.of<AuthService>(context, listen: false);
-    _communityService = CommunityService();
+    _communityService = CommunityRealtimeService();
     
     await _communityService.initialize();
     
-    // الاستماع للرسائل الجديدة
+    // الاستماع للرسائل الجديدة في الوقت الفعلي
     _communityService.messageStream.listen((message) {
-      setState(() {
-        // إضافة الرسالة الجديدة أو تحديث الموجودة
-        final existingIndex = _messages.indexWhere((m) => m.id == message.id);
-        if (existingIndex != -1) {
-          _messages[existingIndex] = message;
-        } else {
-          _messages.insert(0, message);
+      if (mounted) {
+        setState(() {
+          // إضافة الرسالة الجديدة فقط إذا لم تكن موجودة
+          final existingIndex = _messages.indexWhere((m) => m.id == message.id);
+          if (existingIndex == -1) {
+            // إضافة الرسالة الجديدة في المقدمة (أحدث رسالة)
+            _messages.insert(0, message);
+          } else {
+            // تحديث الرسالة الموجودة
+            _messages[existingIndex] = message;
+          }
+        });
+        
+        // التمرير للأسفل عند وصول رسالة جديدة (فقط إذا كان المستخدم في الأسفل)
+        if (_scrollController.hasClients && _scrollController.offset < 100) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
         }
-      });
-      
-      // التمرير للأسفل عند وصول رسالة جديدة
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
       }
     });
 
     // الاستماع لعدد المستخدمين المتصلين
     _communityService.onlineCountStream.listen((count) {
-      setState(() {
-        _onlineUsersCount = count;
-      });
+      if (mounted) {
+        setState(() {
+          _onlineUsersCount = count;
+        });
+      }
     });
 
     // تحميل الرسائل الموجودة
     _loadExistingMessages();
   }
-
   void _loadExistingMessages() async {
     try {
       final messages = await _communityService.getChatMessages();
-      setState(() {
-        _messages = messages;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _messages = messages;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في تحميل الرسائل: $e')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في تحميل الرسائل: $e')),
+        );
+      }
     }
   }
 
@@ -89,17 +98,21 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
     _messageController.clear();
 
     try {
-      // إنشاء رسالة جديدة
-      final message = ChatMessage(
-        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-        userId: 'current_user_id', // يجب الحصول على معرف المستخدم الحقيقي
-        userName: 'المستخدم الحالي', // يجب الحصول على اسم المستخدم الحقيقي
-        message: messageText,
-        timestamp: DateTime.now(),
-        messageType: MessageType.text,
+      // الحصول على بيانات المستخدم الحالي
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('يجب تسجيل الدخول أولاً')),
+        );
+        return;
+      }
+
+      // إرسال الرسالة باستخدام الخدمة الجديدة
+      await _communityService.sendMessage(
+        currentUser.uid,
+        currentUser.displayName ?? 'مستخدم',
+        messageText,
       );
-      
-      await _communityService.sendMessage(message);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('خطأ في إرسال الرسالة: $e')),

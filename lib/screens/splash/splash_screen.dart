@@ -59,10 +59,28 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    _logoAnimationController.forward();
+
+    // تحقق من أن الـ widget ما زال mounted
+    if (mounted) {
+      try {
+        _logoAnimationController.forward();
+      } catch (e) {
+        // تجاهل الخطأ إذا تم dispose الـ controller
+        debugPrint('AnimationController already disposed: $e');
+      }
+    }
 
     await Future.delayed(const Duration(milliseconds: 1000));
-    _fadeAnimationController.forward();
+
+    // تحقق من أن الـ widget ما زال mounted
+    if (mounted) {
+      try {
+        _fadeAnimationController.forward();
+      } catch (e) {
+        // تجاهل الخطأ إذا تم dispose الـ controller
+        debugPrint('AnimationController already disposed: $e');
+      }
+    }
 
     await Future.delayed(const Duration(milliseconds: 3000));
     // _navigateToNextScreen(); // This line is removed as per the new_code

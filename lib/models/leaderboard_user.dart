@@ -52,6 +52,33 @@ class LeaderboardUser {
     );
   }
 
+  // Firebase Realtime Database methods
+  factory LeaderboardUser.fromRealtimeDatabase(String id, Map<String, dynamic> data) {
+    return LeaderboardUser(
+      id: id,
+      name: data['userName'] as String? ?? data['name'] as String,
+      photoUrl: data['photoUrl'] as String?,
+      points: data['points'] as int? ?? 0,
+      rank: 0, // سيتم حساب الترتيب منفصل
+      safetyReports: data['safetyReports'] as int? ?? 0,
+      helpfulTips: data['helpfulTips'] as int? ?? 0,
+      badge: data['badge'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toRealtimeDatabase() {
+    return {
+      'userId': id,
+      'userName': name,
+      'photoUrl': photoUrl,
+      'points': points,
+      'safetyReports': safetyReports,
+      'helpfulTips': helpfulTips,
+      'badge': badge,
+      'lastUpdated': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

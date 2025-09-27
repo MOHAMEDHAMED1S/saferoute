@@ -129,6 +129,62 @@ class ChatMessage {
     };
   }
 
+  // Firebase Realtime Database methods
+  factory ChatMessage.fromRealtimeDatabase(String id, Map<String, dynamic> data) {
+    return ChatMessage(
+      id: id,
+      userId: data['userId'] as String,
+      userName: data['userName'] as String,
+      message: data['message'] as String,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(data['timestamp'] as int),
+      userAvatar: data['userAvatar'] as String?,
+      isDelivered: data['isDelivered'] as bool? ?? false,
+      isRead: data['isRead'] as bool? ?? false,
+      messageType: MessageType.values.firstWhere(
+        (e) => e.toString().split('.').last == data['messageType'],
+        orElse: () => MessageType.text,
+      ),
+      metadata: data['metadata'] != null 
+          ? Map<String, dynamic>.from(data['metadata'] as Map)
+          : null,
+      editedAt: data['editedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(data['editedAt'] as int)
+          : null,
+      deletedAt: data['deletedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(data['deletedAt'] as int)
+          : null,
+      replyTo: data['replyTo'] as String?,
+      reactions: data['reactions'] != null
+          ? Map<String, List<String>>.from(
+              (data['reactions'] as Map).map(
+                (key, value) => MapEntry(
+                  key.toString(),
+                  List<String>.from(value as List),
+                ),
+              ),
+            )
+          : {},
+    );
+  }
+
+  Map<String, dynamic> toRealtimeDatabase() {
+    return {
+      'userId': userId,
+      'userName': userName,
+      'message': message,
+      'timestamp': timestamp.millisecondsSinceEpoch,
+      'userAvatar': userAvatar,
+      'isDelivered': isDelivered,
+      'isRead': isRead,
+      'messageType': messageType.toString().split('.').last,
+      'metadata': metadata,
+      'editedAt': editedAt?.millisecondsSinceEpoch,
+      'deletedAt': deletedAt?.millisecondsSinceEpoch,
+      'replyTo': replyTo,
+      'reactions': reactions,
+    };
+  }
+
   ChatMessage copyWith({
     String? id,
     String? userId,

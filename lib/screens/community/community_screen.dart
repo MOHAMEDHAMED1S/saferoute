@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/community_service.dart';
+import '../../services/community_realtime_service.dart';
 import '../../models/chat_message.dart';
 import '../../models/leaderboard_user.dart';
 import '../../models/incident_report.dart';
@@ -33,7 +33,28 @@ class _CommunityScreenState extends State<CommunityScreen>
   int _onlineUsersCount = 0;
 
   // Services
-  final CommunityService _communityService = CommunityService();
+  final CommunityRealtimeService _communityService = CommunityRealtimeService();
+
+  String _getIncidentTypeString(IncidentType type) {
+    switch (type) {
+      case IncidentType.accident:
+        return 'حادث';
+      case IncidentType.roadBlock:
+        return 'حاجز طريق';
+      case IncidentType.policeCheckpoint:
+        return 'نقطة تفتيش';
+      case IncidentType.hazard:
+        return 'خطر';
+      case IncidentType.traffic:
+        return 'ازدحام مروري';
+      case IncidentType.speedBump:
+        return 'مطب';
+      case IncidentType.construction:
+        return 'أعمال إنشاء';
+      case IncidentType.other:
+        return 'أخرى';
+    }
+  }
 
   @override
   void initState() {
@@ -60,40 +81,29 @@ class _CommunityScreenState extends State<CommunityScreen>
     _communityService
         .initialize()
         .then((_) {
+          // تعيين المستخدم كمتصل
+          final authProvider = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          );
+          if (authProvider.userModel != null) {
+            _communityService.setUserOnline(
+              authProvider.userModel!.id,
+              authProvider.userModel!.name,
+            );
+          }
+
           // الاستماع إلى تحديثات الرسائل في الوقت الحقيقي
           _communityService.messageStream.listen((newMessage) {
             if (mounted) {
               setState(() {
-                // تجنب إضافة الرسائل المكررة
-                final existingIndex = _messages.indexWhere(
-                  (msg) => msg.id == newMessage.id,
-                );
-                if (existingIndex != -1) {
-                  // تحديث الرسالة الموجودة
-                  _messages[existingIndex] = newMessage;
-                } else {
-                  // إضافة رسالة جديدة فقط إذا لم تكن موجودة
-                  // وتجنب إضافة الرسائل المؤقتة مرة أخرى
-                  final tempIndex = _messages.indexWhere(
-                    (msg) =>
-                        msg.userId == newMessage.userId &&
-                        msg.message == newMessage.message &&
-                        msg.id.startsWith('temp_') &&
-                        msg.timestamp
-                                .difference(newMessage.timestamp)
-                                .abs()
-                                .inSeconds <
-                            5,
-                  );
-
-                  if (tempIndex != -1) {
-                    // استبدال الرسالة المؤقتة بالرسالة الحقيقية
-                    _messages[tempIndex] = newMessage;
-                  } else {
-                    // إضافة رسالة جديدة
-                    _messages.add(newMessage);
-                  }
-                }
+                // استخدم Map مؤقت لتفادي التكرار
+                final Map<String, ChatMessage> messagesMap = {
+                  for (var msg in _messages) msg.id: msg,
+                };
+                messagesMap[newMessage.id] = newMessage;
+                _messages = messagesMap.values.toList()
+                  ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
               });
               _scrollToBottom();
             }
@@ -160,50 +170,15 @@ class _CommunityScreenState extends State<CommunityScreen>
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      // إنشاء رسالة مؤقتة لعرضها فوراً
-      final tempMessage = ChatMessage(
-        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-        userId: authProvider.userModel?.id ?? '',
-        userName: authProvider.userModel?.name ?? 'مستخدم',
-        message: messageText,
-        timestamp: DateTime.now(),
-        userAvatar: authProvider.userModel?.photoUrl,
-        isDelivered: false, // مؤقتة - لم يتم التأكيد بعد
-        isRead: false,
-      );
-
-      // إضافة الرسالة فوراً للواجهة
-      setState(() {
-        _messages.add(tempMessage);
-      });
-      _scrollToBottom();
       _messageController.clear();
 
-      // إرسال الرسالة للخادم
-      final sentMessage = await _communityService.sendChatMessage(
-        userId: authProvider.userModel?.id ?? '',
-        userName: authProvider.userModel?.name ?? 'مستخدم',
-        message: messageText,
-        userAvatar: authProvider.userModel?.photoUrl,
+      // إرسال الرسالة باستخدام الخدمة الجديدة
+      await _communityService.sendMessage(
+        authProvider.userModel?.id ?? '',
+        authProvider.userModel?.name ?? 'مستخدم',
+        messageText,
       );
-
-      // تحديث الرسالة المؤقتة بالرسالة الحقيقية
-      setState(() {
-        final tempIndex = _messages.indexWhere(
-          (msg) => msg.id == tempMessage.id,
-        );
-        if (tempIndex != -1) {
-          _messages[tempIndex] = sentMessage.copyWith(
-            isDelivered: true,
-            isRead: false,
-          );
-        }
-      });
     } catch (e) {
-      // إزالة الرسالة المؤقتة في حالة الفشل
-      setState(() {
-        _messages.removeWhere((msg) => msg.id.startsWith('temp_'));
-      });
       _showErrorSnackBar('فشل في إرسال الرسالة');
     } finally {
       setState(() {
@@ -217,11 +192,12 @@ class _CommunityScreenState extends State<CommunityScreen>
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       await _communityService.sendIncidentReport(
-        userId: authProvider.userModel?.id ?? '',
-        userName: authProvider.userModel?.name ?? 'مستخدم',
-        incidentType: type,
-        // يمكن إضافة الموقع الحالي هنا
-        // location: {'lat': latitude, 'lng': longitude},
+        authProvider.userModel?.id ?? '',
+        authProvider.userModel?.name ?? 'مستخدم',
+        type,
+        'تم الإبلاغ عن ${_getIncidentTypeString(type)}',
+        0.0, // latitude - يمكن إضافة الموقع الحقيقي لاحقاً
+        0.0, // longitude - يمكن إضافة الموقع الحقيقي لاحقاً
       );
 
       _showSuccessSnackBar('تم إرسال البلاغ بنجاح');
@@ -232,6 +208,12 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   @override
   void dispose() {
+    // تعيين المستخدم كغير متصل عند الخروج
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.userModel != null) {
+      _communityService.setUserOffline(authProvider.userModel!.id);
+    }
+
     _tabController.dispose();
     _messageController.dispose();
     _chatScrollController.dispose();
