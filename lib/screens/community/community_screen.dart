@@ -117,6 +117,15 @@ class _CommunityScreenState extends State<CommunityScreen>
               });
             }
           });
+
+          // الاستماع إلى تحديثات المتصدرين في الوقت الحقيقي
+          _communityService.leaderboardStream.listen((leaderboard) {
+            if (mounted) {
+              setState(() {
+                _leaderboardUsers = leaderboard;
+              });
+            }
+          });
         })
         .catchError((error) {
           if (mounted) {
@@ -611,7 +620,7 @@ class _CommunityScreenState extends State<CommunityScreen>
                                   ? (message.isRead
                                         ? Icons.done_all
                                         : Icons.done)
-                                  : Icons.access_time,
+                                  : Icons.done,
                               size: 12,
                               color: message.isRead
                                   ? Colors.blue
@@ -740,25 +749,33 @@ class _CommunityScreenState extends State<CommunityScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'المتصدرين هذا الأسبوع',
-              style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Icon(Icons.emoji_events, color: Colors.amber, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'المتصدرين هذا الأسبوع',
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (_leaderboardUsers.isEmpty)
               _buildEmptyLeaderboard()
             else
-              ..._leaderboardUsers.asMap().entries.map((entry) {
-                final index = entry.key;
-                final user = entry.value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildLeaderboardItem(rank: index + 1, user: user),
-                );
-              }),
+              Column(
+                children: _leaderboardUsers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final user = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildLeaderboardItem(rank: index + 1, user: user),
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 100),
           ],
         ),
@@ -793,61 +810,93 @@ class _CommunityScreenState extends State<CommunityScreen>
     final isCurrentUser = user.userId == authProvider.userModel?.id;
 
     return LiquidGlassContainer(
-      type: LiquidGlassType.secondary,
+      type: isCurrentUser ? LiquidGlassType.primary : LiquidGlassType.secondary,
       isInteractive: true,
       padding: const EdgeInsets.all(18),
       borderRadius: BorderRadius.circular(16),
       margin: const EdgeInsets.only(bottom: 2),
       child: Row(
         children: [
+          // ترتيب المستخدم
           Container(
-            width: 40,
-            height: 40,
+            width: 45,
+            height: 45,
             decoration: BoxDecoration(
-              color: rank <= 3
+              gradient: rank <= 3
                   ? (rank == 1
-                        ? Colors.amber
+                        ? LinearGradient(
+                            colors: [Colors.amber, Colors.orange],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
                         : rank == 2
-                        ? Colors.grey[300]
-                        : Colors.orange[300])
-                  : Colors.blueAccent.withAlpha((255 * 0.15).toInt()),
+                        ? LinearGradient(
+                            colors: [Colors.grey[300]!, Colors.grey[400]!],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : LinearGradient(
+                            colors: [Colors.orange[300]!, Colors.orange[400]!],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ))
+                  : LinearGradient(
+                      colors: [
+                        Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
+                        Colors.blueAccent.withAlpha((255 * 0.5).toInt()),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               shape: BoxShape.circle,
+              boxShadow: rank <= 3
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withAlpha((255 * 0.1).toInt()),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Center(
               child: rank <= 3
                   ? Icon(
                       Icons.emoji_events,
                       color: rank == 1 ? Colors.white : Colors.grey[800],
-                      size: 20,
+                      size: 22,
                     )
                   : Text(
                       '#$rank',
                       style: TextStyle(
                         color: Colors.blueAccent,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 14,
                       ),
                     ),
             ),
           ),
           const SizedBox(width: 16),
+          // صورة المستخدم
           CircleAvatar(
-            radius: 20,
+            radius: 22,
             backgroundColor: Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
             backgroundImage: user.avatarUrl != null
                 ? NetworkImage(user.avatarUrl!)
                 : null,
             child: user.avatarUrl == null
                 ? Text(
-                    user.name.substring(0, 1),
+                    user.name.substring(0, 1).toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   )
                 : null,
           ),
           const SizedBox(width: 16),
+          // معلومات المستخدم
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -855,33 +904,54 @@ class _CommunityScreenState extends State<CommunityScreen>
                 Text(
                   user.name,
                   style: LiquidGlassTheme.headerTextStyle.copyWith(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: isCurrentUser
                         ? FontWeight.bold
                         : FontWeight.w600,
                     color: isCurrentUser ? Colors.blueAccent : null,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '${user.points} نقطة',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 13),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.stars, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${user.points} نقطة',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          // علامة "أنت" للمستخدم الحالي
           if (isCurrentUser)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blueAccent,
+                gradient: LinearGradient(
+                  colors: [Colors.blueAccent, Colors.blue[600]!],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blueAccent.withAlpha((255 * 0.3).toInt()),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 'أنت',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                 ),
               ),
