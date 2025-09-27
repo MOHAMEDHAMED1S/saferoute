@@ -4,6 +4,8 @@ import '../models/report_model.dart';
 import 'package:saferoute/services/firebase_schema_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'dart:math' as math;
 
 class DashboardProvider extends ChangeNotifier {
@@ -52,6 +54,9 @@ class DashboardProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Load cached reports first for immediate display
+      await _loadCachedReports();
+      
       // Load data from Firebase
       await _loadStats();
       await _loadNearbyReportsFromFirebase();
@@ -61,11 +66,106 @@ class DashboardProvider extends ChangeNotifier {
       _filteredReports = List.from(
         _nearbyReports,
       ); // Initialize filtered reports
+      
+      // Save reports to cache after loading from Firebase
+      await _saveReportsToCache();
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  // حفظ البلاغات محلياً
+  Future<void> _saveReportsToCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final reportsJson = _nearbyReports
+          .map((report) => jsonEncode({
+                'id': report.id,
+                'title': report.title,
+                'description': report.description,
+                'distance': report.distance,
+                'timeAgo': report.timeAgo,
+                'confirmations': report.confirmations,
+                'type': report.type.toString(),
+                'latitude': report.latitude,
+                'longitude': report.longitude,
+              }))
+          .toList();
+      
+      await prefs.setStringList('dashboard_nearby_reports', reportsJson);
+      await prefs.setString('dashboard_cache_timestamp', DateTime.now().toIso8601String());
+      debugPrint('تم حفظ ${_nearbyReports.length} بلاغ محلياً');
+    } catch (e) {
+      debugPrint('خطأ في حفظ البلاغات محلياً: $e');
+    }
+  }
+
+  // تحميل البلاغات المحفوظة محلياً
+  Future<void> _loadCachedReports() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final reportsJson = prefs.getStringList('dashboard_nearby_reports');
+      final cacheTimestamp = prefs.getString('dashboard_cache_timestamp');
+      
+      if (reportsJson != null && cacheTimestamp != null) {
+        final cacheTime = DateTime.parse(cacheTimestamp);
+        final now = DateTime.now();
+        
+        // استخدم البيانات المحفوظة إذا كانت أحدث من 10 دقائق
+        if (now.difference(cacheTime).inMinutes < 10) {
+          final List<NearbyReport> cachedReports = [];
+          
+          for (String reportJson in reportsJson) {
+            final Map<String, dynamic> reportData = jsonDecode(reportJson);
+            cachedReports.add(NearbyReport(
+              id: reportData['id'],
+              title: reportData['title'],
+              description: reportData['description'],
+              distance: reportData['distance'],
+              timeAgo: reportData['timeAgo'],
+              confirmations: reportData['confirmations'],
+              type: _parseReportType(reportData['type']),
+              latitude: reportData['latitude'],
+              longitude: reportData['longitude'],
+            ));
+          }
+          
+          _nearbyReports.clear();
+          _nearbyReports.addAll(cachedReports);
+          _filteredReports = List.from(_nearbyReports);
+          debugPrint('تم تحميل ${cachedReports.length} بلاغ من الذاكرة المحلية');
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل البلاغات المحفوظة: $e');
+    }
+  }
+
+  // تحويل نص نوع البلاغ إلى enum
+  ReportType _parseReportType(String typeString) {
+    switch (typeString) {
+      case 'ReportType.accident':
+        return ReportType.accident;
+      case 'ReportType.jam':
+        return ReportType.jam;
+      case 'ReportType.carBreakdown':
+        return ReportType.carBreakdown;
+      case 'ReportType.bump':
+        return ReportType.bump;
+      case 'ReportType.closedRoad':
+        return ReportType.closedRoad;
+      case 'ReportType.hazard':
+        return ReportType.hazard;
+      case 'ReportType.police':
+        return ReportType.police;
+      case 'ReportType.traffic':
+        return ReportType.traffic;
+      default:
+        return ReportType.other;
     }
   }
 
@@ -142,9 +242,18 @@ class DashboardProvider extends ChangeNotifier {
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        final location = data['location'] as Map<String, dynamic>;
-        final double reportLat = (location['latitude'] as num).toDouble();
-        final double reportLng = (location['longitude'] as num).toDouble();
+        final location = data['location'] as Map<String, dynamic>?;
+        
+        // تحقق من وجود بيانات الموقع
+        if (location == null || 
+            location['lat'] == null || 
+            location['lng'] == null) {
+          debugPrint('تخطي البلاغ ${doc.id} - بيانات الموقع مفقودة');
+          continue;
+        }
+        
+        final double reportLat = (location['lat'] as num).toDouble();
+        final double reportLng = (location['lng'] as num).toDouble();
 
         // Calculate distance
         final distanceInMeters = Geolocator.distanceBetween(
@@ -156,16 +265,25 @@ class DashboardProvider extends ChangeNotifier {
 
         // Only include reports within 5km
         if (distanceInMeters <= 5000) {
+          // تحقق من وجود البيانات المطلوبة
+          if (data['createdAt'] == null || 
+              data['description'] == null || 
+              data['type'] == null) {
+            debugPrint('تخطي البلاغ ${doc.id} - بيانات مفقودة');
+            continue;
+          }
+          
           final createdAt = (data['createdAt'] as Timestamp).toDate();
           final timeAgo = _getTimeAgo(createdAt);
           final distance = _formatDistance(distanceInMeters);
+          final description = data['description'] as String? ?? '';
 
           reports.add(
             NearbyReport(
               id: doc.id,
               title:
-                  '${_getReportTypeNameArabic(data['type'])} - ${data['description'].substring(0, math.min(20, data['description'].length))}...',
-              description: data['description'],
+                  '${_getReportTypeNameArabic(data['type'])} - ${description.isNotEmpty ? description.substring(0, math.min(20, description.length)) : 'بلاغ'}...',
+              description: description,
               distance: distance,
               timeAgo: timeAgo,
               confirmations: (data['verifiedBy'] as List?)?.length ?? 0,

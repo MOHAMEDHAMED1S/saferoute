@@ -1361,116 +1361,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
 
     return GestureDetector(
       onTap: () {
-        // عرض التفاصيل
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: Colors
-                  .transparent, // Make alert dialog background transparent
-              contentPadding: EdgeInsets.zero, // Remove default padding
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28), // Larger border radius
-              ),
-              content: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      LiquidGlassTheme.primaryGlass,
-                      LiquidGlassTheme.primaryGlass.withValues(alpha: 0.8),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: LiquidGlassTheme.borderSecondary,
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                      child: Text(
-                        'تفاصيل البلاغ',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                    Divider(color: Colors.grey.shade300, height: 1),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 15),
-                          _buildDetailRow(
-                            Icons.location_on,
-                            'المسافة:',
-                            distance,
-                          ),
-                          const SizedBox(height: 10),
-                          _buildDetailRow(Icons.access_time, 'الوقت:', time),
-                          const SizedBox(height: 10),
-                          _buildDetailRow(
-                            Icons.warning,
-                            'مستوى الخطورة:',
-                            severity,
-                            color: _getSeverityColor(severity),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildDetailRow(
-                            Icons.directions_car,
-                            'السيارات المتأثرة:',
-                            '$affectedCars',
-                          ),
-                        ],
-                      ),
-                    ),
-                    Divider(color: Colors.grey.shade300, height: 1),
-                    Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(
-                          'إغلاق',
-                          style: TextStyle(
-                            color: LiquidGlassTheme.getGradientByName(
-                              'primary',
-                            ).colors.first,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
+        // عرض التفاصيل المحسنة
+        _showEnhancedReportDetails(title, distance, time, icon, severity, affectedCars);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -1619,126 +1511,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      // عرض التفاصيل
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            backgroundColor: Colors.transparent,
-                            contentPadding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            content: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    LiquidGlassTheme.primaryGlass,
-                                    LiquidGlassTheme.primaryGlass.withValues(
-                                      alpha: 0.8,
-                                    ),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(28),
-                                border: Border.all(
-                                  color: LiquidGlassTheme.borderSecondary,
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          'مشاركة البلاغ',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: LiquidGlassTheme.textColor,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          'سيتم مشاركة هذا البلاغ مع الآخرين',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: LiquidGlassTheme.textColor
-                                                .withValues(alpha: 0.8),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Divider(
-                                    color: Colors.grey.shade300,
-                                    height: 1,
-                                  ),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(context).pop(),
-                                          child: Text(
-                                            'إلغاء',
-                                            style: TextStyle(
-                                              color: LiquidGlassTheme.textColor
-                                                  .withValues(alpha: 0.7),
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'تم مشاركة البلاغ بنجاح',
-                                                ),
-                                                backgroundColor: Colors.green,
-                                              ),
-                                            );
-                                          },
-                                          child: Text(
-                                            'مشاركة',
-                                            style: TextStyle(
-                                              color:
-                                                  LiquidGlassTheme.getGradientByName(
-                                                    'primary',
-                                                  ).colors.first,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
+                      // عرض التفاصيل المحسنة
+                      _showEnhancedReportDetails(title, distance, time, icon, severity, affectedCars);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1771,39 +1545,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      // مشاركة البلاغ
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            title: const Text('مشاركة البلاغ'),
-                            content: const Text(
-                              'سيتم مشاركة هذا البلاغ مع الآخرين',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text('إلغاء'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('تم مشاركة البلاغ بنجاح'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                },
-                                child: const Text('مشاركة'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
+                   _shareEnhancedReport(title, distance, time, severity, null);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -2014,6 +1756,598 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           ),
         ),
       ],
+    );
+  }
+
+  void _showEnhancedReportDetails(String title, String distance, String time, IconData icon, String severity, int affectedCars) {
+    // البحث عن البلاغ في قائمة البلاغات المفلترة للحصول على معلومات إضافية
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    NearbyReport? reportData;
+    try {
+      reportData = dashboardProvider.filteredReports.firstWhere(
+        (report) => report.title.contains(title.split(' - ').first),
+        orElse: () => throw StateError('Report not found'),
+      );
+    } catch (e) {
+      // إذا لم يتم العثور على البلاغ، استخدم البيانات المتاحة
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.transparent,
+          contentPadding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          content: Container(
+            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  LiquidGlassTheme.primaryGlass,
+                  LiquidGlassTheme.primaryGlass.withValues(alpha: 0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: LiquidGlassTheme.borderSecondary,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getSeverityColor(severity).withValues(alpha: 0.1),
+                        _getSeverityColor(severity).withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(28),
+                      topRight: Radius.circular(28),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              _getSeverityColor(severity),
+                              _getSeverityColor(severity).withValues(alpha: 0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _getSeverityColor(severity).withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'تفاصيل البلاغ',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                            Text(
+                              title.split(' - ').first,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getSeverityColor(severity).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _getSeverityColor(severity).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          severity,
+                          style: TextStyle(
+                            color: _getSeverityColor(severity),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                Divider(color: Colors.grey.shade300, height: 1),
+                
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // الوصف
+                        if (reportData?.description != null) ...[
+                          _buildEnhancedDetailSection(
+                            'الوصف',
+                            Icons.description_outlined,
+                            reportData!.description,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                        
+                        // معلومات البلاغ
+                        _buildEnhancedDetailSection(
+                          'معلومات البلاغ',
+                          Icons.info_outline,
+                          null,
+                          children: [
+                            _buildDetailRow(Icons.location_on, 'المسافة:', distance),
+                            const SizedBox(height: 12),
+                            _buildDetailRow(Icons.access_time, 'الوقت:', time),
+                            const SizedBox(height: 12),
+                            _buildDetailRow(
+                              Icons.directions_car,
+                              'السيارات المتأثرة:',
+                              '$affectedCars',
+                            ),
+                            if (reportData != null) ...[
+                              const SizedBox(height: 12),
+                              _buildDetailRow(
+                                Icons.verified_user,
+                                'التأكيدات:',
+                                '${reportData.confirmations}',
+                                color: Colors.green.shade600,
+                              ),
+                            ],
+                          ],
+                        ),
+                        
+                        // إحداثيات الموقع
+                        if (reportData != null) ...[
+                          const SizedBox(height: 20),
+                          _buildEnhancedDetailSection(
+                            'إحداثيات الموقع',
+                            Icons.gps_fixed,
+                            null,
+                            children: [
+                              _buildDetailRow(
+                                Icons.north,
+                                'خط العرض:',
+                                '${reportData.latitude.toStringAsFixed(6)}°',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildDetailRow(
+                                Icons.east,
+                                'خط الطول:',
+                                '${reportData.longitude.toStringAsFixed(6)}°',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                
+                Divider(color: Colors.grey.shade300, height: 1),
+                
+                // Action Buttons
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      // عرض على الخريطة
+                      if (reportData != null)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                              _showReportOnMap(reportData!);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.shade500,
+                                    Colors.blue.shade600,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.map, color: Colors.white, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'عرض على الخريطة',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      
+                      if (reportData != null) const SizedBox(width: 12),
+                      
+                      // مشاركة
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _shareEnhancedReport(title, distance, time, severity, reportData);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.green.shade500,
+                                  Colors.green.shade600,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.green.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.share, color: Colors.white, size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'مشاركة',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(width: 12),
+                      
+                      // إغلاق
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.grey.shade600,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEnhancedDetailSection(String title, IconData icon, String? content, {List<Widget>? children}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ],
+          ),
+          if (content != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              content,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                height: 1.4,
+              ),
+            ),
+          ],
+          if (children != null) ...[
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showReportOnMap(NearbyReport report) {
+    // التنقل إلى شاشة الخريطة مع إظهار موقع البلاغ
+    Navigator.pushNamed(
+      context,
+      '/map',
+      arguments: {
+        'latitude': report.latitude,
+        'longitude': report.longitude,
+        'title': report.title,
+        'description': report.description,
+      },
+    );
+  }
+
+  void _shareEnhancedReport(String title, String distance, String time, String severity, NearbyReport? reportData) {
+    final shareText = '''
+🚨 بلاغ من تطبيق الطريق الآمن
+
+📍 $title
+📝 الوصف: ${reportData?.description ?? 'غير متوفر'}
+📏 المسافة: $distance
+⏰ الوقت: $time
+⚠️ مستوى الخطورة: $severity
+✅ التأكيدات: ${reportData?.confirmations ?? 0}
+
+${reportData != null ? '🗺️ الموقع: ${reportData.latitude.toStringAsFixed(4)}, ${reportData.longitude.toStringAsFixed(4)}' : ''}
+
+#الطريق_الآمن #سلامة_الطرق
+    '''.trim();
+
+    // عرض خيارات المشاركة المحسنة
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              LiquidGlassTheme.primaryGlass,
+              LiquidGlassTheme.primaryGlass.withValues(alpha: 0.9),
+            ],
+          ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          border: Border.all(
+            color: LiquidGlassTheme.borderSecondary,
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Text(
+                    'مشاركة البلاغ',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      shareText,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildShareOption(
+                          'نسخ النص',
+                          Icons.copy,
+                          Colors.blue,
+                          () {
+                            // Clipboard.setData(ClipboardData(text: shareText));
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('تم نسخ النص')),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildShareOption(
+                          'مشاركة',
+                          Icons.share,
+                          Colors.green,
+                          () {
+                            Navigator.pop(context);
+                            // Share.share(shareText);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'إلغاء',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption(String title, IconData icon, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              color,
+              color.withValues(alpha: 0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
