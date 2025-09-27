@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 enum ReportType {
   accident,
@@ -10,6 +11,54 @@ enum ReportType {
   police,
   traffic,
   other,
+}
+
+extension ReportTypeExtension on ReportType {
+  String get displayName {
+    switch (this) {
+      case ReportType.accident:
+        return 'حادث';
+      case ReportType.jam:
+        return 'ازدحام';
+      case ReportType.carBreakdown:
+        return 'سيارة معطلة';
+      case ReportType.bump:
+        return 'مطب';
+      case ReportType.closedRoad:
+        return 'طريق مغلق';
+      case ReportType.hazard:
+        return 'خطر';
+      case ReportType.police:
+        return 'شرطة';
+      case ReportType.traffic:
+        return 'حركة مرور';
+      case ReportType.other:
+        return 'أخرى';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ReportType.accident:
+        return Icons.car_crash;
+      case ReportType.jam:
+        return Icons.traffic;
+      case ReportType.carBreakdown:
+        return Icons.build;
+      case ReportType.bump:
+        return Icons.warning;
+      case ReportType.closedRoad:
+        return Icons.block;
+      case ReportType.hazard:
+        return Icons.warning;
+      case ReportType.police:
+        return Icons.local_police;
+      case ReportType.traffic:
+        return Icons.traffic;
+      case ReportType.other:
+        return Icons.assignment;
+    }
+  }
 }
 
 enum ReportStatus { active, expired, removed, pending, verified, rejected }

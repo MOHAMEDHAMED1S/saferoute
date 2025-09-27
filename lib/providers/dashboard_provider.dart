@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/dashboard_models.dart';
+import '../models/report_model.dart';
 import 'package:saferoute/services/firebase_schema_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,7 +33,7 @@ class DashboardProvider extends ChangeNotifier {
       distance: '1.2كم',
       timeAgo: '45 دقيقة',
       confirmations: 8,
-      type: ReportType.pothole,
+      type: ReportType.bump,
       latitude: 30.0626,
       longitude: 31.2497,
     ),
@@ -137,7 +138,7 @@ class DashboardProvider extends ChangeNotifier {
         break;
       case 'صيانة':
         _filteredReports = _nearbyReports
-            .where((report) => report.type == ReportType.maintenance)
+            .where((report) => report.type == ReportType.other)
             .toList();
         break;
       default:
@@ -257,17 +258,19 @@ class DashboardProvider extends ChangeNotifier {
       case 'accident':
         return ReportType.accident;
       case 'jam':
-        return ReportType.traffic;
+        return ReportType.jam;
       case 'car_breakdown':
-        return ReportType.maintenance;
+        return ReportType.carBreakdown;
       case 'bump':
-        return ReportType.pothole;
+        return ReportType.bump;
       case 'closed_road':
-        return ReportType.roadwork;
+        return ReportType.closedRoad;
       case 'hazard':
-        return ReportType.other;
+        return ReportType.hazard;
       case 'police':
-        return ReportType.other;
+        return ReportType.police;
+      case 'traffic':
+        return ReportType.traffic;
       default:
         return ReportType.other;
     }

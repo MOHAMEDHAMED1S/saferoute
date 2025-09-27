@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'report_model.dart';
 
 class DashboardStats {
   final int nearbyRisks;
@@ -84,75 +85,6 @@ class NearbyReport {
       'latitude': latitude,
       'longitude': longitude,
     };
-  }
-}
-
-enum ReportType {
-  accident,
-  pothole,
-  traffic,
-  roadwork,
-  weather,
-  maintenance,
-  other,
-}
-
-extension ReportTypeExtension on ReportType {
-  String get displayName {
-    switch (this) {
-      case ReportType.accident:
-        return 'حادث';
-      case ReportType.pothole:
-        return 'مطب';
-      case ReportType.traffic:
-        return 'ازدحام';
-      case ReportType.roadwork:
-        return 'أعمال طريق';
-      case ReportType.weather:
-        return 'طقس';
-      case ReportType.maintenance:
-        return 'صيانة';
-      case ReportType.other:
-        return 'أخرى';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case ReportType.accident:
-        return Icons.car_crash;
-      case ReportType.pothole:
-        return Icons.warning;
-      case ReportType.traffic:
-        return Icons.traffic;
-      case ReportType.roadwork:
-        return Icons.construction;
-      case ReportType.weather:
-        return Icons.cloud;
-      case ReportType.maintenance:
-        return Icons.build;
-      case ReportType.other:
-        return Icons.error;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case ReportType.accident:
-        return Colors.red;
-      case ReportType.pothole:
-        return Colors.orange;
-      case ReportType.traffic:
-        return Colors.blue;
-      case ReportType.roadwork:
-        return Colors.amber;
-      case ReportType.weather:
-        return Colors.grey;
-      case ReportType.maintenance:
-        return Colors.brown;
-      case ReportType.other:
-        return Colors.purple;
-    }
   }
 }
 

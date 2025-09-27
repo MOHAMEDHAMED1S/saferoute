@@ -76,10 +76,14 @@ class SafeRouteApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
+        // Add LocationService as a Provider
+        Provider<LocationService>(
+          create: (_) => LocationService(),
+        ),
         ChangeNotifierProvider(
-          create: (_) => ReportsProvider(
+          create: (context) => ReportsProvider(
             firestoreService: FirestoreService(),
-            locationService: LocationService(),
+            locationService: Provider.of<LocationService>(context, listen: false),
           ),
         ),
         ChangeNotifierProvider(create: (_) => NotificationsProvider()),

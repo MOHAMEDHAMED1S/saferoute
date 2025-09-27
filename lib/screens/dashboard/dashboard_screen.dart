@@ -8,6 +8,7 @@ import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/dashboard_models.dart';
+import '../../models/report_model.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
@@ -61,7 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       // فحص إذا كان المستخدم مسجل دخول
       if (!authProvider.isLoggedIn) {
-        print(
+        debugPrint(
           'DashboardScreen: المستخدم غير مسجل دخول، إعادة توجيه لصفحة تسجيل الدخول',
         );
         if (mounted) {
@@ -72,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       // فحص صحة بيانات المستخدم
       if (authProvider.userModel == null) {
-        print(
+        debugPrint(
           'DashboardScreen: بيانات المستخدم غير متوفرة، إعادة توجيه لصفحة تسجيل الدخول',
         );
         if (mounted) {
@@ -84,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       // فحص البيانات الأساسية
       if (authProvider.userModel!.name.isEmpty ||
           authProvider.userModel!.email.isEmpty) {
-        print(
+        debugPrint(
           'DashboardScreen: بيانات المستخدم غير مكتملة، إعادة توجيه لصفحة تسجيل الدخول',
         );
         if (mounted) {
@@ -93,9 +94,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         return;
       }
 
-      print('DashboardScreen: المصادقة صحيحة، يمكن المتابعة');
+      debugPrint('DashboardScreen: المصادقة صحيحة، يمكن المتابعة');
     } catch (e) {
-      print('DashboardScreen: خطأ في فحص المصادقة: $e');
+      debugPrint('DashboardScreen: خطأ في فحص المصادقة: $e');
       // إزالة إعادة التوجيه التلقائي عند الخطأ لتجنب تسجيل الخروج غير المرغوب فيه
       // if (mounted) {
       //   Navigator.of(context).pushReplacementNamed('/login');
@@ -1852,7 +1853,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         return Colors.red.shade500;
       case ReportType.traffic:
         return Colors.orange.shade500;
-      case ReportType.maintenance:
+      case ReportType.other:
         return Colors.blue.shade500;
       default:
         return Colors.grey.shade500;

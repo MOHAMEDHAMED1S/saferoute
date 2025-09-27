@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../models/report_model.dart';
+import '../../models/incident_report.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 import '../../services/reports_firebase_service.dart';
 import '../../services/location_service.dart';
+import '../../services/community_realtime_service.dart';
 
 class AddReportScreen extends StatefulWidget {
   static const String routeName = '/add-report';
@@ -34,6 +37,9 @@ class _AddReportScreenState extends State<AddReportScreen>
   // إضافة متغيرات للصور
   final ImagePicker _picker = ImagePicker();
   List<File> _reportImages = [];
+
+  // خدمة Realtime Database للبلاغات
+  final CommunityRealtimeService _realtimeService = CommunityRealtimeService();
 
   final List<String> _stepTitles = [
     'اختر نوع البلاغ',
@@ -70,6 +76,7 @@ class _AddReportScreenState extends State<AddReportScreen>
   void dispose() {
     _descriptionController.dispose();
     _animationController.dispose();
+    _realtimeService.dispose();
     super.dispose();
   }
 
@@ -162,18 +169,20 @@ class _AddReportScreenState extends State<AddReportScreen>
     });
 
     try {
-      print('AddReportScreen: بدء عملية إرسال البلاغ');
+      debugPrint('AddReportScreen: بدء عملية إرسال البلاغ');
 
       // فحص حالة المصادقة مرة أخرى قبل الإرسال
       if (!authProvider.isLoggedIn || authProvider.userModel == null) {
-        print('AddReportScreen: المستخدم غير مسجل دخول، إعادة توجيه');
-        Navigator.of(context).pushReplacementNamed('/login');
+        debugPrint('AddReportScreen: المستخدم غير مسجل دخول، إعادة توجيه');
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
         return;
       }
 
       // الحصول على الموقع الحالي
       final currentLocation = await locationService.getCurrentLocation();
-      print(
+      debugPrint(
         'AddReportScreen: تم الحصول على الموقع: ${currentLocation.latitude}, ${currentLocation.longitude}',
       );
 
@@ -200,42 +209,68 @@ class _AddReportScreenState extends State<AddReportScreen>
         updatedAt: DateTime.now(),
       );
 
-      print('AddReportScreen: تم إنشاء نموذج البلاغ');
+      debugPrint('AddReportScreen: تم إنشاء نموذج البلاغ');
 
       // رفع الصور وإنشاء الإبلاغ
+      String reportId = '';
       if (_reportImages.isNotEmpty) {
-        print('AddReportScreen: رفع الصور مع البلاغ');
+        debugPrint('AddReportScreen: رفع الصور مع البلاغ');
         // استخدام الدالة الجديدة لرفع الصور وإنشاء الإبلاغ
-        final reportId = await reportsFirebaseService.createReportWithImages(
+        reportId = await reportsFirebaseService.createReportWithImages(
           report,
           _reportImages,
         );
 
-        if (reportId.isNotEmpty) {
-          print('AddReportScreen: تم إرسال البلاغ مع الصور بنجاح: $reportId');
-          _showSuccessDialog();
-        } else {
-          print('AddReportScreen: فشل في إرسال البلاغ مع الصور');
+        if (reportId.isEmpty) {
+          debugPrint('AddReportScreen: فشل في إرسال البلاغ مع الصور');
           _showErrorSnackBar(
             'خطأ في إرسال البلاغ - لم يتم الحصول على معرف البلاغ',
           );
+          return;
         }
+        debugPrint(
+          'AddReportScreen: تم إرسال البلاغ مع الصور بنجاح: $reportId',
+        );
       } else {
-        print('AddReportScreen: إرسال البلاغ بدون صور');
+        debugPrint('AddReportScreen: إرسال البلاغ بدون صور');
         // إنشاء إبلاغ بدون صور
-        final reportId = await reportsFirebaseService.createReport(report);
-        if (reportId.isNotEmpty) {
-          print('AddReportScreen: تم إرسال البلاغ بدون صور بنجاح: $reportId');
-          _showSuccessDialog();
-        } else {
-          print('AddReportScreen: فشل في إرسال البلاغ بدون صور');
+        reportId = await reportsFirebaseService.createReport(report);
+        if (reportId.isEmpty) {
+          debugPrint('AddReportScreen: فشل في إرسال البلاغ بدون صور');
           _showErrorSnackBar(
             'خطأ في إرسال البلاغ - لم يتم الحصول على معرف البلاغ',
           );
+          return;
         }
+        debugPrint(
+          'AddReportScreen: تم إرسال البلاغ بدون صور بنجاح: $reportId',
+        );
       }
+
+      // إرسال البلاغ إلى Realtime Database للظهور المباشر على الخريطة
+      try {
+        debugPrint('AddReportScreen: إرسال البلاغ إلى Realtime Database');
+        await _realtimeService.sendIncidentReport(
+          authProvider.userModel!.id,
+          authProvider.userModel!.name,
+          _convertReportTypeToIncidentType(_selectedType!),
+          _descriptionController.text.trim(),
+          currentLocation.latitude,
+          currentLocation.longitude,
+        );
+        debugPrint(
+          'AddReportScreen: تم إرسال البلاغ إلى Realtime Database بنجاح',
+        );
+      } catch (e) {
+        debugPrint(
+          'AddReportScreen: خطأ في إرسال البلاغ إلى Realtime Database: $e',
+        );
+        // لا نوقف العملية هنا، البلاغ تم حفظه في Firestore
+      }
+
+      _showSuccessDialog();
     } catch (e) {
-      print('AddReportScreen: خطأ في إرسال البلاغ: $e');
+      debugPrint('AddReportScreen: خطأ في إرسال البلاغ: $e');
       _showErrorSnackBar('خطأ في إرسال البلاغ: ${e.toString()}');
     } finally {
       setState(() {
@@ -305,6 +340,8 @@ class _AddReportScreenState extends State<AddReportScreen>
             LiquidGlassButton(
               text: 'حسناً',
               onPressed: () {
+                if (!mounted) return;
+
                 try {
                   // إغلاق الحوار أولاً
                   Navigator.of(context).pop();
@@ -318,14 +355,16 @@ class _AddReportScreenState extends State<AddReportScreen>
                           context,
                         ).pushReplacementNamed('/dashboard');
                       } catch (e) {
-                        print('AddReportScreen: خطأ في التنقل: $e');
+                        debugPrint('AddReportScreen: خطأ في التنقل: $e');
                         // محاولة بديلة للعودة
-                        Navigator.of(context).pop();
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
                       }
                     }
                   });
                 } catch (e) {
-                  print('AddReportScreen: خطأ في إغلاق الحوار: $e');
+                  debugPrint('AddReportScreen: خطأ في إغلاق الحوار: $e');
                   // محاولة إغلاق الحوار بطريقة بديلة
                   if (mounted) {
                     Navigator.of(context).pop();
@@ -1631,6 +1670,30 @@ class _AddReportScreenState extends State<AddReportScreen>
       return 'بعيد';
     } else {
       return 'بعيد جداً';
+    }
+  }
+
+  // تحويل نوع البلاغ من Firestore إلى Realtime Database
+  IncidentType _convertReportTypeToIncidentType(ReportType reportType) {
+    switch (reportType) {
+      case ReportType.accident:
+        return IncidentType.accident;
+      case ReportType.jam:
+        return IncidentType.traffic;
+      case ReportType.carBreakdown:
+        return IncidentType.hazard;
+      case ReportType.bump:
+        return IncidentType.speedBump;
+      case ReportType.closedRoad:
+        return IncidentType.roadBlock;
+      case ReportType.hazard:
+        return IncidentType.hazard;
+      case ReportType.police:
+        return IncidentType.policeCheckpoint;
+      case ReportType.traffic:
+        return IncidentType.traffic;
+      case ReportType.other:
+        return IncidentType.other;
     }
   }
 }
