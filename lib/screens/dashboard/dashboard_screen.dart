@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../maps/basic_map_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/add_report_screen.dart';
 import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart' as auth_provider;
 import '../../models/dashboard_models.dart';
 import '../../models/report_model.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
@@ -58,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _checkAuthenticationStatus() async {
     try {
-      final authProvider = context.read<AuthProvider>();
+      final authProvider = context.read<auth_provider.AuthProvider>();
 
       // فحص إذا كان المستخدم مسجل دخول
       if (!authProvider.isLoggedIn) {
@@ -83,8 +86,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
 
       // فحص البيانات الأساسية
-      if (authProvider.userModel!.name.isEmpty ||
-          authProvider.userModel!.email.isEmpty) {
+      if (authProvider.userModel?.name.isEmpty == true ||
+          authProvider.userModel?.email.isEmpty == true) {
         debugPrint(
           'DashboardScreen: بيانات المستخدم غير مكتملة، إعادة توجيه لصفحة تسجيل الدخول',
         );
@@ -294,15 +297,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
+        color: Colors.white.withValues(alpha:  0.85),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
+          color: Colors.white.withValues(alpha:  0.25),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha:  0.08),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -320,7 +323,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha:  0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -397,8 +400,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withValues(alpha: 0.95),
-                                Colors.white.withValues(alpha: 0.9),
+                                Colors.white.withValues(alpha:  0.95),
+                                Colors.white.withValues(alpha:  0.9),
                               ],
                             ),
                             borderRadius: const BorderRadius.vertical(
@@ -410,7 +413,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
+                                color: Colors.black.withValues(alpha:  0.15),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -775,7 +778,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: Colors.black.withValues(alpha:  0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -851,7 +854,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF667eea).withValues(alpha: 0.35),
+                  color: const Color(0xFF667eea).withValues(alpha:  0.35),
                   blurRadius: 25,
                   offset: const Offset(0, 12),
                 ),
@@ -865,15 +868,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25),
+                color: Colors.white.withValues(alpha:  0.25),
                 width: 1.2,
               ),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.25),
-                  Colors.white.withValues(alpha: 0.05),
+                  Colors.white.withValues(alpha:  0.25),
+                  Colors.white.withValues(alpha:  0.05),
                 ],
               ),
             ),
@@ -899,7 +902,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Consumer<AuthProvider>(
+                                child: Consumer<auth_provider.AuthProvider>(
                                   builder: (context, authProvider, child) {
                                     final userName =
                                         authProvider.userModel?.name ??
@@ -934,10 +937,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               vertical: 7,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
+                              color: Colors.white.withValues(alpha:  0.15),
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3),
+                                color: Colors.white.withValues(alpha:  0.3),
                               ),
                             ),
                             child: Text(
@@ -958,14 +961,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
+                        color: Colors.white.withValues(alpha:  0.18),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
+                          color: Colors.white.withValues(alpha:  0.3),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
+                            color: Colors.black.withValues(alpha:  0.15),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -989,7 +992,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           Text(
                             weather.condition,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
+                              color: Colors.white.withValues(alpha:  0.85),
                               fontSize: 11,
                             ),
                           ),
@@ -1018,18 +1021,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.white.withValues(alpha: 0.28),
-                              Colors.white.withValues(alpha: 0.1),
+                              Colors.white.withValues(alpha:  0.28),
+                              Colors.white.withValues(alpha:  0.1),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(26),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
+                            color: Colors.white.withValues(alpha:  0.3),
                             width: 1.3,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: Colors.white.withValues(alpha:  0.12),
                               blurRadius: 22,
                               offset: const Offset(0, 8),
                             ),
@@ -1086,10 +1089,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
+                                  color: Colors.white.withValues(alpha:  0.15),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
+                                    color: Colors.white.withValues(alpha:  0.3),
                                   ),
                                 ),
                                 child: const Icon(
@@ -1126,7 +1129,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha:  0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1184,7 +1187,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.3),
+                          color: Colors.blue.withValues(alpha:  0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -1279,7 +1282,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   report.timeAgo,
                   report.type.icon,
                   severity: 'متوسط',
-                  affectedCars: 5,
                 ),
               ),
             ),
@@ -1313,14 +1315,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.3),
+                    color: Colors.blue.withValues(alpha:  0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withValues(alpha:  0.05),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -1355,14 +1357,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     String time,
     IconData icon, {
     required String severity,
-    required int affectedCars,
   }) {
     final severityColor = _getSeverityColor(severity);
 
     return GestureDetector(
       onTap: () {
         // عرض التفاصيل المحسنة
-        _showEnhancedReportDetails(title, distance, time, icon, severity, affectedCars);
+        _showEnhancedReportDetails(title, distance, time, icon, severity);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -1375,17 +1376,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: severityColor.withValues(alpha: 0.2),
+            color: severityColor.withValues(alpha:  0.2),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: severityColor.withValues(alpha: 0.15),
+              color: severityColor.withValues(alpha:  0.15),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withValues(alpha:  0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1402,13 +1403,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     gradient: LinearGradient(
                       colors: [
                         severityColor,
-                        severityColor.withValues(alpha: 0.8),
+                        severityColor.withValues(alpha:  0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: severityColor.withValues(alpha: 0.3),
+                        color: severityColor.withValues(alpha:  0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -1457,7 +1458,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: severityColor.withValues(alpha: 0.1),
+                    color: severityColor.withValues(alpha:  0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1488,21 +1489,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 20),
-                Icon(
-                  Icons.directions_car_outlined,
-                  color: Colors.grey.shade500,
-                  size: 16,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$affectedCars سيارات متأثرة',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -1512,7 +1498,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   child: GestureDetector(
                     onTap: () {
                       // عرض التفاصيل المحسنة
-                      _showEnhancedReportDetails(title, distance, time, icon, severity, affectedCars);
+                      _showEnhancedReportDetails(title, distance, time, icon, severity);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1523,7 +1509,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withValues(alpha: 0.3),
+                            color: Colors.blue.withValues(alpha:  0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -1613,7 +1599,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withValues(alpha: 0.4),
+            color: Colors.red.withValues(alpha:  0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1624,7 +1610,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha:  0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -1650,7 +1636,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Text(
                   alert?.message ?? 'يرجى توخي الحذر الشديد',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withValues(alpha:  0.9),
                     fontSize: 14,
                   ),
                 ),
@@ -1675,7 +1661,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha: 0.3),
+            color: Colors.green.withValues(alpha:  0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1686,7 +1672,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha:  0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
@@ -1714,7 +1700,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       ? tip.content
                       : 'احتفظ بمسافة آمنة بينك وبين السيارة التي أمامك',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withValues(alpha:  0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1759,19 +1745,33 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     );
   }
 
-  void _showEnhancedReportDetails(String title, String distance, String time, IconData icon, String severity, int affectedCars) {
+  void _showEnhancedReportDetails(String title, String distance, String time, IconData icon, String severity) async {
     // البحث عن البلاغ في قائمة البلاغات المفلترة للحصول على معلومات إضافية
     final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
     NearbyReport? reportData;
+    Map<String, dynamic>? fullReportData;
+    
     try {
       reportData = dashboardProvider.filteredReports.firstWhere(
         (report) => report.title.contains(title.split(' - ').first),
         orElse: () => throw StateError('Report not found'),
       );
+      
+      // جلب البيانات الكاملة من Firebase للحصول على التأكيدات والرفض
+      try {
+        final doc = await FirebaseFirestore.instance.collection('reports').doc(reportData.id).get();
+        if (doc.exists) {
+          fullReportData = doc.data();
+        }
+      } catch (e) {
+        debugPrint('Error fetching full report data: $e');
+      }
     } catch (e) {
       // إذا لم يتم العثور على البلاغ، استخدم البيانات المتاحة
     }
 
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1782,26 +1782,33 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             borderRadius: BorderRadius.circular(28),
           ),
           content: Container(
-            constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
+            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 650),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  LiquidGlassTheme.primaryGlass,
-                  LiquidGlassTheme.primaryGlass.withValues(alpha: 0.8),
+                  Colors.white,
+                  Colors.grey.shade50,
                 ],
               ),
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: LiquidGlassTheme.borderSecondary,
-                width: 1.5,
+                color: Colors.grey.shade200,
+                width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha:  0.15),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha:  0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                  spreadRadius: 0,
                 ),
               ],
             ),
@@ -1810,42 +1817,42 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        _getSeverityColor(severity).withValues(alpha: 0.1),
-                        _getSeverityColor(severity).withValues(alpha: 0.05),
+                        _getSeverityColor(severity).withValues(alpha:  0.08),
+                        _getSeverityColor(severity).withValues(alpha:  0.03),
                       ],
                     ),
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(28),
-                      topRight: Radius.circular(28),
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
                               _getSeverityColor(severity),
-                              _getSeverityColor(severity).withValues(alpha: 0.8),
+                              _getSeverityColor(severity).withValues(alpha:  0.9),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: _getSeverityColor(severity).withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                              color: _getSeverityColor(severity).withValues(alpha:  0.25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
-                        child: Icon(icon, color: Colors.white, size: 24),
+                        child: Icon(icon, color: Colors.white, size: 26),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 18),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1853,15 +1860,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             Text(
                               'تفاصيل البلاغ',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.grey.shade800,
+                                letterSpacing: -0.5,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
                               title.split(' - ').first,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey.shade600,
                               ),
@@ -1869,13 +1878,19 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getSeverityColor(severity).withValues(alpha: 0.1),
+                    ],
+                  ),
+                ),
+                
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getSeverityColor(severity).withValues(alpha:  0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _getSeverityColor(severity).withValues(alpha: 0.3),
+                            color: _getSeverityColor(severity).withValues(alpha:  0.3),
                             width: 1,
                           ),
                         ),
@@ -1890,14 +1905,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       ),
                     ],
                   ),
-                ),
                 
                 Divider(color: Colors.grey.shade300, height: 1),
                 
                 // Content
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1908,7 +1922,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             Icons.description_outlined,
                             reportData!.description,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 24),
                         ],
                         
                         // معلومات البلاغ
@@ -1918,21 +1932,70 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           null,
                           children: [
                             _buildDetailRow(Icons.location_on, 'المسافة:', distance),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 16),
                             _buildDetailRow(Icons.access_time, 'الوقت:', time),
-                            const SizedBox(height: 12),
-                            _buildDetailRow(
-                              Icons.directions_car,
-                              'السيارات المتأثرة:',
-                              '$affectedCars',
-                            ),
                             if (reportData != null) ...[
-                              const SizedBox(height: 12),
-                              _buildDetailRow(
-                                Icons.verified_user,
-                                'التأكيدات:',
-                                '${reportData.confirmations}',
-                                color: Colors.green.shade600,
+                              const SizedBox(height: 20),
+                              // إحصائيات التحقق
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.grey.shade50,
+                                      Colors.white,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.shade200,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.analytics_outlined,
+                                          color: Colors.grey.shade600,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'إحصائيات التحقق',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildStatCard(
+                                            Icons.verified_user,
+                                            'التأكيدات',
+                                            '${fullReportData != null ? (fullReportData['verifications'] as List?)?.length ?? reportData.confirmations : reportData.confirmations}',
+                                            Colors.green,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: _buildStatCard(
+                                            Icons.cancel,
+                                            'الرفض',
+                                            '${fullReportData != null ? (fullReportData['rejections'] as List?)?.length ?? 0 : 0}',
+                                            Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ],
@@ -1968,122 +2031,282 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Divider(color: Colors.grey.shade300, height: 1),
                 
                 // Action Buttons
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: Column(
                     children: [
-                      // عرض على الخريطة
-                      if (reportData != null)
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).pop();
-                              _showReportOnMap(reportData!);
-                            },
+                      // Verification Buttons
+                      Row(
+                        children: [
+                          // تأكيد البلاغ
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                _verifyReport(reportData, true);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.green.shade400,
+                                      Colors.green.shade600,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.green.withValues(alpha:  0.25),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'تأكيد البلاغ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          const SizedBox(width: 16),
+                          
+                          // رفض البلاغ
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                _verifyReport(reportData, false);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.red.shade400,
+                                      Colors.red.shade600,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withValues(alpha:  0.4),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                      spreadRadius: 1,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.red.withValues(alpha:  0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: Colors.red.shade300.withValues(alpha:  0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'رفض البلاغ',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Other Action Buttons
+                      Row(
+                        children: [
+                          // عرض على الخريطة
+                          if (reportData != null)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  _showReportOnMap(reportData!);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.blue.shade400,
+                                        Colors.blue.shade600,
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.blue.withValues(alpha:  0.4),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                        spreadRadius: 1,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.blue.withValues(alpha:  0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.blue.shade300.withValues(alpha:  0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.map_rounded, color: Colors.white, size: 20),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'عرض على الخريطة',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          
+                          if (reportData != null) const SizedBox(width: 12),
+                          
+                          // مشاركة
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                _shareEnhancedReport(title, distance, time, severity, reportData);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.orange.shade400,
+                                      Colors.orange.shade600,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.orange.withValues(alpha:  0.4),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 6),
+                                      spreadRadius: 1,
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.orange.withValues(alpha:  0.1),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color: Colors.orange.shade300.withValues(alpha:  0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.share_rounded, color: Colors.white, size: 20),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'مشاركة',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          const SizedBox(width: 12),
+                          
+                          // إغلاق
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.blue.shade500,
-                                    Colors.blue.shade600,
+                                    Colors.grey.shade100,
+                                    Colors.grey.shade200,
                                   ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.grey.shade300.withValues(alpha:  0.5),
+                                  width: 1,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.blue.withValues(alpha: 0.3),
+                                    color: Colors.grey.withValues(alpha:  0.2),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.map, color: Colors.white, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'عرض على الخريطة',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey.shade700,
+                                size: 20,
                               ),
                             ),
                           ),
-                        ),
-                      
-                      if (reportData != null) const SizedBox(width: 12),
-                      
-                      // مشاركة
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            _shareEnhancedReport(title, distance, time, severity, reportData);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.green.shade500,
-                                  Colors.green.shade600,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.green.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.share, color: Colors.white, size: 18),
-                                SizedBox(width: 8),
-                                Text(
-                                  'مشاركة',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 12),
-                      
-                      // إغلاق
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.grey.shade600,
-                            size: 18,
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -2096,11 +2319,128 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     );
   }
 
-  Widget _buildEnhancedDetailSection(String title, IconData icon, String? content, {List<Widget>? children}) {
+  // دالة التحقق من البلاغ
+  void _verifyReport(NearbyReport? reportData, bool isVerified) async {
+    if (reportData == null) return;
+    
+    try {
+      await FirebaseFirestore.instance
+          .collection('reports')
+          .doc(reportData.id)
+          .update({
+        'isVerified': isVerified,
+        'verifiedAt': FieldValue.serverTimestamp(),
+        'verifiedBy': FirebaseAuth.instance.currentUser?.uid,
+      });
+      
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isVerified ? 'تم تأكيد البلاغ بنجاح' : 'تم رفض البلاغ',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: isVerified ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // تحديث البيانات
+      _loadReports();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('حدث خطأ: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // دالة تحديث البلاغات
+  void _loadReports() {
+    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    dashboardProvider.loadDashboardData();
+  }
+
+  // دالة عرض البلاغ على الخريطة
+  void _showReportOnMap(NearbyReport report) {
+    Navigator.pushNamed(
+      context,
+      '/map',
+      arguments: {
+        'latitude': report.latitude,
+        'longitude': report.longitude,
+        'title': report.title,
+        'description': report.description,
+      },
+    );
+  }
+
+  // دالة مشاركة البلاغ
+  void _shareEnhancedReport(String title, String distance, String time, String severity, NearbyReport? reportData) {
+    final shareText = '''
+تفاصيل البلاغ:
+العنوان: $title
+المسافة: $distance
+الوقت: $time
+الخطورة: $severity
+${reportData != null ? 'الموقع: ${reportData.latitude}, ${reportData.longitude}' : ''}
+    ''';
+    
+    // يمكن استخدام مكتبة share_plus هنا
+    // Share.share(shareText);
+    debugPrint('مشاركة البلاغ: $shareText');
+  }
+
+  // دالة بناء بطاقة الإحصائيات
+  Widget _buildStatCard(IconData icon, String title, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Global function for building enhanced detail sections
+Widget _buildEnhancedDetailSection(String title, IconData icon, String? content, {List<Widget>? children}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.7),
+        color: Colors.white.withValues(alpha:  0.7),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.grey.shade200,
@@ -2108,7 +2448,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha:  0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -2122,7 +2462,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withValues(alpha: 0.1),
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withValues(alpha:  0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -2160,194 +2500,4 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         ],
       ),
     );
-  }
-
-  void _showReportOnMap(NearbyReport report) {
-    // التنقل إلى شاشة الخريطة مع إظهار موقع البلاغ
-    Navigator.pushNamed(
-      context,
-      '/map',
-      arguments: {
-        'latitude': report.latitude,
-        'longitude': report.longitude,
-        'title': report.title,
-        'description': report.description,
-      },
-    );
-  }
-
-  void _shareEnhancedReport(String title, String distance, String time, String severity, NearbyReport? reportData) {
-    final shareText = '''
-🚨 بلاغ من تطبيق الطريق الآمن
-
-📍 $title
-📝 الوصف: ${reportData?.description ?? 'غير متوفر'}
-📏 المسافة: $distance
-⏰ الوقت: $time
-⚠️ مستوى الخطورة: $severity
-✅ التأكيدات: ${reportData?.confirmations ?? 0}
-
-${reportData != null ? '🗺️ الموقع: ${reportData.latitude.toStringAsFixed(4)}, ${reportData.longitude.toStringAsFixed(4)}' : ''}
-
-#الطريق_الآمن #سلامة_الطرق
-    '''.trim();
-
-    // عرض خيارات المشاركة المحسنة
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              LiquidGlassTheme.primaryGlass,
-              LiquidGlassTheme.primaryGlass.withValues(alpha: 0.9),
-            ],
-          ),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
-          border: Border.all(
-            color: LiquidGlassTheme.borderSecondary,
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Text(
-                    'مشاركة البلاغ',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      shareText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade700,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildShareOption(
-                          'نسخ النص',
-                          Icons.copy,
-                          Colors.blue,
-                          () {
-                            // Clipboard.setData(ClipboardData(text: shareText));
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم نسخ النص')),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildShareOption(
-                          'مشاركة',
-                          Icons.share,
-                          Colors.green,
-                          () {
-                            Navigator.pop(context);
-                            // Share.share(shareText);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'إلغاء',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShareOption(String title, IconData icon, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              color,
-              color.withValues(alpha: 0.8),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

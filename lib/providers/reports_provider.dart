@@ -222,12 +222,18 @@ class ReportsProvider with ChangeNotifier {
   // Get user's reports
   Future<void> loadUserReports(String userId) async {
     try {
+      print('ReportsProvider: loadUserReports called with userId: $userId');
       _setLoading(true);
       _clearError();
 
       _userReports = await _firestoreService.getUserReports(userId);
+      print('ReportsProvider: Loaded ${_userReports.length} user reports');
+      for (var report in _userReports) {
+        print('ReportsProvider: Report - ID: ${report.id}, Type: ${report.type}, Status: ${report.status}');
+      }
       notifyListeners();
     } catch (e) {
+      print('ReportsProvider: Error loading user reports: $e');
       _setError('خطأ في تحميل بلاغات المستخدم: ${e.toString()}');
     } finally {
       _setLoading(false);

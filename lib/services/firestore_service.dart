@@ -352,15 +352,25 @@ class FirestoreService {
   // Get user reports
   Future<List<ReportModel>> getUserReports(String userId) async {
     try {
+      print('FirestoreService: getUserReports called with userId: $userId');
       QuerySnapshot snapshot = await _reportsCollection
           .where('createdBy', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => ReportModel.fromFirestore(doc))
+      print('FirestoreService: Found ${snapshot.docs.length} documents for user');
+      
+      List<ReportModel> reports = snapshot.docs
+          .map((doc) {
+            print('FirestoreService: Processing document ${doc.id} with data: ${doc.data()}');
+            return ReportModel.fromFirestore(doc);
+          })
           .toList();
+          
+      print('FirestoreService: Successfully converted ${reports.length} reports');
+      return reports;
     } catch (e) {
+      print('FirestoreService: Error in getUserReports: $e');
       throw 'خطأ في جلب بلاغات المستخدم: ${e.toString()}';
     }
   }
@@ -512,5 +522,45 @@ class FirestoreService {
     } catch (e) {
       throw 'خطأ في جلب لوحة المتصدرين: ${e.toString()}';
     }
+  }
+
+  // Verify report (confirm or reject)
+  Future<void> verifyReport(String reportId, String userId, bool isVerified) async {
+    return await _withTimeout(() async {
+      DocumentReference reportRef = _reportsCollection.doc(reportId);
+      
+      await _firestore.runTransaction((transaction) async {
+        DocumentSnapshot reportSnapshot = await transaction.get(reportRef);
+        
+        if (!reportSnapshot.exists) {
+          throw 'البلاغ غير موجود';
+        }
+
+        Map<String, dynamic> reportData = reportSnapshot.data() as Map<String, dynamic>;
+        
+        // Initialize verification arrays if they don't exist
+        List<String> verifications = List<String>.from(reportData['verifications'] ?? []);
+        List<String> rejections = List<String>.from(reportData['rejections'] ?? []);
+        
+        // Remove user from both arrays first (in case they're changing their vote)
+        verifications.remove(userId);
+        rejections.remove(userId);
+        
+        // Add user to appropriate array
+        if (isVerified) {
+          verifications.add(userId);
+        } else {
+          rejections.add(userId);
+        }
+        
+        // Update the report
+        transaction.update(reportRef, {
+          'verifications': verifications,
+          'rejections': rejections,
+          'confirmations': verifications.length, // Update confirmations count
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      });
+    }, operationName: 'verifyReport');
   }
 }

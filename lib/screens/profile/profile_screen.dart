@@ -140,16 +140,21 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _loadUserReports() {
+    print('ProfileScreen: _loadUserReports called');
     final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
       context,
       listen: false,
     );
+    print('ProfileScreen: userId = ${authProvider.userId}');
     if (authProvider.userId != null) {
       final reportsProvider = Provider.of<ReportsProvider>(
         context,
         listen: false,
       );
+      print('ProfileScreen: Loading user reports for userId: ${authProvider.userId}');
       reportsProvider.loadUserReports(authProvider.userId!);
+    } else {
+      print('ProfileScreen: userId is null, cannot load reports');
     }
   }
 
