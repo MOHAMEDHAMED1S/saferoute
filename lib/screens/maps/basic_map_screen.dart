@@ -10,9 +10,23 @@ import '../../theme/liquid_glass_theme.dart';
 import '../../models/report_model.dart';
 import '../../services/reports_firebase_service.dart';
 import '../../services/location_service.dart';
+import '../../widgets/common/bottom_navigation_widget.dart';
 
 class BasicMapScreen extends StatefulWidget {
-  const BasicMapScreen({Key? key}) : super(key: key);
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final bool showMarker;
+  final String? markerTitle;
+  final String? markerDescription;
+
+  const BasicMapScreen({
+    Key? key,
+    this.initialLatitude,
+    this.initialLongitude,
+    this.showMarker = false,
+    this.markerTitle,
+    this.markerDescription,
+  }) : super(key: key);
 
   @override
   State<BasicMapScreen> createState() => _BasicMapScreenState();
@@ -25,11 +39,35 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
   Set<ReportType> _activeFilters = Set.from(ReportType.values);
   final TextEditingController _searchController = TextEditingController();
   bool _isSearchVisible = false;
+  int _currentBottomNavIndex = 1; // Set to 1 for "الخريطة" tab
 
   @override
   void initState() {
     super.initState();
-    _loadReportsMarkers();
+    if (widget.showMarker && widget.initialLatitude != null && widget.initialLongitude != null) {
+      _loadSpecificMarker();
+    } else {
+      _loadReportsMarkers();
+    }
+  }
+
+  void _loadSpecificMarker() {
+    // إنشاء علامة للموقع المحدد
+    final marker = Marker(
+      markerId: const MarkerId('specific_location'),
+      position: LatLng(widget.initialLatitude!, widget.initialLongitude!),
+      infoWindow: InfoWindow(
+        title: widget.markerTitle ?? 'موقع البلاغ',
+        snippet: widget.markerDescription ?? '',
+      ),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+    );
+
+    if (mounted) {
+      setState(() {
+        _markers = {marker};
+      });
+    }
   }
 
   void _loadReportsMarkers() async {
@@ -460,6 +498,7 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       backgroundColor: LiquidGlassTheme.backgroundColor,
       appBar: AppBar(
         title: _isSearchVisible
@@ -524,8 +563,12 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
           GoogleMap(
             onMapCreated: _onMapCreated,
             initialCameraPosition: CameraPosition(
-              target: MapUtils.defaultLocation,
-              zoom: MapUtils.defaultZoom,
+              target: (widget.initialLatitude != null && widget.initialLongitude != null)
+                  ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
+                  : MapUtils.defaultLocation,
+              zoom: (widget.initialLatitude != null && widget.initialLongitude != null)
+                  ? 16.0
+                  : MapUtils.defaultZoom,
             ),
             markers: _markers,
             myLocationEnabled: true,
@@ -613,6 +656,31 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      bottomNavigationBar: BottomNavigationWidget(
+        currentIndex: _currentBottomNavIndex,
+        onTap: (index) {
+          if (index != _currentBottomNavIndex) {
+            // Navigate based on the selected tab
+            switch (index) {
+              case 0: // الرئيسية
+                Navigator.pushReplacementNamed(context, '/dashboard');
+                break;
+              case 1: // الخريطة
+                // Already on map screen, do nothing
+                break;
+              case 2: // إبلاغ
+                Navigator.pushNamed(context, '/report');
+                break;
+              case 3: // المجتمع
+                Navigator.pushNamed(context, '/community');
+                break;
+              case 4: // الملف الشخصي
+                Navigator.pushNamed(context, '/profile');
+                break;
+            }
+          }
+        },
+      ),
     );
   }
 

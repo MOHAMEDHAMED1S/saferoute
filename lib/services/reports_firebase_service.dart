@@ -9,6 +9,8 @@ import 'external_image_upload_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
+import '../services/firestore_connection_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ReportsFirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -264,45 +266,127 @@ class ReportsFirebaseService {
   Future<void> confirmReport(String reportId) async {
     final user = _auth.currentUser;
     if (user == null) {
-      throw Exception('User not authenticated');
+      throw 'يجب تسجيل الدخول أولاً';
     }
 
-    // Get the report
-    DocumentSnapshot reportDoc = await _reportsCollection.doc(reportId).get();
-    if (!reportDoc.exists) {
-      throw Exception('Report not found');
+    try {
+      // Use connection manager for better error handling
+      await FirestoreConnectionManager().executeWithTimeout(() async {
+        final batch = _firestore.batch();
+        final reportRef = _reportsCollection.doc(reportId);
+        
+        // Get current report data
+        final reportDoc = await reportRef.get();
+        if (!reportDoc.exists) {
+          throw 'التقرير غير موجود';
+        }
+
+        final reportData = reportDoc.data() as Map<String, dynamic>;
+        
+        // Check if user already voted
+        final confirmations = List<String>.from(reportData['confirmations'] ?? []);
+        final rejections = List<String>.from(reportData['rejections'] ?? []);
+        
+        if (confirmations.contains(user.uid) || rejections.contains(user.uid)) {
+          throw 'لقد قمت بالتصويت على هذا التقرير من قبل';
+        }
+
+        // Check if user is trying to vote on their own report
+        if (reportData['userId'] == user.uid) {
+          throw 'لا يمكنك التصويت على تقريرك الخاص';
+        }
+
+        // Add user to confirmations
+        confirmations.add(user.uid);
+        
+        // Update report
+        batch.update(reportRef, {
+          'confirmations': confirmations,
+          'confirmationCount': confirmations.length,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+
+        // Update user trust score
+        final reportCreatorId = reportData['userId'] as String;
+        if (reportCreatorId.isNotEmpty) {
+          final userRef = _firestore.collection('users').doc(reportCreatorId);
+          batch.update(userRef, {
+            'trustScore': FieldValue.increment(1),
+            'points': FieldValue.increment(5),
+          });
+        }
+
+        await batch.commit();
+      }, operationName: 'confirmReport');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error confirming report: $e');
+      }
+      rethrow;
     }
-
-    // Update the report
-    await _reportsCollection.doc(reportId).update({
-      'confirmedBy': FieldValue.arrayUnion([user.uid]),
-      'confirmations.total': FieldValue.increment(1),
-    });
-
-    // Update user's trust score
-    await _firestore.collection('users').doc(user.uid).update({
-      'trustScore': FieldValue.increment(1),
-    });
   }
 
   // Deny a report
   Future<void> denyReport(String reportId) async {
     final user = _auth.currentUser;
     if (user == null) {
-      throw Exception('User not authenticated');
+      throw 'يجب تسجيل الدخول أولاً';
     }
 
-    // Get the report
-    DocumentSnapshot reportDoc = await _reportsCollection.doc(reportId).get();
-    if (!reportDoc.exists) {
-      throw Exception('Report not found');
-    }
+    try {
+      // Use connection manager for better error handling
+      await FirestoreConnectionManager().executeWithTimeout(() async {
+        final batch = _firestore.batch();
+        final reportRef = _reportsCollection.doc(reportId);
+        
+        // Get current report data
+        final reportDoc = await reportRef.get();
+        if (!reportDoc.exists) {
+          throw 'التقرير غير موجود';
+        }
 
-    // Update the report
-    await _reportsCollection.doc(reportId).update({
-      'deniedBy': FieldValue.arrayUnion([user.uid]),
-      'confirmations.total': FieldValue.increment(-1),
-    });
+        final reportData = reportDoc.data() as Map<String, dynamic>;
+        
+        // Check if user already voted
+        final confirmations = List<String>.from(reportData['confirmations'] ?? []);
+        final rejections = List<String>.from(reportData['rejections'] ?? []);
+        
+        if (confirmations.contains(user.uid) || rejections.contains(user.uid)) {
+          throw 'لقد قمت بالتصويت على هذا التقرير من قبل';
+        }
+
+        // Check if user is trying to vote on their own report
+        if (reportData['userId'] == user.uid) {
+          throw 'لا يمكنك التصويت على تقريرك الخاص';
+        }
+
+        // Add user to rejections
+        rejections.add(user.uid);
+        
+        // Update report
+        batch.update(reportRef, {
+          'rejections': rejections,
+          'rejectionCount': rejections.length,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+
+        // Decrease user trust score slightly
+        final reportCreatorId = reportData['userId'] as String;
+        if (reportCreatorId.isNotEmpty) {
+          final userRef = _firestore.collection('users').doc(reportCreatorId);
+          batch.update(userRef, {
+            'trustScore': FieldValue.increment(-0.5),
+          });
+        }
+
+        await batch.commit();
+      }, operationName: 'denyReport');
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error denying report: $e');
+      }
+      rethrow;
+    }
   }
 
   // Delete a report (only by creator or if denied by many users)
@@ -323,6 +407,16 @@ class ReportsFirebaseService {
     // Check if user is creator or report has many denials
     if (report.createdBy == user.uid || report.deniedBy.length > 5) {
       await _reportsCollection.doc(reportId).update({'status': 'removed'});
+      
+      // Clear cached data to ensure deleted reports don't appear
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('dashboard_nearby_reports');
+        await prefs.remove('dashboard_cache_timestamp');
+        debugPrint('تم مسح البيانات المحفوظة محلياً بعد حذف البلاغ');
+      } catch (e) {
+        debugPrint('خطأ في مسح البيانات المحفوظة: $e');
+      }
     } else {
       throw Exception('Not authorized to delete this report');
     }

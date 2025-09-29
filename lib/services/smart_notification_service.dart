@@ -6,7 +6,7 @@ import '../models/route_model.dart';
 import '../models/threat_model.dart';
 import '../utils/cache_utils.dart';
 import '../utils/network_utils.dart';
-import 'ai_prediction_service.dart';
+
 
 // Smart Notification Service
 class SmartNotificationService {

@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../models/report_model.dart';
 import '../models/notification_model.dart';
 import '../models/app_settings_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -344,6 +345,16 @@ class FirestoreService {
   Future<void> deleteReport(String reportId) async {
     try {
       await _reportsCollection.doc(reportId).update({'status': 'removed'});
+      
+      // Clear cached data to ensure deleted reports don't appear
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('dashboard_nearby_reports');
+        await prefs.remove('dashboard_cache_timestamp');
+        debugPrint('تم مسح البيانات المحفوظة محلياً بعد حذف البلاغ');
+      } catch (e) {
+        debugPrint('خطأ في مسح البيانات المحفوظة: $e');
+      }
     } catch (e) {
       throw 'خطأ في حذف البلاغ: ${e.toString()}';
     }

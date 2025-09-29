@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../maps/basic_map_screen.dart';
 import '../profile/profile_screen.dart';
@@ -10,6 +11,7 @@ import '../reports/add_report_screen.dart';
 import '../community/community_screen.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart' as auth_provider;
+import '../../providers/reports_provider.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/report_model.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
@@ -1774,40 +1776,48 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        return AlertDialog(
+        final screenHeight = MediaQuery.of(context).size.height;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isSmallScreen = screenWidth < 400;
+        
+        return Dialog(
           backgroundColor: Colors.transparent,
-          contentPadding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: isSmallScreen ? 12 : 20,
+            vertical: screenHeight * 0.08,
           ),
-          content: Container(
-            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 650),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: screenHeight * 0.85,
+              maxWidth: isSmallScreen ? screenWidth - 24 : 400,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white,
-                  Colors.grey.shade50,
+                  Colors.white.withValues(alpha: 0.98),
+                  Colors.grey.shade50.withValues(alpha: 0.95),
                 ],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(isSmallScreen ? 16 : 20),
               border: Border.all(
-                color: Colors.grey.shade200,
+                color: Colors.grey.shade300.withValues(alpha: 0.6),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha:  0.15),
-                  blurRadius: 30,
-                  offset: const Offset(0, 15),
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                   spreadRadius: 0,
                 ),
                 BoxShadow(
-                  color: Colors.black.withValues(alpha:  0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                   spreadRadius: 0,
                 ),
               ],
@@ -1817,42 +1827,51 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                  padding: EdgeInsets.fromLTRB(
+                    isSmallScreen ? 16 : 20,
+                    isSmallScreen ? 16 : 20,
+                    isSmallScreen ? 16 : 20,
+                    isSmallScreen ? 12 : 16,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        _getSeverityColor(severity).withValues(alpha:  0.08),
-                        _getSeverityColor(severity).withValues(alpha:  0.03),
+                        _getSeverityColor(severity).withValues(alpha: 0.08),
+                        _getSeverityColor(severity).withValues(alpha: 0.03),
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(isSmallScreen ? 16 : 20),
+                      topRight: Radius.circular(isSmallScreen ? 16 : 20),
                     ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
                               _getSeverityColor(severity),
-                              _getSeverityColor(severity).withValues(alpha:  0.9),
+                              _getSeverityColor(severity).withValues(alpha: 0.9),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
                           boxShadow: [
                             BoxShadow(
-                              color: _getSeverityColor(severity).withValues(alpha:  0.25),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                              color: _getSeverityColor(severity).withValues(alpha: 0.25),
+                              blurRadius: isSmallScreen ? 8 : 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(icon, color: Colors.white, size: 26),
+                        child: Icon(
+                          icon,
+                          color: Colors.white,
+                          size: isSmallScreen ? 20 : 24,
+                        ),
                       ),
-                      const SizedBox(width: 18),
+                      SizedBox(width: isSmallScreen ? 12 : 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1860,20 +1879,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             Text(
                               'تفاصيل البلاغ',
                               style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
+                                fontSize: isSmallScreen ? 18 : 20,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.grey.shade800,
-                                letterSpacing: -0.5,
+                                letterSpacing: -0.3,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: isSmallScreen ? 2 : 4),
                             Text(
                               title.split(' - ').first,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: isSmallScreen ? 13 : 14,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey.shade600,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -1882,15 +1903,24 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   ),
                 ),
                 
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _getSeverityColor(severity).withValues(alpha:  0.1),
-                          borderRadius: BorderRadius.circular(12),
+                // Severity Badge
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallScreen ? 16 : 20,
+                    vertical: isSmallScreen ? 8 : 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSmallScreen ? 10 : 12,
+                          vertical: isSmallScreen ? 4 : 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getSeverityColor(severity).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
                           border: Border.all(
-                            color: _getSeverityColor(severity).withValues(alpha:  0.3),
+                            color: _getSeverityColor(severity).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -1898,20 +1928,26 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           severity,
                           style: TextStyle(
                             color: _getSeverityColor(severity),
-                            fontSize: 12,
+                            fontSize: isSmallScreen ? 11 : 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ],
                   ),
+                ),
                 
                 Divider(color: Colors.grey.shade300, height: 1),
                 
                 // Content
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                    padding: EdgeInsets.fromLTRB(
+                      isSmallScreen ? 16 : 20,
+                      isSmallScreen ? 8 : 12,
+                      isSmallScreen ? 16 : 20,
+                      isSmallScreen ? 16 : 20,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2009,16 +2045,71 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             Icons.gps_fixed,
                             null,
                             children: [
-                              _buildDetailRow(
-                                Icons.north,
-                                'خط العرض:',
-                                '${reportData.latitude.toStringAsFixed(6)}°',
-                              ),
-                              const SizedBox(height: 12),
-                              _buildDetailRow(
-                                Icons.east,
-                                'خط الطول:',
-                                '${reportData.longitude.toStringAsFixed(6)}°',
+                              GestureDetector(
+                                onTap: () {
+                                  // الانتقال إلى صفحة الخريطة مع إظهار الموقع
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BasicMapScreen(
+                                        initialLatitude: reportData?.latitude,
+                                        initialLongitude: reportData?.longitude,
+                                        showMarker: true,
+                                        markerTitle: 'موقع البلاغ',
+                                        markerDescription: reportData?.description,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.blue.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.map_outlined,
+                                        color: Colors.blue.shade600,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'عرض الموقع على الخريطة',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'خط العرض: ${reportData.latitude.toStringAsFixed(6)}°\nخط الطول: ${reportData.longitude.toStringAsFixed(6)}°',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: Colors.blue.shade400,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -2032,12 +2123,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 
                 // Action Buttons
                 Container(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                  padding: EdgeInsets.fromLTRB(
+                    isSmallScreen ? 16 : 20,
+                    isSmallScreen ? 12 : 16,
+                    isSmallScreen ? 16 : 20,
+                    isSmallScreen ? 16 : 20,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(24),
-                      bottomRight: Radius.circular(24),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(isSmallScreen ? 16 : 20),
+                      bottomRight: Radius.circular(isSmallScreen ? 16 : 20),
                     ),
                   ),
                   child: Column(
@@ -2052,7 +2148,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 _verifyReport(reportData, true);
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isSmallScreen ? 12 : 14,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
@@ -2060,25 +2158,29 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       Colors.green.shade600,
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.green.withValues(alpha:  0.25),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
+                                      color: Colors.green.withValues(alpha: 0.25),
+                                      blurRadius: isSmallScreen ? 8 : 10,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.check_circle, color: Colors.white, size: 20),
-                                    SizedBox(width: 10),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                      size: isSmallScreen ? 18 : 20,
+                                    ),
+                                    SizedBox(width: isSmallScreen ? 6 : 8),
                                     Text(
                                       'تأكيد البلاغ',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 15,
+                                        fontSize: isSmallScreen ? 13 : 14,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -2088,7 +2190,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             ),
                           ),
                           
-                          const SizedBox(width: 16),
+                          SizedBox(width: isSmallScreen ? 10 : 12),
                           
                           // رفض البلاغ
                           Expanded(
@@ -2097,7 +2199,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 _verifyReport(reportData, false);
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isSmallScreen ? 12 : 14,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
@@ -2107,13 +2211,12 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.red.withValues(alpha:  0.4),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
-                                      spreadRadius: 1,
+                                      color: Colors.red.withValues(alpha: 0.25),
+                                      blurRadius: isSmallScreen ? 8 : 10,
+                                      offset: const Offset(0, 4),
                                     ),
                                     BoxShadow(
                                       color: Colors.red.withValues(alpha:  0.1),
@@ -2126,18 +2229,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     width: 1,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.cancel_rounded, color: Colors.white, size: 20),
-                                    SizedBox(width: 10),
+                                    Icon(
+                                      Icons.cancel_rounded,
+                                      color: Colors.white,
+                                      size: isSmallScreen ? 18 : 20,
+                                    ),
+                                    SizedBox(width: isSmallScreen ? 6 : 8),
                                     Text(
                                       'رفض البلاغ',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.5,
+                                        fontSize: isSmallScreen ? 13 : 14,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.3,
                                       ),
                                     ),
                                   ],
@@ -2148,7 +2255,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         ],
                       ),
                       
-                      const SizedBox(height: 12),
+                      SizedBox(height: isSmallScreen ? 8 : 10),
                       
                       // Other Action Buttons
                       Row(
@@ -2162,7 +2269,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                   _showReportOnMap(reportData!);
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: isSmallScreen ? 12 : 14,
+                                  ),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
@@ -2172,37 +2281,35 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.blue.withValues(alpha:  0.4),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                        spreadRadius: 1,
-                                      ),
-                                      BoxShadow(
-                                        color: Colors.blue.withValues(alpha:  0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
+                                        color: Colors.blue.withValues(alpha: 0.25),
+                                        blurRadius: isSmallScreen ? 8 : 10,
+                                        offset: const Offset(0, 4),
                                       ),
                                     ],
                                     border: Border.all(
-                                      color: Colors.blue.shade300.withValues(alpha:  0.3),
+                                      color: Colors.blue.shade300.withValues(alpha: 0.3),
                                       width: 1,
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.map_rounded, color: Colors.white, size: 20),
-                                      SizedBox(width: 10),
+                                      Icon(
+                                        Icons.map_rounded,
+                                        color: Colors.white,
+                                        size: isSmallScreen ? 18 : 20,
+                                      ),
+                                      SizedBox(width: isSmallScreen ? 6 : 8),
                                       Text(
                                         'عرض على الخريطة',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.5,
+                                          fontSize: isSmallScreen ? 13 : 14,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.3,
                                         ),
                                       ),
                                     ],
@@ -2211,7 +2318,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               ),
                             ),
                           
-                          if (reportData != null) const SizedBox(width: 12),
+                          if (reportData != null) SizedBox(width: isSmallScreen ? 8 : 10),
                           
                           // مشاركة
                           Expanded(
@@ -2221,7 +2328,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 _shareEnhancedReport(title, distance, time, severity, reportData);
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: isSmallScreen ? 12 : 14,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
@@ -2231,35 +2340,33 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.orange.withValues(alpha:  0.4),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 6),
-                                      spreadRadius: 1,
-                                    ),
-                                    BoxShadow(
-                                      color: Colors.orange.withValues(alpha:  0.1),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10),
+                                      color: Colors.orange.withValues(alpha: 0.25),
+                                      blurRadius: isSmallScreen ? 8 : 10,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Colors.orange.shade300.withValues(alpha:  0.3),
+                                    color: Colors.orange.shade300.withValues(alpha: 0.3),
                                     width: 1,
                                   ),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.share_rounded, color: Colors.white, size: 20),
-                                    SizedBox(width: 10),
+                                    Icon(
+                                      Icons.share_rounded, 
+                                      color: Colors.white, 
+                                      size: screenWidth < 600 ? 18 : 20,
+                                    ),
+                                    SizedBox(width: screenWidth < 600 ? 8 : 10),
                                     Text(
                                       'مشاركة',
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 15,
+                                        fontSize: screenWidth < 600 ? 13 : 15,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 0.5,
                                       ),
@@ -2276,7 +2383,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           GestureDetector(
                             onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: EdgeInsets.all(screenWidth < 600 ? 12 : 16),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -2286,7 +2393,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(screenWidth < 600 ? 16 : 20),
                                 border: Border.all(
                                   color: Colors.grey.shade300.withValues(alpha:  0.5),
                                   width: 1,
@@ -2302,7 +2409,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               child: Icon(
                                 Icons.close_rounded,
                                 color: Colors.grey.shade700,
-                                size: 20,
+                                size: screenWidth < 600 ? 18 : 20,
                               ),
                             ),
                           ),
@@ -2323,35 +2430,97 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
   void _verifyReport(NearbyReport? reportData, bool isVerified) async {
     if (reportData == null) return;
     
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يجب تسجيل الدخول أولاً'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     try {
-      await FirebaseFirestore.instance
+      // استخدام ReportsProvider للتصويت على البلاغ
+      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      
+      // التحقق من إمكانية التصويت
+      final reportDoc = await FirebaseFirestore.instance
           .collection('reports')
           .doc(reportData.id)
-          .update({
-        'isVerified': isVerified,
-        'verifiedAt': FieldValue.serverTimestamp(),
-        'verifiedBy': FirebaseAuth.instance.currentUser?.uid,
-      });
+          .get();
+          
+      if (!reportDoc.exists) {
+        throw 'البلاغ غير موجود';
+      }
+      
+      final report = ReportModel.fromFirestore(reportDoc);
+      
+      // التحقق من التصويت المسبق
+      if (report.confirmedBy.contains(currentUser.uid) ||
+          report.deniedBy.contains(currentUser.uid)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لقد قمت بالتصويت على هذا البلاغ من قبل'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
+      
+      // التحقق من أن المستخدم ليس منشئ البلاغ
+      if (report.createdBy == currentUser.uid) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('لا يمكنك التصويت على بلاغك الخاص'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
+      
+      // التصويت على البلاغ
+      bool success = await reportsProvider.voteOnReport(
+        reportId: reportData.id,
+        userId: currentUser.uid,
+        isTrue: isVerified,
+      );
       
       if (!mounted) return;
       Navigator.of(context).pop();
       
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isVerified ? 'تم تأكيد البلاغ بنجاح' : 'تم رفض البلاغ',
-            style: const TextStyle(color: Colors.white),
+      if (success) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isVerified ? 'تم تأكيد البلاغ بنجاح' : 'تم رفض البلاغ بنجاح',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: isVerified ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 2),
           ),
-          backgroundColor: isVerified ? Colors.green : Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      
-      // تحديث البيانات
-      _loadReports();
+        );
+        
+        // تحديث البيانات
+        _loadReports();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(reportsProvider.errorMessage ?? 'حدث خطأ في التصويت'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('حدث خطأ: $e'),
@@ -2392,9 +2561,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
 ${reportData != null ? 'الموقع: ${reportData.latitude}, ${reportData.longitude}' : ''}
     ''';
     
-    // يمكن استخدام مكتبة share_plus هنا
-    // Share.share(shareText);
-    debugPrint('مشاركة البلاغ: $shareText');
+    // استخدام مكتبة share_plus لمشاركة البلاغ
+    Share.share(shareText, subject: 'بلاغ من تطبيق SafeRoute');
   }
 
   // دالة بناء بطاقة الإحصائيات

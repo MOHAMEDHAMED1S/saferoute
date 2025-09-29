@@ -21,9 +21,9 @@ import 'screens/reports/advanced_reports_screen.dart';
 import 'screens/security/security_monitor_screen.dart';
 import 'screens/security/security_settings_screen.dart';
 import 'screens/security/threat_management_screen.dart';
-import 'screens/ai/ai_prediction_screen.dart';
+
 import 'screens/notifications/smart_notifications_screen.dart';
-import 'screens/maps/3d_maps_screen.dart';
+
 import 'screens/profile/profile_screen.dart';
 import 'screens/driving/driving_mode_screen.dart';
 import 'screens/community_chat_screen.dart';
@@ -138,12 +138,10 @@ class SafeRouteApp extends StatelessWidget {
                   const NetworkAwareWidget(child: SecuritySettingsScreen()),
               '/threat-management': (context) =>
                   const NetworkAwareWidget(child: ThreatManagementScreen()),
-              '/ai-prediction': (context) =>
-                  NetworkAwareWidget(child: const AIPredictionScreen()),
+             
               '/smart-notifications': (context) =>
                   NetworkAwareWidget(child: const SmartNotificationsScreen()),
-              '/3d-maps': (context) =>
-                  NetworkAwareWidget(child: const Maps3DScreen()),
+             
               '/community-chat': (context) =>
                   const NetworkAwareWidget(child: CommunityChatScreen()),
             },

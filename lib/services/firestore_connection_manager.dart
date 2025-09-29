@@ -126,10 +126,14 @@ class FirestoreConnectionManager {
       return 'البيانات المطلوبة غير موجودة.';
     } else if (errorString.contains('already exists')) {
       return 'البيانات موجودة بالفعل.';
-    } else if (errorString.contains('invalid argument')) {
-      return 'البيانات المرسلة غير صحيحة.';
+    } else if (errorString.contains('invalid argument') || errorString.contains('400') || errorString.contains('bad request')) {
+      return 'البيانات المرسلة غير صحيحة أو تحتوي على أخطاء في التنسيق.';
     } else if (errorString.contains('unavailable')) {
       return 'الخدمة غير متاحة حالياً. يرجى المحاولة لاحقاً.';
+    } else if (errorString.contains('cancelled') || errorString.contains('aborted')) {
+      return 'تم إلغاء العملية. يرجى المحاولة مرة أخرى.';
+    } else if (errorString.contains('deadline exceeded')) {
+      return 'انتهت مهلة العملية. يرجى المحاولة مرة أخرى.';
     } else {
       return 'حدث خطأ في قاعدة البيانات: ${error.toString()}';
     }
