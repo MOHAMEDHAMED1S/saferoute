@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart' as AuthProviderCustom;
@@ -58,9 +59,13 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _setupUserStream();
-    _loadUserData();
-    _loadUserReports();
-    _loadUserPoints();
+    
+    // تأخير استدعاء الدوال التي تحتوي على setState لتجنب مشكلة setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+      _loadUserReports();
+      _loadUserPoints();
+    });
   }
 
   // إعداد Stream للاستماع لتغييرات بيانات المستخدم
@@ -570,7 +575,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
-          Expanded(
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -683,7 +688,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           // الإحصائيات الأساسية
           Row(
             children: [
-              Expanded(
+              Flexible(
                 child: _buildStatCard(
                   title: 'إجمالي البلاغات',
                   value: '${_userStatistics!.totalReports}',
@@ -692,7 +697,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: _buildStatCard(
                   title: 'البلاغات المؤكدة',
                   value: '${_userStatistics!.confirmedReports}',
@@ -705,7 +710,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
+              Flexible(
                 child: _buildStatCard(
                   title: 'البلاغات المرفوضة',
                   value: '${_userStatistics!.rejectedReports}',
@@ -714,7 +719,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: _buildStatCard(
                   title: 'معدل التأكيد',
                   value: '${_userStatistics!.confirmationRate.toStringAsFixed(1)}%',
@@ -784,7 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1533,6 +1538,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<ReportsProvider>(
       builder: (context, reportsProvider, child) {
         final userReports = reportsProvider.userReports;
+        
+        // إضافة تسجيل للتشخيص
+        print('ProfileScreen: _buildReportsTab - userReports.length = ${userReports.length}');
+        print('ProfileScreen: _buildReportsTab - isLoading = ${reportsProvider.isLoading}');
+        print('ProfileScreen: _buildReportsTab - errorMessage = ${reportsProvider.errorMessage}');
 
         return RefreshIndicator(
           onRefresh: _loadUserReports,
@@ -1563,6 +1573,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                   style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
                 ),
                 const SizedBox(height: 16),
+                
+                // إضافة معلومات التشخيص في وضع التطوير
+                if (kDebugMode) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      border: Border.all(color: Colors.orange),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('معلومات التشخيص:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('عدد البلاغات: ${userReports.length}'),
+                        Text('حالة التحميل: ${reportsProvider.isLoading ? "جاري التحميل" : "مكتمل"}'),
+                        if (reportsProvider.errorMessage != null)
+                          Text('خطأ: ${reportsProvider.errorMessage}', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
                 
                 if (_isLoading)
                   const Center(child: CircularProgressIndicator())
