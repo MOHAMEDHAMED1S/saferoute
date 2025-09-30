@@ -186,6 +186,7 @@ class RealtimeReportsService {
     int priority = 1,
     String severity = 'medium',
     Duration? expirationDuration,
+    String? relatedReportId, // إضافة معرف Firestore
   }) async {
     try {
       final user = _auth.currentUser;
@@ -212,6 +213,7 @@ class RealtimeReportsService {
         'expiresAt': expiresAt,
         'viewCount': 0,
         'interactionCount': 0,
+        'relatedReportId': relatedReportId, // إضافة معرف Firestore
       };
 
       await reportRef.set(reportData);

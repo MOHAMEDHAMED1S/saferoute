@@ -263,6 +263,7 @@ class _AddReportScreenState extends State<AddReportScreen>
           type: _selectedType!,
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
+          relatedReportId: reportId, // ربط البلاغ بمعرف Firestore
         );
         dashboardProvider.addNearbyReport(nearbyReport);
         // إضافة نسخة للقاعدة الفورية لضمان ظهورها فوراً في لوحة التحكم
@@ -274,6 +275,7 @@ class _AddReportScreenState extends State<AddReportScreen>
             description: _descriptionController.text.trim(),
             imageUrls: _reportImages.map((x) => x.path).toList(),
             priority: 1,
+            relatedReportId: reportId, // ربط البلاغ بمعرف Firestore
           );
         } catch (e) {
           debugPrint('AddReportScreen: فشل إضافة البلاغ للريل تايم: $e');

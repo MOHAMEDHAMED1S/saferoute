@@ -756,6 +756,7 @@ class DashboardProvider extends ChangeNotifier {
     required String description,
     List<String>? imageUrls,
     int priority = 1,
+    String? relatedReportId, // إضافة معرف Firestore
   }) async {
     return await _realtimeService.addReport(
       type: type,
@@ -764,6 +765,7 @@ class DashboardProvider extends ChangeNotifier {
       description: description,
       imageUrls: imageUrls,
       priority: priority,
+      relatedReportId: relatedReportId, // تمرير معرف Firestore
     );
   }
 

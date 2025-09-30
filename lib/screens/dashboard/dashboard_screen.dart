@@ -2562,9 +2562,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         return;
       }
 
-      // التصويت على البلاغ
+      // التصويت على البلاغ - استخدام relatedReportId إذا كان متاحاً، وإلا استخدام id
       bool success = await reportsProvider.voteOnReport(
-        reportId: reportData.id,
+        reportId: reportData.relatedReportId ?? reportData.id,
         userId: currentUser.uid,
         isTrue: isVerified,
       );
