@@ -1061,11 +1061,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     required IconData icon,
     required Color color,
   }) {
-    return LiquidGlassContainer(
-      type: LiquidGlassType.secondary,
-      isInteractive: false,
-      borderRadius: BorderRadius.circular(12),
+    return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Container(
@@ -1083,19 +1092,19 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: LiquidGlassTheme.getTextColor('secondary'),
+                    color: Colors.grey,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: LiquidGlassTheme.getTextColor('primary'),
+                    color: Colors.black87,
                   ),
                 ),
               ],
@@ -1280,12 +1289,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(10),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(30),
-                  width: 1,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: (_userStatistics?.reportsByType.entries ?? <MapEntry<String, int>>[]).map((entry) => 
@@ -1297,24 +1310,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Expanded(
                           child: Text(
                             entry.key, 
-                            style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                            style: const TextStyle(
                               fontSize: 15,
-                              color: LiquidGlassTheme.getTextColor('primary'),
+                              color: Colors.black87,
                             ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
+                            color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '${entry.value}', 
-                            style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                              color: Colors.blue,
                             ),
                           ),
                         ),
