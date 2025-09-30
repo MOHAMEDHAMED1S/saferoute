@@ -79,6 +79,517 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  // إشعار توضيحي للمكافآت التجريبية
+  Widget _buildDemoNotice() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: LiquidGlassContainer(
+        type: LiquidGlassType.secondary,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withAlpha(25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.lightbulb,
+                    color: Colors.amber.shade600,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'نسخة تجريبية - فكرة للمستقبل',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: LiquidGlassTheme.getTextColor('primary'),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'مكافآت الشراكات مع البراندات',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: LiquidGlassTheme.getTextColor('secondary'),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(50),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'هذه مجرد فكرة بسيطة يمكن التوسع فيها مستقبلاً عند نمو المشروع. الشراكات مع البراندات والمتاجر ستكون متاحة عند زيادة عدد المستخدمين وتطوير النظام أكثر.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: LiquidGlassTheme.getTextColor('primary'),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // بناء مكافآت البراندات التجريبية
+  Widget _buildDemoBrandRewards() {
+    final demoBrands = [
+      {
+        'name': 'كارفور',
+        'discount': '15%',
+        'points': 100, // تقليل النقاط المطلوبة
+        'code': 'SAFE15',
+        'icon': '🛒',
+        'description': 'خصم على جميع المنتجات',
+        'color': Colors.blue,
+      },
+      {
+        'name': 'ماكدونالدز',
+        'discount': '20%',
+        'points': 50, // تقليل النقاط المطلوبة
+        'code': 'SAFE20',
+        'icon': '🍔',
+        'description': 'خصم على الوجبات',
+        'color': Colors.red,
+      },
+      {
+        'name': 'أوبر',
+        'discount': '25 جنيه',
+        'points': 150, // تقليل النقاط المطلوبة
+        'code': 'SAFEUBER',
+        'icon': '🚗',
+        'description': 'خصم على الرحلات',
+        'color': Colors.black,
+      },
+      {
+        'name': 'نون',
+        'discount': '10%',
+        'points': 75, // تقليل النقاط المطلوبة
+        'code': 'NOON10',
+        'icon': '📦',
+        'description': 'خصم على التسوق الإلكتروني',
+        'color': Colors.purple,
+      },
+      {
+        'name': 'ستاربكس',
+        'discount': '30%',
+        'points': 25, // تقليل النقاط المطلوبة
+        'code': 'COFFEE30',
+        'icon': '☕',
+        'description': 'خصم على المشروبات',
+        'color': Colors.green,
+      },
+    ];
+
+    return Column(
+      children: demoBrands.map((brand) => _buildDemoBrandCard(brand)).toList(),
+    );
+  }
+
+  // بطاقة براند تجريبية
+  Widget _buildDemoBrandCard(Map<String, dynamic> brand) {
+    final userPoints = _userPoints?.points ?? 0;
+    final canRedeem = userPoints >= brand['points'];
+
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: true,
+      borderRadius: BorderRadius.circular(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: (brand['color'] as Color).withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    brand['icon'],
+                    style: const TextStyle(fontSize: 30),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          brand['name'],
+                          style: LiquidGlassTheme.headerTextStyle.copyWith(
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'تجريبي',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      brand['description'],
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        color: LiquidGlassTheme.getTextColor('secondary'),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: (brand['color'] as Color).withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'خصم ${brand['discount']}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: brand['color'],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${brand['points']} نقطة',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: LiquidGlassTheme.getGradientByName(
+                    'primary',
+                  ).colors.first,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // عرض النقاط المطلوبة والحالية
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: canRedeem 
+                  ? Colors.green.withAlpha(25)
+                  : Colors.orange.withAlpha(25),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: canRedeem 
+                    ? Colors.green.shade300
+                    : Colors.orange.shade300,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  canRedeem ? Icons.check_circle : Icons.info_outline,
+                  color: canRedeem 
+                      ? Colors.green.shade700
+                      : Colors.orange.shade700,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    canRedeem 
+                        ? 'يمكنك استبدال هذه المكافأة!'
+                        : 'تحتاج ${brand['points'] - userPoints} نقطة إضافية',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: canRedeem 
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$userPoints / ${brand['points']}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: canRedeem 
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: canRedeem 
+                        ? Colors.grey.shade100
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: canRedeem 
+                          ? Colors.grey.shade300
+                          : Colors.grey.shade400,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'الكود: ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      canRedeem 
+                          ? Text(
+                              brand['code'],
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            )
+                          : Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '••••••',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade600,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                      const Spacer(),
+                      Icon(
+                        canRedeem ? Icons.copy : Icons.lock,
+                        size: 16,
+                        color: canRedeem 
+                            ? Colors.grey.shade600
+                            : Colors.grey.shade500,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              LiquidGlassButton(
+                onPressed: canRedeem ? () => _showDemoRedeemDialog(brand) : null,
+                text: canRedeem ? 'استبدال' : 'نقاط غير كافية',
+                type: canRedeem
+                    ? LiquidGlassType.primary
+                    : LiquidGlassType.secondary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // عرض حوار الاستبدال التجريبي
+  void _showDemoRedeemDialog(Map<String, dynamic> brand) {
+    final userPoints = _userPoints?.points ?? 0;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Text(brand['icon'], style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
+              Text(
+                'استبدال مكافأة ${brand['name']}',
+                style: const TextStyle(fontSize: 18),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'هذه نسخة تجريبية. في النسخة الحقيقية ستحصل على كود خصم فعلي.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'تفاصيل المكافأة:',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('• خصم: ${brand['discount']}'),
+              Text('• النقاط المطلوبة: ${brand['points']}'),
+              Text('• نقاطك الحالية: $userPoints'),
+              Text('• الكود التجريبي: ${brand['code']}'),
+              Text('• ${brand['description']}'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.green.shade300,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'سيتم خصم ${brand['points']} نقطة من رصيدك',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showSuccessSnackBar(
+                  'تم الاستبدال التجريبي بنجاح! الكود: ${brand['code']}',
+                );
+                // في التطبيق الحقيقي، سيتم خصم النقاط هنا
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('استبدال تجريبي'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -550,20 +1061,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     required IconData icon,
     required Color color,
   }) {
-    return Container(
+    return LiquidGlassContainer(
+      type: LiquidGlassType.secondary,
+      isInteractive: false,
+      borderRadius: BorderRadius.circular(12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(25),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -581,18 +1083,19 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    color: LiquidGlassTheme.getTextColor('secondary'),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: LiquidGlassTheme.getTextColor('primary'),
                   ),
                 ),
               ],
@@ -671,6 +1174,38 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildDetailedStatsSection() {
+    // التحقق من وجود الإحصائيات قبل عرضها
+    if (_userStatistics == null) {
+      return LiquidGlassContainer(
+        type: LiquidGlassType.ultraLight,
+        isInteractive: false,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: LiquidGlassTheme.getTextColor('secondary'),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'لا توجد إحصائيات متاحة',
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'قم بإرسال بعض البلاغات لرؤية الإحصائيات',
+              style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                color: LiquidGlassTheme.getTextColor('secondary'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return LiquidGlassContainer(
       type: LiquidGlassType.ultraLight,
       isInteractive: false,
@@ -691,7 +1226,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Flexible(
                 child: _buildStatCard(
                   title: 'إجمالي البلاغات',
-                  value: '${_userStatistics!.totalReports}',
+                  value: '${_userStatistics?.totalReports ?? 0}',
                   icon: Icons.report,
                   color: Colors.blue,
                 ),
@@ -700,7 +1235,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Flexible(
                 child: _buildStatCard(
                   title: 'البلاغات المؤكدة',
-                  value: '${_userStatistics!.confirmedReports}',
+                  value: '${_userStatistics?.confirmedReports ?? 0}',
                   icon: Icons.check_circle,
                   color: Colors.green,
                 ),
@@ -713,7 +1248,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Flexible(
                 child: _buildStatCard(
                   title: 'البلاغات المرفوضة',
-                  value: '${_userStatistics!.rejectedReports}',
+                  value: '${_userStatistics?.rejectedReports ?? 0}',
                   icon: Icons.cancel,
                   color: Colors.red,
                 ),
@@ -722,7 +1257,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Flexible(
                 child: _buildStatCard(
                   title: 'معدل التأكيد',
-                  value: '${_userStatistics!.confirmationRate.toStringAsFixed(1)}%',
+                  value: '${(_userStatistics?.confirmationRate ?? 0.0).toStringAsFixed(1)}%',
                   icon: Icons.analytics,
                   color: Colors.purple,
                 ),
@@ -731,25 +1266,64 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           
           // إحصائيات حسب النوع
-          if (_userStatistics!.reportsByType.isNotEmpty) ...[
+          if (_userStatistics?.reportsByType.isNotEmpty == true) ...[
             const SizedBox(height: 16),
             Text(
               'البلاغات حسب النوع',
-              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: LiquidGlassTheme.getTextColor('primary'),
+              ),
             ),
-            const SizedBox(height: 8),
-            ..._userStatistics!.reportsByType.entries.map((entry) => 
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(entry.key, style: LiquidGlassTheme.bodyTextStyle),
-                    Text('${entry.value}', style: LiquidGlassTheme.bodyTextStyle.copyWith(fontWeight: FontWeight.bold)),
-                  ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(30),
+                  width: 1,
                 ),
               ),
-            ).toList(),
+              child: Column(
+                children: (_userStatistics?.reportsByType.entries ?? <MapEntry<String, int>>[]).map((entry) => 
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            entry.key, 
+                            style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                              fontSize: 15,
+                              color: LiquidGlassTheme.getTextColor('primary'),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: LiquidGlassTheme.getGradientByName('primary').colors.first.withAlpha(25),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${entry.value}', 
+                            style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: LiquidGlassTheme.getGradientByName('primary').colors.first,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).toList(),
+              ),
+            ),
           ],
         ],
       ),
@@ -757,6 +1331,38 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildUserLevelSection() {
+    // التحقق من وجود الإحصائيات قبل حساب النقاط والمستوى
+    if (_userStatistics == null) {
+      return LiquidGlassContainer(
+        type: LiquidGlassType.ultraLight,
+        isInteractive: false,
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.star_outline,
+              size: 48,
+              color: LiquidGlassTheme.getTextColor('secondary'),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'مستوى المستخدم غير متاح',
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'قم بإرسال بعض البلاغات لرؤية مستواك',
+              style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                color: LiquidGlassTheme.getTextColor('secondary'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final points = _statisticsService.calculateUserPoints(_userStatistics!);
     final level = _statisticsService.getUserLevel(points);
     final levelColor = Color(int.parse(_statisticsService.getUserLevelColor(level).replaceFirst('#', '0xFF')));
@@ -1270,51 +1876,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // قسم المكافآت المتاحة
-          Text(
-            'المكافآت المتاحة',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
-          ),
-          const SizedBox(height: 16),
-          _availableRewards.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      'لا توجد مكافآت متاحة حالياً',
-                      style: LiquidGlassTheme.bodyTextStyle,
-                    ),
-                  ),
-                )
-              : Column(
-                  children: _availableRewards
-                      .map((reward) => _buildRewardCard(reward))
-                      .toList(),
-                ),
-
+          // إشعار توضيحي
+          _buildDemoNotice(),
           const SizedBox(height: 24),
 
-          // قسم مكافآت المستخدم
+          // قسم المكافآت التجريبية من الشراكات
           Text(
-            'مكافآتك',
+            'مكافآت الشراكات مع البراندات',
             style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 16),
-          _userRewards.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      'لم تقم باستبدال أي مكافآت بعد',
-                      style: LiquidGlassTheme.bodyTextStyle,
-                    ),
-                  ),
-                )
-              : Column(
-                  children: _userRewards
-                      .map((userReward) => _buildUserRewardCard(userReward))
-                      .toList(),
-                ),
+          _buildDemoBrandRewards(),
+          
+          // مسافة فارغة في الأسفل لمنع التداخل مع القائمة السفلية
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -1603,6 +2178,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   _buildEmptyReportsState()
                 else
                   _buildReportsListSection(userReports),
+                
+                // مسافة فارغة في الأسفل لمنع التداخل مع القائمة السفلية
+                const SizedBox(height: 100),
               ],
             ),
           ),
