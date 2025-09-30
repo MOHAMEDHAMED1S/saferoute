@@ -214,6 +214,401 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     }
   }
 
+  void _showUserMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.95),
+              Colors.white.withValues(alpha: 0.9),
+            ],
+          ),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(28),
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 25,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 50,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // User Info
+                Consumer<auth_provider.AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    final user = authProvider.userModel;
+                    return Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.blue.shade100,
+                                Colors.blue.shade50,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.blue.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.blue.shade600,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user?.name ?? 'مستخدم',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                              Text(
+                                user?.email ?? 'user@example.com',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Menu Items
+                _buildMenuButton(
+                  icon: Icons.notifications_outlined,
+                  title: 'الإشعارات',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showNotifications(context);
+                  },
+                ),
+                _buildMenuButton(
+                  icon: Icons.person_outline,
+                  title: 'الملف الشخصي',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/profile');
+                  },
+                ),
+                _buildMenuButton(
+                  icon: Icons.settings_outlined,
+                  title: 'الإعدادات',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/settings');
+                  },
+                ),
+                _buildMenuButton(
+                  icon: Icons.logout,
+                  title: 'تسجيل الخروج',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _logout(context);
+                  },
+                  isDestructive: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.6),
+              Colors.white.withValues(alpha: 0.4),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red.shade600 : Colors.grey.shade700,
+              size: 20,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDestructive ? Colors.red.shade600 : Colors.grey.shade800,
+              ),
+            ),
+            const Spacer(),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey.shade400,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNotifications(BuildContext context) {
+    final dashboardProvider = context.read<DashboardProvider>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final reports = dashboardProvider.nearbyReports.take(5).toList();
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.95),
+                Colors.white.withValues(alpha: 0.9),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 25,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    width: 50,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Title
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_active_outlined,
+                        color: Colors.grey.shade700,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'آخر البلاغات',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  if (reports.isEmpty)
+                    Container(
+                      height: 120,
+                      alignment: Alignment.center,
+                      child: Text(
+                        'لا توجد بلاغات حديثة',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: reports.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, i) {
+                          final r = reports[i];
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.8),
+                                  Colors.white.withValues(alpha: 0.6),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    r.type.icon,
+                                    color: Colors.blue.shade600,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        r.title,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade800,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        r.timeAgo,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _logout(BuildContext context) async {
+    try {
+      final authProvider = context.read<auth_provider.AuthProvider>();
+      await authProvider.signOut();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تسجيل الخروج: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,6 +640,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   // Enhanced Header
                   SliverToBoxAdapter(child: _buildEnhancedHeader(context)),
 
+                  // Spacing after header - محسن
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
                   // Enhanced Welcome Section
                   SliverToBoxAdapter(
                     child: AnimatedBuilder(
@@ -261,8 +659,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     ),
                   ),
 
+                  // Spacing after welcome section - محسن
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
                   // Statistics Cards
                   const SliverToBoxAdapter(child: PrayerTimesSection()),
+
+                  // Spacing after statistics - محسن
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
                   // Around You Section
                   SliverToBoxAdapter(
@@ -284,8 +688,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     child: _buildSafetyTip(dashboardProvider.dailyTip),
                   ),
 
-                  // Bottom padding for navigation
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  // Bottom padding for navigation - محسن
+                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
             );
@@ -297,38 +701,62 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
 
   Widget _buildEnhancedHeader(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.25),
+            Colors.white.withValues(alpha: 0.15),
+          ],
+        ),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-          width: 1.2,
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
             offset: const Offset(0, 8),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          // App Logo with animation
+          // App Logo
           Hero(
             tag: 'app_logo',
             child: Container(
-              padding: const EdgeInsets.all(0),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.8),
+                    Colors.white.withValues(alpha: 0.6),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -336,14 +764,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
                   'assets/images/logo.jpg',
-                  width: 64,
-                  height: 64,
+                  width: 40,
+                  height: 40,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
+                    return Icon(
                       Icons.shield_outlined,
-                      color: Colors.white,
-                      size: 32,
+                      color: Colors.grey.shade700,
+                      size: 24,
                     );
                   },
                 ),
@@ -360,437 +788,61 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Text(
                   'سلامة السائقين',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Colors.grey.shade800,
                     height: 1.2,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 Text(
                   'قيادة آمنة، مستقبل أفضل',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Notifications with badge
+          // Notifications
           Container(
             margin: const EdgeInsets.only(left: 8),
             child: Stack(
               children: [
                 GestureDetector(
-                  onTap: () {
-                    final dashboardProvider = context.read<DashboardProvider>();
-                    showModalBottomSheet(
-                      context: context,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(24),
-                        ),
-                      ),
-                      builder: (context) {
-                        final reports = dashboardProvider.nearbyReports
-                            .take(5)
-                            .toList();
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Colors.white.withValues(alpha: 0.95),
-                                Colors.white.withValues(alpha: 0.9),
-                              ],
-                            ),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(24),
-                            ),
-                            border: Border.all(
-                              color: Colors.grey.shade300,
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: SafeArea(
-                            top: false,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                10,
-                                16,
-                                16,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Handle
-                                  Container(
-                                    width: 40,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade400,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // Title
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.notifications_active_outlined,
-                                        color: Colors.blue.shade600,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'آخر البلاغات',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.grey.shade800,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 14),
-                                  if (reports.isEmpty)
-                                    Container(
-                                      height: 180,
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'لا توجد بلاغات حديثة',
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    Flexible(
-                                      child: ListView.separated(
-                                        shrinkWrap: true,
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        itemCount: reports.length,
-                                        separatorBuilder: (_, __) =>
-                                            const SizedBox(height: 10),
-                                        itemBuilder: (context, i) {
-                                          final r = reports[i];
-                                          final Color accent =
-                                              _getReportTypeColor(r.type);
-                                          return GestureDetector(
-                                            onTap: () {
-                                              Navigator.pop(context);
-                                              showDialog(
-                                                context: context,
-                                                builder: (_) => AlertDialog(
-                                                  backgroundColor:
-                                                      Colors.transparent,
-                                                  contentPadding:
-                                                      EdgeInsets.zero,
-                                                  content: Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: LinearGradient(
-                                                        begin:
-                                                            Alignment.topLeft,
-                                                        end: Alignment
-                                                            .bottomRight,
-                                                        colors: [
-                                                          Colors.white
-                                                              .withValues(
-                                                                alpha: 0.95,
-                                                              ),
-                                                          Colors.white
-                                                              .withValues(
-                                                                alpha: 0.9,
-                                                              ),
-                                                        ],
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            24,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: Colors
-                                                            .grey
-                                                            .shade300,
-                                                        width: 1.2,
-                                                      ),
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                          20,
-                                                        ),
-                                                    child: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          r.title,
-                                                          style: TextStyle(
-                                                            fontSize: 18,
-                                                            fontWeight:
-                                                                FontWeight.w800,
-                                                            color: Colors
-                                                                .grey
-                                                                .shade800,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 10,
-                                                        ),
-                                                        _buildDetailRow(
-                                                          Icons.category,
-                                                          'النوع:',
-                                                          r.type.displayName,
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 8,
-                                                        ),
-                                                        _buildDetailRow(
-                                                          Icons.access_time,
-                                                          'الوقت:',
-                                                          r.timeAgo,
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 8,
-                                                        ),
-                                                        if (r
-                                                            .description
-                                                            .isNotEmpty)
-                                                          _buildDetailRow(
-                                                            Icons.notes,
-                                                            'الوصف:',
-                                                            r.description,
-                                                          ),
-                                                        const SizedBox(
-                                                          height: 16,
-                                                        ),
-                                                        Align(
-                                                          alignment: Alignment
-                                                              .centerRight,
-                                                          child: TextButton(
-                                                            onPressed: () =>
-                                                                Navigator.pop(
-                                                                  context,
-                                                                ),
-                                                            child: Text(
-                                                              'إغلاق',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .blue
-                                                                    .shade600,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w700,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                                border: Border.all(
-                                                  color: Colors.grey.shade200,
-                                                ),
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  colors: [
-                                                    Colors.white.withValues(
-                                                      alpha: 0.9,
-                                                    ),
-                                                    Colors.white.withValues(
-                                                      alpha: 0.8,
-                                                    ),
-                                                  ],
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black
-                                                        .withValues(
-                                                          alpha: 0.08,
-                                                        ),
-                                                    blurRadius: 12,
-                                                    offset: const Offset(0, 6),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(
-                                                  14,
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            10,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        gradient:
-                                                            LinearGradient(
-                                                              colors: [
-                                                                accent,
-                                                                accent
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.8,
-                                                                    ),
-                                                              ],
-                                                            ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              14,
-                                                            ),
-                                                      ),
-                                                      child: Icon(
-                                                        r.type.icon,
-                                                        color: Colors.white,
-                                                        size: 20,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            r.title,
-                                                            style: TextStyle(
-                                                              color: Colors
-                                                                  .grey
-                                                                  .shade800,
-                                                              fontSize: 14,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w700,
-                                                            ),
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 4,
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .access_time,
-                                                                size: 14,
-                                                                color: Colors
-                                                                    .grey
-                                                                    .shade600,
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                              Text(
-                                                                r.timeAgo,
-                                                                style: TextStyle(
-                                                                  color: Colors
-                                                                      .grey
-                                                                      .shade600,
-                                                                  fontSize: 12,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 10,
-                                                            vertical: 6,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: accent
-                                                            .withValues(
-                                                              alpha: 0.1,
-                                                            ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              12,
-                                                            ),
-                                                        border: Border.all(
-                                                          color: accent
-                                                              .withValues(
-                                                                alpha: 0.3,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                      child: Text(
-                                                        r.type.displayName,
-                                                        style: TextStyle(
-                                                          color: accent,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                  onTap: () => _showNotifications(context),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.6),
+                          Colors.white.withValues(alpha: 0.4),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: Icon(
                       Icons.notifications_outlined,
                       color: Colors.grey.shade700,
-                      size: 24,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -802,12 +854,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       final count = provider.nearbyReports.length;
                       if (count == 0) return const SizedBox.shrink();
                       return Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.red.shade400, Colors.red.shade600],
-                          ),
+                          color: Colors.red.shade500,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withValues(alpha: 0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
                           count > 99 ? '99+' : count.toString(),
@@ -824,6 +881,66 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               ],
             ),
           ),
+
+          const SizedBox(width: 12),
+
+          // User Profile Menu
+          GestureDetector(
+            onTap: () => _showUserMenu(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.6),
+                    Colors.white.withValues(alpha: 0.4),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Consumer<auth_provider.AuthProvider>(
+                builder: (context, authProvider, child) {
+                  final user = authProvider.userModel;
+                  if (user?.photoUrl != null && user!.photoUrl!.isNotEmpty) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        user.photoUrl!,
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person_outline,
+                            color: Colors.grey.shade700,
+                            size: 24,
+                          );
+                        },
+                      ),
+                    );
+                  }
+                  return Icon(
+                    Icons.person_outline,
+                    color: Colors.grey.shade700,
+                    size: 24,
+                  );
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -838,274 +955,327 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Container(
-      margin: const EdgeInsets.all(20),
-      child: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF667eea),
-                  Color(0xFF764ba2),
-                  Color(0xFFf093fb),
+      margin: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade50.withValues(alpha: 0.8),
+            const Color.fromARGB(16, 157, 35, 198).withValues(alpha: 0.1),
+            const Color.fromARGB(255, 228, 233, 252).withValues(alpha: 0.4),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.shade100.withValues(alpha: 0.3),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.8),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Colors.purple.shade50.withValues(alpha: 0.2),
+            blurRadius: 30,
+            offset: const Offset(-5, -5),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Welcome Message
+            Text(
+              'مرحباً بك في تطبيق سلامة السائقين',
+              style: TextStyle(
+                fontSize: screenWidth * 0.055,
+                fontWeight: FontWeight.w800,
+                color: const Color.fromARGB(255, 12, 12, 12),
+                height: 1.3,
+                letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF667eea).withValues(alpha: 0.35),
-                  blurRadius: 25,
-                  offset: const Offset(0, 12),
-                ),
-              ],
             ),
-          ),
-
-          // Glass effect overlay
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.25),
-                width: 1.2,
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.25),
-                  Colors.white.withValues(alpha: 0.05),
+            const SizedBox(height: 6),
+            Text(
+              'نحن هنا لضمان رحلتك الآمنة',
+              style: TextStyle(
+                fontSize: screenWidth * 0.032,
+                color: Colors.blue.shade600,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
+                shadows: [
+                  Shadow(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    blurRadius: 8,
+                    offset: const Offset(0, 1),
+                  ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: 20),
 
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Time and Weather Row
+            Row(
               children: [
-                // Welcome & Weather
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
+                // Time Info
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        color: Colors.blue.shade600,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Hero(
-                            tag: 'welcome_text',
-                            child: Material(
-                              color: Colors.transparent,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Consumer<auth_provider.AuthProvider>(
-                                  builder: (context, authProvider, child) {
-                                    final userName =
-                                        authProvider.userModel?.name ??
-                                        'مستخدم';
-                                    return Text(
-                                      'أهلاً بك، $userName',
-                                      style: TextStyle(
-                                        fontSize: screenWidth * 0.07,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        height: 1.1,
-                                        shadows: [
-                                          Shadow(
-                                            blurRadius: 8,
-                                            color: Colors.black.withValues(
-                                              alpha: 0.3,
-                                            ),
-                                            offset: const Offset(1, 2),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Text(
-                              '$timeString • ${dateFormat.format(now)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Weather Widget
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
                           Text(
-                            weather.icon,
-                            style: const TextStyle(fontSize: 26),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${weather.temperature}°',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                            ),
-                          ),
-                          Text(
-                            weather.condition,
+                            timeString,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 11,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 16, 16, 16),
+                              shadows: [
+                                Shadow(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            dateFormat.format(now),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade600,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Weather Widget
+                Row(
+                  children: [
+                    Text(
+                      weather.icon,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${weather.temperature}°',
+                          style: TextStyle(
+                            color: const Color.fromARGB(255, 15, 15, 15),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            shadows: [
+                              Shadow(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          weather.condition,
+                          style: TextStyle(
+                            color: Colors.blue.shade600,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            shadows: [
+                              Shadow(
+                                color: Colors.white.withValues(alpha: 0.5),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+              ],
+            ),
 
-                const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
+            // Quick Actions
+            Row(
+              children: [
                 // Driving Mode Button
-                AnimatedBuilder(
-                  animation: _pulseAnimation,
-                  builder: (context, child) => Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/driving-mode');
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withValues(alpha: 0.28),
-                              Colors.white.withValues(alpha: 0.1),
+                Expanded(
+                  child: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) => Transform.scale(
+                      scale: _pulseAnimation.value,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, '/driving-mode');
+                        },
+                        child: Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.8),
+                                const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.6),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.blue.shade200.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(26),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1.3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              blurRadius: 22,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            children: [
-                              // Icon
-                              Container(
-                                padding: const EdgeInsets.all(13),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.orange.shade400,
-                                      Colors.orange.shade600,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.navigation,
+                                  color: const Color.fromARGB(255, 2, 2, 2),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'وضع القيادة',
+                                  style: TextStyle(
+                                    color: const Color.fromARGB(255, 13, 13, 13),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.3,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.white.withValues(alpha: 0.8),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 1),
+                                      ),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(18),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.orange.withValues(
-                                        alpha: 0.45,
-                                      ),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 5),
-                                    ),
-                                  ],
                                 ),
-                                child: const Icon(
-                                  Icons.navigation,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-
-                              const SizedBox(width: 18),
-
-                              // Text
-                              Expanded(
-                                child: Text(
-                                  'وضع القيادة الذكي',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: screenWidth * 0.048,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-
-                              // Arrow
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Map Button
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _switchToMap,
+                    child: Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.8),
+                            const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.6),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 233, 233, 233).withValues(alpha: 0.7),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.map_outlined,
+                              color: const Color.fromARGB(255, 0, 0, 0),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'الخريطة',
+                              style: TextStyle(
+                                color: const Color.fromARGB(255, 0, 0, 0),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1113,8 +1283,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1126,20 +1296,37 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     Function(String) onFilterSelected,
   ) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(24, 12, 24, 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.9),
+            Colors.white.withValues(alpha: 0.7),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+            spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.6),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1152,26 +1339,41 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            Colors.orange.shade400,
-                            Colors.orange.shade600,
+                            Colors.blue.shade100,
+                            Colors.blue.shade200,
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.blue.shade300.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.location_on_rounded,
-                        color: Colors.white,
-                        size: 22,
+                        color: Colors.blue.shade700,
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'ماذا يحدث حولك؟',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: Colors.grey.shade800,
+                        letterSpacing: 0.3,
+                        fontFamily: 'NotoSansArabic',
                       ),
                     ),
                   ],
@@ -1181,32 +1383,47 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 8,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.blue.shade400, Colors.blue.shade600],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.blue.shade100,
+                          Colors.blue.shade200,
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.blue.shade300.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.3),
+                          color: Colors.blue.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.map_rounded, color: Colors.white, size: 16),
-                        SizedBox(width: 6),
+                        Icon(
+                          Icons.map_rounded, 
+                          color: Colors.blue.shade700, 
+                          size: 16
+                        ),
+                        const SizedBox(width: 6),
                         Text(
                           'خريطة',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.blue.shade700,
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                            fontFamily: 'NotoSansArabic',
                           ),
                         ),
                       ],
@@ -1215,9 +1432,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
 
-            // Enhanced filter chips
+            // Enhanced filter chips - محسن
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -1230,6 +1447,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       onFilterSelected('الكل');
                     },
                   ),
+                  const SizedBox(width: 12),
                   _buildEnhancedFilterChip(
                     label: '500م',
                     icon: Icons.location_on,
@@ -1238,6 +1456,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       onFilterSelected('500م');
                     },
                   ),
+                  const SizedBox(width: 12),
                   _buildEnhancedFilterChip(
                     label: '1كم',
                     icon: Icons.location_on,
@@ -1246,6 +1465,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       onFilterSelected('1كم');
                     },
                   ),
+                  const SizedBox(width: 12),
                   _buildEnhancedFilterChip(
                     label: 'حوادث',
                     icon: Icons.car_crash,
@@ -1254,6 +1474,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       onFilterSelected('حوادث');
                     },
                   ),
+                  const SizedBox(width: 12),
                   _buildEnhancedFilterChip(
                     label: 'ازدحام',
                     icon: Icons.traffic,
@@ -1262,6 +1483,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       onFilterSelected('ازدحام');
                     },
                   ),
+                  const SizedBox(width: 12),
                   _buildEnhancedFilterChip(
                     label: 'صيانة',
                     icon: Icons.build,
@@ -1273,12 +1495,12 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
 
-            // Reports list
+            // Reports list - محسن
             ...dashboardProvider.filteredReports.map(
               (report) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: _buildEnhancedReportCard(
                   report.title,
                   report.distance,
@@ -1303,31 +1525,31 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
                   colors: [Colors.blue.shade400, Colors.blue.shade600],
                 )
               : null,
-          color: isSelected ? null : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? null : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(24),
           border: isSelected
               ? null
               : Border.all(color: Colors.grey.shade300, width: 1.5),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    color: Colors.blue.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
         ),
@@ -1337,15 +1559,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             Icon(
               icon,
               color: isSelected ? Colors.white : Colors.grey.shade600,
-              size: 16,
+              size: 18,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey.shade700,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                letterSpacing: 0.3,
               ),
             ),
           ],
@@ -1369,7 +1592,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         _showEnhancedReportDetails(title, distance, time, icon, severity);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 18),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -1377,21 +1600,21 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             end: Alignment.bottomRight,
             colors: [Colors.white, Colors.grey.shade50],
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: severityColor.withValues(alpha: 0.2),
+            color: severityColor.withValues(alpha: 0.25),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: severityColor.withValues(alpha: 0.15),
+              color: severityColor.withValues(alpha: 0.2),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -1401,7 +1624,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -1409,16 +1632,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         severityColor.withValues(alpha: 0.8),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: severityColor.withValues(alpha: 0.3),
+                        color: severityColor.withValues(alpha: 0.4),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1431,9 +1654,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           color: Colors.grey.shade800,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           Icon(
@@ -1441,13 +1665,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             color: Colors.grey.shade500,
                             size: 14,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 6),
                           Text(
                             time,
                             style: TextStyle(
                               color: Colors.grey.shade600,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -1457,19 +1681,24 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: 12,
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: severityColor.withValues(alpha: 0.1),
+                    color: severityColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: severityColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     severity,
                     style: TextStyle(
                       color: severityColor,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -1483,18 +1712,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   color: Colors.grey.shade500,
                   size: 16,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Text(
                   distance,
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
@@ -1510,17 +1739,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [Colors.blue.shade400, Colors.blue.shade600],
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                            color: Colors.blue.withValues(alpha: 0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
@@ -1529,14 +1758,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
@@ -1549,22 +1779,30 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Colors.grey.shade300,
-                          width: 1,
+                          width: 1.5,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Text(
                         'مشاركة',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade700,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -1590,18 +1828,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     }
   }
 
-  Color _getReportTypeColor(ReportType type) {
-    switch (type) {
-      case ReportType.accident:
-        return Colors.red.shade500;
-      case ReportType.traffic:
-        return Colors.orange.shade500;
-      case ReportType.other:
-        return Colors.blue.shade500;
-      default:
-        return Colors.grey.shade500;
-    }
-  }
 
   Widget _buildEmergencyAlert(BuildContext context, dynamic alert) {
     return Container(
@@ -2548,19 +2774,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     dashboardProvider.loadDashboardData();
   }
 
-  // دالة عرض البلاغ على الخريطة
-  void _showReportOnMap(NearbyReport report) {
-    Navigator.pushNamed(
-      context,
-      '/map',
-      arguments: {
-        'latitude': report.latitude,
-        'longitude': report.longitude,
-        'title': report.title,
-        'description': report.description,
-      },
-    );
-  }
 
   // دالة مشاركة البلاغ
   void _shareEnhancedReport(

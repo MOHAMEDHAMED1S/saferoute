@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/dashboard_models.dart';
 import '../models/report_model.dart';
 import '../models/nearby_report.dart'; // إضافة استيراد نموذج البلاغات القريبة
@@ -109,7 +110,12 @@ class DashboardProvider extends ChangeNotifier {
     try {
       // الحصول على الموقع الحالي
       final position = await _getCurrentPosition();
-      if (position == null) return;
+      if (position == null) {
+        LoggingService.instance.logWarning('لا يمكن الحصول على الموقع، سيتم استخدام الموقع الافتراضي');
+        return;
+      }
+
+      LoggingService.instance.logInfo('بدء الاستماع للبلاغات في الموقع: ${position.latitude}, ${position.longitude}');
 
       // إلغاء الاشتراك السابق إن وجد
       _realtimeSubscription?.cancel();
@@ -130,12 +136,17 @@ class DashboardProvider extends ChangeNotifier {
           )
           .listen(
             (reports) {
+              LoggingService.instance.logInfo('تم استلام ${reports.length} بلاغ من البيانات الفورية');
+              
               _nearbyReports.clear();
               _nearbyReports.addAll(reports);
               _filteredReports = List.from(_nearbyReports);
 
               // تحديث الإحصائيات
               _updateStatsFromReports(reports);
+
+              // حفظ البيانات محلياً
+              _saveReportsToCache(reports);
 
               notifyListeners();
             },
@@ -154,39 +165,31 @@ class DashboardProvider extends ChangeNotifier {
   /// الحصول على الموقع الحالي
   Future<Position?> _getCurrentPosition() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return null;
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return null;
-      }
-
-      if (permission == LocationPermission.deniedForever) return null;
-      try {
-        return await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 10),
-        );
-      } on TimeoutException {
-        // استخدم آخر موقع معروف عند انتهاء المهلة
-        final last = await Geolocator.getLastKnownPosition();
-        return last;
-      }
+      // استخدام LocationService المحسن
+      final position = await _locationService.getCurrentLocation();
+      LoggingService.instance.logInfo('تم الحصول على الموقع: ${position.latitude}, ${position.longitude}');
+      return position;
     } catch (e) {
       LoggingService.instance.logError('خطأ في الحصول على الموقع', e);
+      
       // محاولة استخدام آخر موقع معروف
-      try {
-        final last = await Geolocator.getLastKnownPosition();
-        return last;
-      } catch (_) {}
-      // موقع افتراضي كحل أخير
+      if (!kIsWeb) {
+        try {
+          final last = await _locationService.getLastKnownPosition();
+          if (last != null) {
+            LoggingService.instance.logInfo('استخدام آخر موقع معروف: ${last.latitude}, ${last.longitude}');
+            return last;
+          }
+        } catch (_) {}
+      }
+      
+      // موقع افتراضي كحل أخير (القاهرة)
+      LoggingService.instance.logWarning('استخدام الموقع الافتراضي');
       return Position(
         latitude: 30.0444,
         longitude: 31.2357,
         timestamp: DateTime.now(),
-        accuracy: 0,
+        accuracy: 1000,
         altitude: 0,
         altitudeAccuracy: 0,
         heading: 0,
@@ -201,6 +204,31 @@ class DashboardProvider extends ChangeNotifier {
   void _updateStatsFromReports(List<NearbyReport> reports) {
     final activeReports = reports.length;
     _stats = _stats.copyWith(nearbyRisks: activeReports);
+  }
+
+  /// حفظ البلاغات في الذاكرة المحلية
+  Future<void> _saveReportsToCache(List<NearbyReport> reports) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final reportsJson = reports.map((report) => jsonEncode({
+        'id': report.id,
+        'title': report.title,
+        'description': report.description,
+        'distance': report.distance,
+        'timeAgo': report.timeAgo,
+        'confirmations': report.confirmations,
+        'type': report.type.toString(),
+        'latitude': report.latitude,
+        'longitude': report.longitude,
+      })).toList();
+      
+      await prefs.setStringList('dashboard_nearby_reports', reportsJson);
+      await prefs.setString('dashboard_cache_timestamp', DateTime.now().toIso8601String());
+      
+      LoggingService.instance.logInfo('تم حفظ ${reports.length} بلاغ في الذاكرة المحلية');
+    } catch (e) {
+      LoggingService.instance.logError('خطأ في حفظ البلاغات محلياً', e);
+    }
   }
 
   // تحميل البلاغات المحفوظة محلياً

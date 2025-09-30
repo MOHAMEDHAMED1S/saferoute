@@ -1,10 +1,21 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class MapUtils {
   // Default map configuration
-  static const LatLng defaultLocation = LatLng(30.0444, 31.2357); // Cairo, Egypt
+  static Position get defaultLocation => Position(
+    latitude: 30.0444,
+    longitude: 31.2357,
+    timestamp: DateTime.now(),
+    accuracy: 0.0,
+    altitude: 0.0,
+    altitudeAccuracy: 0.0,
+    heading: 0.0,
+    headingAccuracy: 0.0,
+    speed: 0.0,
+    speedAccuracy: 0.0,
+  ); // Cairo, Egypt
   static const double defaultZoom = 12.0;
   static const double minZoom = 8.0;
   static const double maxZoom = 20.0;
@@ -57,40 +68,11 @@ class MapUtils {
       'rotateGesturesEnabled': true, // Enable rotation for Android
       'scrollGesturesEnabled': true,
       'zoomGesturesEnabled': true,
-      'minMaxZoomPreference': MinMaxZoomPreference(minZoom, maxZoom),
     };
   }
 
-  // Camera update with bounds checking
-  static CameraUpdate safeCameraUpdate(LatLng target, {double? zoom}) {
-    final safeZoom = zoom?.clamp(minZoom, maxZoom) ?? defaultZoom;
-    return CameraUpdate.newLatLngZoom(target, safeZoom);
-  }
-
-  // Animate camera with error handling
-  static Future<void> animateCameraSafely(
-    GoogleMapController? controller,
-    CameraUpdate cameraUpdate,
-  ) async {
-    if (controller == null) return;
-    
-    try {
-      await controller.animateCamera(cameraUpdate);
-    } catch (e) {
-      // Fallback to move camera if animation fails
-      try {
-        await controller.moveCamera(cameraUpdate);
-      } catch (e) {
-        // Ignore if both fail
-        if (kDebugMode) {
-          print('Camera update failed: $e');
-        }
-      }
-    }
-  }
-
   // Calculate distance between two points
-  static double calculateDistance(LatLng point1, LatLng point2) {
+  static double calculateDistance(Position point1, Position point2) {
     const double earthRadius = 6371000; // meters
     final double lat1Rad = point1.latitude * (3.14159265359 / 180);
     final double lat2Rad = point2.latitude * (3.14159265359 / 180);
@@ -106,7 +88,7 @@ class MapUtils {
   }
 
   // Check if location is within Egypt bounds (approximate)
-  static bool isLocationInEgypt(LatLng location) {
+  static bool isLocationInEgypt(Position location) {
     const double minLat = 22.0;
     const double maxLat = 31.7;
     const double minLng = 25.0;

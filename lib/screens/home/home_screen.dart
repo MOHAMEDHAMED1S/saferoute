@@ -1,46 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
-import '../../utils/map_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../models/report_model.dart';
-import '../../models/nearby_report.dart';
-import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 
-import 'widgets/map_widget.dart';
-import 'widgets/reports_bottom_sheet.dart';
-import 'widgets/filter_bottom_sheet.dart';
+import 'widgets/mapbox_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String routeName = '/home';
 
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  GoogleMapController? _mapController;
-  Position? _currentPosition;
   bool _isMapReady = false;
-  Set<Marker> _markers = {};
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
-  bool _showReportsSheet = false;
-  bool _showFilterSheet = false;
+  bool _isInitialized = false;
+  Position? _currentPosition;
+  List<ReportModel> _reports = [];
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeLocation();
-    _loadReports();
+    _initializeAsync();
+  }
+
+  Future<void> _initializeAsync() async {
+    // Initialize location and reports in parallel for better performance
+    await Future.wait([
+      _initializeLocation(),
+      _loadReports(),
+    ]);
+    
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
+    }
   }
 
   @override
@@ -61,6 +66,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _initializeLocation() async {
     try {
+      // Skip location initialization on web as it's handled by Mapbox
+      if (kIsWeb) {
+        debugPrint('Skipping location initialization on web - handled by Mapbox');
+        return;
+      }
+
       // Check location permission first
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -80,145 +91,157 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         throw Exception('خدمات الموقع غير مفعلة. يرجى تفعيلها');
       }
 
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.initialize();
-
-      _currentPosition = await Geolocator.getCurrentPosition(
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
       );
 
       if (mounted) {
         setState(() {
-          // Update UI after location update
+          _currentPosition = position;
         });
-        _animateToCurrentLocation();
+        debugPrint('Current position updated: ${position.latitude}, ${position.longitude}');
       }
+
+      // Start listening to position changes
+      _startLocationUpdates();
     } catch (e) {
-      if (mounted) {
+      debugPrint('خطأ في الحصول على الموقع: $e');
+      // Show error to user only on mobile platforms
+      if (mounted && !kIsWeb) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطأ في تحديد الموقع: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName(
-              'danger',
-            ).colors.first,
-            duration: const Duration(seconds: 4),
+            content: Text('خطأ في الحصول على الموقع: $e'),
+            backgroundColor: Colors.red,
           ),
         );
-        // Set default location (Cairo) if location fails
-        setState(() {
-          _currentPosition = null;
-        });
       }
     }
+  }
+
+  void _startLocationUpdates() {
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Update every 10 meters
+      ),
+    ).listen((Position position) {
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+        debugPrint('Position stream updated: ${position.latitude}, ${position.longitude}');
+      }
+    });
   }
 
   Future<void> _loadReports() async {
     try {
-      final reportsProvider = Provider.of<ReportsProvider>(
-        context,
-        listen: false,
-      );
-      await reportsProvider.initialize();
-      _updateMapMarkers();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحميل البلاغات: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName(
-              'danger',
-            ).colors.first,
-          ),
-        );
+      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      
+      // Initialize reports provider if not already done
+      if (!reportsProvider.isLoading && reportsProvider.reports.isEmpty) {
+        await reportsProvider.initialize();
       }
+      
+      // Load user reports if authenticated
+      if (authProvider.userId != null) {
+        await reportsProvider.loadUserReports(authProvider.userId!);
+      }
+      
+      if (mounted) {
+        setState(() {
+          _reports = reportsProvider.reports;
+        });
+        debugPrint('Reports loaded: ${_reports.length} reports');
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل التقارير: $e');
     }
   }
 
-  void _updateMapMarkers() {
-    final dashboardProvider = Provider.of<DashboardProvider>(
-      context,
-      listen: false,
-    );
-    final reports = dashboardProvider.nearbyReports;
 
-    Set<Marker> newMarkers = {};
 
-    for (var report in reports) {
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId(report.id),
-          position: LatLng(report.latitude, report.longitude),
-          icon: _getMarkerIcon(report.type),
-          infoWindow: InfoWindow(
-            title: report.title,
-            snippet: report.description.length > 50
-                ? '${report.description.substring(0, 50)}...'
-                : report.description,
-            onTap: () => _showReportDetailsFromNearby(report),
+  // Simple filter state
+  Set<ReportType> _activeFilters = Set.from(ReportType.values);
+
+  void _showSimpleFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('تحديد أنواع البلاغات'),
+          content: SingleChildScrollView(
+        child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: ReportType.values.map((type) {
+                final isActive = _activeFilters.contains(type);
+                return CheckboxListTile(
+                  title: Text(_getReportTypeTitle(type)),
+                  subtitle: Text(_getReportTypeDescription(type)),
+                  value: isActive,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        _activeFilters.add(type);
+                      } else {
+                        _activeFilters.remove(type);
+                      }
+                    });
+                  },
+                  activeColor: _getReportColor(type),
+                  secondary: Icon(
+                    _getReportIcon(type),
+                    color: _getReportColor(type),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _markers = newMarkers;
-      });
-    }
-  }
-
-  // _getReportTypeFromString removed; NearbyReport already carries ReportType
-
-  void _showReportDetailsFromNearby(NearbyReport report) {
-    // تحويل NearbyReport إلى ReportModel للعرض
-    final reportModel = ReportModel(
-      id: report.id,
-      type: report.type,
-      description: report.description,
-      location: ReportLocation(lat: report.latitude, lng: report.longitude),
-      createdAt: DateTime.now(),
-      createdBy: '',
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _activeFilters.clear();
+                  _activeFilters.addAll(ReportType.values);
+                });
+              },
+              child: const Text('الكل'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _applySimpleFilters();
+                Navigator.of(context).pop();
+              },
+              child: const Text('تطبيق'),
+            ),
+          ],
+        );
+      },
     );
-    _showReportDetails(reportModel);
   }
 
-  BitmapDescriptor _getMarkerIcon(ReportType type) {
-    // TODO: Create custom marker icons for different report types
-    switch (type) {
-      case ReportType.accident:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
-      case ReportType.jam:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        );
-      case ReportType.carBreakdown:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-      case ReportType.bump:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueYellow,
-        );
-      case ReportType.closedRoad:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueViolet,
-        );
-      case ReportType.hazard:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
-      case ReportType.police:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
-      case ReportType.traffic:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        );
-      case ReportType.other:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
+  void _applySimpleFilters() async {
+    try {
+      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      await reportsProvider.initialize();
+      debugPrint('Applied filters: ${_activeFilters.length} types selected');
+    } catch (e) {
+      debugPrint('Error applying filters: $e');
     }
   }
 
   String _getReportTypeTitle(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return 'حادث مروري';
+        return 'حوادث مرورية';
       case ReportType.jam:
         return 'ازدحام مروري';
       case ReportType.carBreakdown:
@@ -228,86 +251,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case ReportType.closedRoad:
         return 'طريق مغلق';
       case ReportType.hazard:
-        return 'خطر';
+        return 'خطر على الطريق';
       case ReportType.police:
-        return 'شرطة';
+        return 'نقطة شرطة';
       case ReportType.traffic:
-        return 'حركة مرور';
+        return 'حركة مرور كثيفة';
       case ReportType.other:
-        return 'بلاغ';
+        return 'أخرى';
     }
   }
 
-  void _showReportDetails(ReportModel report) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => LiquidGlassContainer(
-        type: LiquidGlassType.secondary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                LiquidGlassContainer(
-                  type: LiquidGlassType.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(
-                    _getReportIcon(report.type),
-                    color: LiquidGlassTheme.getIconColor('primary'),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    _getReportTypeTitle(report.type),
-                    style: LiquidGlassTheme.headerTextStyle.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                LiquidGlassButton(
-                  text: '',
-                  onPressed: () => Navigator.pop(context),
-                  type: LiquidGlassType.secondary,
-                  borderRadius: 12,
-                  padding: const EdgeInsets.all(8),
-                  icon: Icons.close,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              report.description,
-              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: LiquidGlassTheme.getTextColor('secondary'),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _formatDateTime(report.createdAt),
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
+  String _getReportTypeDescription(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return 'حوادث السيارات والحوادث المرورية';
+      case ReportType.jam:
+        return 'ازدحام مروري واختناقات';
+      case ReportType.carBreakdown:
+        return 'عطل في المركبات';
+      case ReportType.bump:
+        return 'مطبات صناعية أو طبيعية';
+      case ReportType.closedRoad:
+        return 'طرق مغلقة أو مسدودة';
+      case ReportType.hazard:
+        return 'مخاطر على الطريق';
+      case ReportType.police:
+        return 'نقاط تفتيش شرطية';
+      case ReportType.traffic:
+        return 'حركة مرور مكثفة';
+      case ReportType.other:
+        return 'بلاغات أخرى';
+    }
+  }
+
+  Color _getReportColor(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return const Color(0xFFDC2626);
+      case ReportType.jam:
+        return const Color(0xFFEA580C);
+      case ReportType.carBreakdown:
+        return const Color(0xFFD97706);
+      case ReportType.bump:
+        return const Color(0xFF7C3AED);
+      case ReportType.closedRoad:
+        return const Color(0xFFB91C1C);
+      case ReportType.hazard:
+        return const Color(0xFFC2410C);
+      case ReportType.police:
+        return const Color(0xFF2563EB);
+      case ReportType.traffic:
+        return const Color(0xFFEA580C);
+      case ReportType.other:
+        return const Color(0xFF6B7280);
+    }
   }
 
   IconData _getReportIcon(ReportType type) {
@@ -317,281 +314,116 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case ReportType.jam:
         return Icons.traffic;
       case ReportType.carBreakdown:
-        return Icons.car_repair;
+        return Icons.build;
       case ReportType.bump:
-        return Icons.warning;
+        return Icons.speed;
       case ReportType.closedRoad:
         return Icons.block;
       case ReportType.hazard:
-        return Icons.warning_amber;
+        return Icons.warning;
       case ReportType.police:
         return Icons.local_police;
       case ReportType.traffic:
         return Icons.traffic;
       case ReportType.other:
-        return Icons.report;
+        return Icons.place;
     }
   }
 
-  // تم إزالة الدالة غير المستخدمة _getReportColor
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inMinutes < 60) {
-      return 'منذ ${difference.inMinutes} دقيقة';
-    } else if (difference.inHours < 24) {
-      return 'منذ ${difference.inHours} ساعة';
-    } else {
-      return 'منذ ${difference.inDays} يوم';
-    }
-  }
-
-  void _animateToCurrentLocation() async {
-    if (_mapController != null && _currentPosition != null) {
-      final latLng = LatLng(
-        _currentPosition!.latitude,
-        _currentPosition!.longitude,
-      );
-
-      // Validate location is within Egypt bounds
-      if (!MapUtils.isLocationInEgypt(latLng)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('الموقع خارج حدود جمهورية مصر العربية'),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-
-      final cameraUpdate = MapUtils.safeCameraUpdate(latLng);
-      await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
-    }
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    setState(() {
-      _isMapReady = true;
-    });
-    _fabAnimationController.forward();
-    _animateToCurrentLocation();
-  }
-
-  void _toggleReportsSheet() {
-    setState(() {
-      _showReportsSheet = !_showReportsSheet;
-      if (_showFilterSheet) _showFilterSheet = false;
-    });
-  }
-
-  void _toggleFilterSheet() {
-    setState(() {
-      _showFilterSheet = !_showFilterSheet;
-      if (_showReportsSheet) _showReportsSheet = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      backgroundColor: LiquidGlassTheme.backgroundColor,
       body: Stack(
         children: [
-          // Map
-          MapWidget(
-            onMapCreated: _onMapCreated,
-            currentPosition: _currentPosition,
-            markers: _markers,
-            onMarkerTapped: (report) => _showReportDetails(report),
-          ),
+          // Mapbox Map
+          MapboxWidget(),
 
-          // Top App Bar
-          SafeArea(
+          // Loading overlay
+          if (!_isInitialized)
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
             child: LiquidGlassContainer(
-              type: LiquidGlassType.secondary,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              borderRadius: BorderRadius.circular(16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pushNamed('/profile');
-                    },
-                    child: Consumer<AuthProvider>(
-                      builder: (context, authProvider, child) {
-                        return CircleAvatar(
-                          radius: 20,
-                          backgroundImage:
-                              authProvider.userModel?.photoUrl != null
-                              ? NetworkImage(authProvider.userModel!.photoUrl!)
-                              : null,
-                          child: authProvider.userModel?.photoUrl == null
-                              ? Icon(
-                                  Icons.person,
-                                  color: LiquidGlassTheme.getIconColor(
-                                    'primary',
-                                  ),
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Consumer<AuthProvider>(
-                          builder: (context, authProvider, child) {
-                            return Text(
-                              'مرحباً، ${authProvider.userModel?.name ?? 'المستخدم'}',
-                              style: LiquidGlassTheme.primaryTextStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            );
-                          },
+                children: [
+                        const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                         ),
+                        const SizedBox(height: 16),
                         Text(
-                          'ابق آمناً على الطريق',
-                          style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                            fontSize: 12,
+                          'جاري تحميل البيانات...',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
+                        if (_currentPosition != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'الموقع: ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  LiquidGlassButton(
-                    text: '',
-                    onPressed: _toggleFilterSheet,
-                    type: LiquidGlassType.primary,
-                    borderRadius: 12,
-                    padding: const EdgeInsets.all(8),
-                    icon: Icons.filter_list,
-                  ),
-                ],
               ),
             ),
           ),
 
-          // Bottom Sheets
-          if (_showReportsSheet)
-            ReportsBottomSheet(
-              onClose: () => setState(() => _showReportsSheet = false),
+          // Add Report Button - زر إضافة البلاغ
+          if (_isMapReady && _isInitialized)
+            Positioned(
+              bottom: 100,
+              right: 16,
+              child: IgnorePointer(
+                ignoring: false,
+              child: AnimatedBuilder(
+                animation: _fabAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _fabAnimation.value,
+                      child: LiquidGlassButton(
+                          text: 'إضافة بلاغ',
+                          icon: Icons.add,
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/add-report');
+                          },
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        borderRadius: 12,
+                    ),
+                  );
+                },
+              ),
+              ),
             ),
 
-          if (_showFilterSheet)
-            FilterBottomSheet(
-              onClose: () => setState(() => _showFilterSheet = false),
-              onFiltersChanged: _updateMapMarkers,
+          // Simple Filter Button - زر الفلترة البسيط
+          if (_isMapReady && _isInitialized)
+            Positioned(
+              bottom: 100,
+              left: 16,
+              child: IgnorePointer(
+                ignoring: false,
+                child: LiquidGlassButton(
+                  text: 'فلترة',
+                  icon: Icons.filter_list,
+                  onPressed: _showSimpleFilterDialog,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  borderRadius: 8,
+                ),
+              ),
             ),
+
         ],
       ),
-
-      // Floating Action Buttons
-      floatingActionButton: _isMapReady
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // My Location Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: _animateToCurrentLocation,
-                    type: LiquidGlassType.secondary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.my_location,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Reports List Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: _toggleReportsSheet,
-                    type: LiquidGlassType.secondary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.list,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // AI Prediction Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/ai-prediction');
-                    },
-                    type: LiquidGlassType.secondary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.psychology,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Smart Notifications Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/smart-notifications');
-                    },
-                    type: LiquidGlassType.secondary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.notifications_active,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 3D Maps Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/3d-maps');
-                    },
-                    type: LiquidGlassType.secondary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.view_in_ar,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Add Report Button
-                ScaleTransition(
-                  scale: _fabAnimation,
-                  child: LiquidGlassButton(
-                    text: '',
-                    onPressed: () {
-                      Navigator.of(context).pushNamed('/add-report');
-                    },
-                    type: LiquidGlassType.primary,
-                    borderRadius: 28,
-                    padding: const EdgeInsets.all(16),
-                    icon: Icons.add,
-                  ),
-                ),
-              ],
-            )
-          : null,
     );
   }
 }

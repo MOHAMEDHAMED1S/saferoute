@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/user_model.dart';
 
@@ -60,14 +61,43 @@ class LocationService {
     try {
       await checkAndRequestPermissions();
       
+      // Try to get last known position first for faster response
+      if (!kIsWeb) {
+        try {
+          Position? lastKnown = await Geolocator.getLastKnownPosition();
+          if (lastKnown != null && isValidLocation(lastKnown)) {
+            _currentPosition = lastKnown;
+            if (kDebugMode) {
+              print('Using last known position: ${lastKnown.latitude}, ${lastKnown.longitude}');
+            }
+            return lastKnown;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Could not get last known position: $e');
+          }
+        }
+      }
+      
+      // Get fresh position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: Duration(seconds: 10),
+        timeLimit: Duration(seconds: 15),
       );
       
+      if (!isValidLocation(position)) {
+        throw 'الموقع المستلم غير صحيح';
+      }
+      
       _currentPosition = position;
+      if (kDebugMode) {
+        print('Got fresh position: ${position.latitude}, ${position.longitude}');
+      }
       return position;
     } catch (e) {
+      if (kDebugMode) {
+        print('Error getting current location: $e');
+      }
       throw 'خطأ في الحصول على الموقع الحالي: ${e.toString()}';
     }
   }
@@ -245,6 +275,12 @@ class LocationService {
   // Get last known position
   Future<Position?> getLastKnownPosition() async {
     try {
+      // Check if we're on web platform
+      if (kIsWeb) {
+        // On web, getLastKnownPosition is not supported
+        // Return null to indicate no cached position available
+        return null;
+      }
       return await Geolocator.getLastKnownPosition();
     } catch (e) {
       return null;

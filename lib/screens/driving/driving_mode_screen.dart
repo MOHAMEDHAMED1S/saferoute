@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'dart:async';
 
-import '../../utils/map_utils.dart';
 import '../../providers/reports_provider.dart';
 import '../../models/report_model.dart';
 import '../../models/warning_model.dart';
@@ -12,6 +10,7 @@ import '../../services/warning_service.dart';
 import '../../services/navigation_service.dart';
 import '../../models/route_model.dart';
 import '../../theme/liquid_glass_theme.dart';
+import '../home/widgets/mapbox_widget.dart';
 
 class DrivingModeScreen extends StatefulWidget {
   static const String routeName = '/driving-mode';
@@ -25,15 +24,11 @@ class DrivingModeScreen extends StatefulWidget {
 class _DrivingModeScreenState extends State<DrivingModeScreen>
     with TickerProviderStateMixin {
   // Map controllers
-  GoogleMapController? _mapController;
-  Position? _currentPosition;
-  StreamSubscription<Position>? _positionStream;
-  final Set<Marker> _markers = {};
-  final Set<Polyline> _polylines = {};
+  geo.Position? _currentPosition;
+  StreamSubscription<geo.Position>? _positionStream;
 
   // Navigation
   final NavigationService _navigationService = NavigationService();
-  NavigationState _navigationState = NavigationState.idle();
   bool _isNavigating = false;
   StreamSubscription<NavigationState>? _navigationSubscription;
   StreamSubscription<String>? _voiceInstructionSubscription;
@@ -53,363 +48,115 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   late AnimationController _warningAnimationController;
   late Animation<double> _warningAnimation;
 
+  // Reports provider
+  late ReportsProvider _reportsProvider;
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeWarningSystem();
-    _initializeLocation();
-    _loadReports();
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    _positionStream?.cancel();
-    _warningsSubscription?.cancel();
-    _navigationSubscription?.cancel();
-    _voiceInstructionSubscription?.cancel();
-    _warningAnimationController.dispose();
-    _destinationController.dispose();
-    super.dispose();
+    _initializeServices();
+    _initializeLocationService();
   }
 
   void _initializeAnimations() {
     _warningAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-
-    _warningAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _warningAnimationController,
-        curve: Curves.elasticOut,
-      ),
+    _warningAnimation = CurvedAnimation(
+      parent: _warningAnimationController,
+      curve: Curves.elasticOut,
     );
   }
 
-  void _initializeWarningSystem() {
-    _navigationService.initialize();
-    _warningService.initialize();
+  void _initializeServices() {
+    _reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
 
-    _warningsSubscription = _warningService.warningsStream.listen((warnings) {
-      if (mounted) {
+    // Subscribe to navigation state changes
+     _navigationSubscription = _navigationService.navigationStateStream.listen(
+       (state) {
+         setState(() {
+           _isNavigating = state.type == NavigationStateType.navigating;
+         });
+       },
+     );
+
+    // Subscribe to voice instructions
+    _voiceInstructionSubscription =
+        _navigationService.voiceInstructionStream.listen(
+      (instruction) {
+        // Handle voice instruction
+        _speakInstruction(instruction);
+      },
+    );
+
+    // Subscribe to warnings
+    _warningsSubscription = _warningService.warningsStream.listen(
+      (warnings) {
         setState(() {
           _activeWarnings = warnings;
         });
-        _updateWarningMarkers(warnings);
-      }
-    });
-
-    _navigationSubscription = _navigationService.navigationStateStream.listen((
-      state,
-    ) {
-      if (mounted) {
-        setState(() {
-          _navigationState = state;
-          _isNavigating = state.isNavigating;
-        });
-      }
-    });
-
-    _voiceInstructionSubscription = _navigationService.voiceInstructionStream
-        .listen((instruction) {
-          _showVoiceInstruction(instruction);
-        });
+        if (warnings.isNotEmpty) {
+          _warningAnimationController.forward();
+        } else {
+          _warningAnimationController.reverse();
+        }
+      },
+    );
   }
 
-  Future<void> _initializeLocation() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+  void _initializeLocationService() async {
+    final permission = await geo.Geolocator.checkPermission();
+    if (permission == geo.LocationPermission.denied) {
+      final requestedPermission = await geo.Geolocator.requestPermission();
+      if (requestedPermission == geo.LocationPermission.denied) {
+        return;
       }
+    }
 
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception('خدمات الموقع غير مفعلة');
-      }
-
-      _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
+    _positionStream = geo.Geolocator.getPositionStream(
+      locationSettings: const geo.LocationSettings(
+        accuracy: geo.LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((position) {
       if (mounted) {
         setState(() {
-          // Update UI after location update
+          _currentPosition = position;
         });
-        _animateToCurrentLocation();
+        _updateMapMarkers();
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحديد الموقع: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _loadReports() async {
-    try {
-      final reportsProvider = Provider.of<ReportsProvider>(
-        context,
-        listen: false,
-      );
-      await reportsProvider.initialize();
-      _updateMapMarkers();
-    } catch (e) {
-      debugPrint('خطأ في تحميل البلاغات: $e');
-    }
+    });
   }
 
   void _updateMapMarkers() {
-    final reportsProvider = Provider.of<ReportsProvider>(
-      context,
-      listen: false,
-    );
-    final reports = reportsProvider.nearbyReports;
-
-    final Set<Marker> newMarkers = {};
-
-    for (final ReportModel report in reports) {
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId(report.id),
-          position: LatLng(report.location.lat, report.location.lng),
-          icon: _getWarningMarkerIcon(_reportTypeToString(report.type)),
-          infoWindow: InfoWindow(
-            title: _getReportTypeTitle(_reportTypeToString(report.type)),
-            snippet: report.description,
-          ),
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _markers.clear();
-        _markers.addAll(newMarkers);
-      });
-    }
+    // MapboxWidget handles markers internally
   }
 
-  void _updateWarningMarkers(List<DrivingWarning> warnings) {
-    final Set<Marker> warningMarkers = {};
-
-    for (final DrivingWarning warning in warnings) {
-      warningMarkers.add(
-        Marker(
-          markerId: MarkerId('warning_${warning.id}'),
-          position: warning.location,
-          icon: _getWarningMarkerIcon(_getWarningTypeString(warning.type)),
-          infoWindow: InfoWindow(
-            title: _getWarningTypeText(warning.type),
-            snippet: warning.message,
-            onTap: () => _showWarningDetails(warning),
-          ),
-        ),
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _markers.removeWhere(
-          (marker) => marker.markerId.value.startsWith('warning_'),
-        );
-        _markers.addAll(warningMarkers);
-      });
-    }
+  void _speakInstruction(String instruction) {
+    // Implement text-to-speech for navigation instructions
   }
 
-  BitmapDescriptor _getWarningMarkerIcon(String type) {
-    switch (type) {
-      case 'accident':
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
-      case 'traffic':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueYellow,
-        );
-      case 'roadwork':
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        );
-      default:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-    }
+  @override
+  void dispose() {
+    _warningAnimationController.dispose();
+    _positionStream?.cancel();
+    _navigationSubscription?.cancel();
+    _voiceInstructionSubscription?.cancel();
+    _warningsSubscription?.cancel();
+    _destinationController.dispose();
+    super.dispose();
   }
 
-  String _reportTypeToString(ReportType type) {
-    switch (type) {
-      case ReportType.accident:
-        return 'accident';
-      case ReportType.jam:
-        return 'traffic';
-      case ReportType.carBreakdown:
-        return 'breakdown';
-      case ReportType.bump:
-        return 'police';
-      case ReportType.closedRoad:
-        return 'roadwork';
-      case ReportType.hazard:
-        return 'hazard';
-      case ReportType.police:
-        return 'police';
-      case ReportType.traffic:
-        return 'traffic';
-      case ReportType.other:
-        return 'other';
-    }
+  void _onMapCreated() {
+    // MapboxWidget handles map creation
   }
 
-  String _getReportTypeTitle(String type) {
-    switch (type) {
-      case 'accident':
-        return 'حادث مروري';
-      case 'traffic':
-        return 'ازدحام مروري';
-      case 'roadwork':
-        return 'أعمال طريق';
-      case 'police':
-        return 'نقطة شرطة';
-      default:
-        return 'تحذير';
-    }
+  void _animateToCurrentLocation() {
+    // MapboxWidget handles location animation
   }
 
-  String _getWarningTypeString(WarningType type) {
-    switch (type) {
-      case WarningType.accident:
-        return 'accident';
-      case WarningType.traffic:
-        return 'traffic';
-      case WarningType.roadwork:
-        return 'roadwork';
-      case WarningType.police:
-        return 'police';
-      case WarningType.speedLimit:
-        return 'speedLimit';
-      default:
-        return 'general';
-    }
-  }
-
-  String _getWarningTypeText(WarningType type) {
-    switch (type) {
-      case WarningType.accident:
-        return 'حادث مروري';
-      case WarningType.traffic:
-        return 'ازدحام مروري';
-      case WarningType.roadwork:
-        return 'أعمال طريق';
-      case WarningType.police:
-        return 'نقطة شرطة';
-      case WarningType.speedLimit:
-        return 'حد السرعة';
-      default:
-        return 'تحذير عام';
-    }
-  }
-
-  void _animateToCurrentLocation() async {
-    if (_mapController != null && _currentPosition != null) {
-      final latLng = LatLng(
-        _currentPosition!.latitude,
-        _currentPosition!.longitude,
-      );
-      final cameraUpdate = MapUtils.safeCameraUpdate(latLng);
-      await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
-    }
-  }
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    _animateToCurrentLocation();
-  }
-
-  void _showVoiceInstruction(String instruction) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.volume_up, color: Colors.white),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                instruction,
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: LiquidGlassTheme.primaryColor,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  void _showWarningDetails(DrivingWarning warning) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              _warningService.getWarningIcon(warning.type),
-              color: _warningService.getWarningColor(warning.type),
-            ),
-            const SizedBox(width: 8),
-            const Text('تفاصيل التحذير'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(warning.message),
-            const SizedBox(height: 8),
-            Text('المسافة: ${warning.distance}م'),
-            Text('الخطورة: ${_getSeverityText(warning.severity)}'),
-            if (warning.additionalInfo != null)
-              Text('معلومات إضافية: ${warning.additionalInfo}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
-          ),
-          TextButton(
-            onPressed: () {
-              _warningService.dismissWarning(warning.id);
-              Navigator.pop(context);
-            },
-            child: const Text('إخفاء التحذير'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getSeverityText(WarningSeverity severity) {
-    switch (severity) {
-      case WarningSeverity.critical:
-        return 'حرج';
-      case WarningSeverity.high:
-        return 'عالي';
-      case WarningSeverity.medium:
-        return 'متوسط';
-      case WarningSeverity.low:
-        return 'منخفض';
-    }
-  }
-
-  // Destination search methods
   void _startDestinationSearch() {
     setState(() {
       _isSearching = true;
@@ -419,81 +166,83 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   void _cancelDestinationSearch() {
     setState(() {
       _isSearching = false;
-      _destinationController.clear();
-      _searchSuggestions.clear();
+      _searchSuggestions = [];
     });
+    _destinationController.clear();
   }
 
   void _onDestinationSearchChanged(String query) {
+    _searchDestination(query);
+  }
+
+  void _searchDestination(String query) async {
     if (query.isEmpty) {
       setState(() {
-        _searchSuggestions.clear();
+        _searchSuggestions = [];
       });
       return;
     }
 
-    // Simulate search suggestions (in real app, use Google Places API)
+    // Mock search results
+    final suggestions = [
+      {
+        'name': 'مطار الملك خالد الدولي',
+        'address': 'الرياض، المملكة العربية السعودية',
+        'latitude': 24.9576,
+        'longitude': 46.6988,
+      },
+      {
+        'name': 'برج المملكة',
+        'address': 'الرياض، المملكة العربية السعودية',
+        'latitude': 24.7116,
+        'longitude': 46.6753,
+      },
+    ];
+
     setState(() {
-      _searchSuggestions =
-          [
-                {
-                  'name': 'مول العرب',
-                  'address': 'الرياض، المملكة العربية السعودية',
-                  'lat': 24.7136,
-                  'lng': 46.6753,
-                },
-                {
-                  'name': 'مطار الملك خالد الدولي',
-                  'address': 'الرياض، المملكة العربية السعودية',
-                  'lat': 24.9576,
-                  'lng': 46.6988,
-                },
-                {
-                  'name': 'برج المملكة',
-                  'address': 'الرياض، المملكة العربية السعودية',
-                  'lat': 24.7119,
-                  'lng': 46.6758,
-                },
-                {
-                  'name': 'جامعة الملك سعود',
-                  'address': 'الرياض، المملكة العربية السعودية',
-                  'lat': 24.7277,
-                  'lng': 46.6219,
-                },
-              ]
-              .where(
-                (place) =>
-                    place['name'].toString().contains(query) ||
-                    place['address'].toString().contains(query),
-              )
-              .toList();
+      _searchSuggestions = suggestions;
     });
   }
 
-  void _selectDestination(Map<String, dynamic> destination) {
-    setState(() {
-      _selectedDestination = destination['name'];
-      final destinationLatLng = LatLng(
-        destination['lat'] as double,
-        destination['lng'] as double,
-      );
-      _startNavigation(destinationLatLng);
-      _isSearching = false;
-    });
-  }
-
-  void _startNavigation(LatLng destination) {
-    if (_currentPosition == null) return;
-
-    final origin = LatLng(
-      _currentPosition!.latitude,
-      _currentPosition!.longitude,
+  void _selectDestination(Map<String, dynamic> destination) async {
+    final destinationPosition = Position(
+      latitude: destination['latitude'],
+      longitude: destination['longitude'],
     );
 
-    _navigationService.startNavigation(destination: destination);
+    _startNavigation(destinationPosition);
+  }
+
+  void _startNavigation(Position destination) {
+    if (_currentPosition == null) return;
+
+    final origin = Position(
+      latitude: _currentPosition!.latitude,
+      longitude: _currentPosition!.longitude,
+    );
+
+    // Create a mock route
+    final route = RouteInfo(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      startLocation: origin,
+      endLocation: destination,
+      polylinePoints: [origin, destination],
+      totalDistance: 5000,
+      remainingDistance: 5000,
+      estimatedTotalTime: const Duration(minutes: 15),
+      estimatedTimeRemaining: const Duration(minutes: 15),
+      routeType: RouteType.fastest,
+      trafficCondition: TrafficCondition.moderate,
+      instructions: [],
+      safetyScore: 85,
+    );
+
+    _navigationService.startNavigation(route);
 
     setState(() {
       _isNavigating = true;
+      _selectedDestination = '${destination.latitude}, ${destination.longitude}';
+      _isSearching = false;
     });
   }
 
@@ -501,7 +250,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     _navigationService.stopNavigation();
     setState(() {
       _isNavigating = false;
-      _polylines.clear();
+      _selectedDestination = null;
     });
   }
 
@@ -514,28 +263,27 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     );
   }
 
-  String _formatDuration(Duration? duration) {
-    if (duration == null) return '0 دقيقة';
-
-    final minutes = duration.inMinutes;
-    if (minutes < 60) {
-      return '$minutes دقيقة';
-    } else {
-      final hours = duration.inHours;
-      final remainingMinutes = minutes - (hours * 60);
-      return '$hours ساعة و $remainingMinutes دقيقة';
+  String _getWarningTypeText(WarningType type) {
+    switch (type) {
+      case WarningType.speedLimit:
+        return 'تحذير من السرعة';
+      case WarningType.accident:
+        return 'حادث مروري';
+      case WarningType.roadwork:
+        return 'أعمال طريق';
+      case WarningType.police:
+        return 'نقطة تفتيش';
+      case WarningType.traffic:
+        return 'ازدحام مروري';
+      case WarningType.speedCamera:
+        return 'كاميرا سرعة';
+      case WarningType.general:
+        return 'تحذير عام';
     }
   }
 
-  String _formatDistance(double? distance) {
-    if (distance == null) return '0 كم';
-
-    if (distance < 1) {
-      final meters = (distance * 1000).round();
-      return '$meters متر';
-    } else {
-      return '${distance.toStringAsFixed(1)} كم';
-    }
+  Widget _buildMap() {
+    return MapboxWidget();
   }
 
   @override
@@ -544,20 +292,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
       body: Stack(
         children: [
           // Map
-          GoogleMap(
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(24.7136, 46.6753), // Default to Riyadh
-              zoom: 15,
-            ),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            compassEnabled: true,
-            mapToolbarEnabled: false,
-            markers: _markers,
-            polylines: _polylines,
-            mapType: MapType.normal,
-          ),
+          _buildMap(),
 
           // Top bar with search
           Positioned(
@@ -592,11 +327,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -651,11 +386,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
           decoration: BoxDecoration(
             color: _warningService
                 .getWarningColor(warning.type)
-                .withOpacity(0.9),
+                .withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -703,11 +438,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   }
 
   Widget _buildNavigationInfo() {
-    if (!_isNavigating || _navigationState.route == null) {
+    if (!_isNavigating || _navigationService.currentRoute == null) {
       return const SizedBox.shrink();
     }
-
-    final route = _navigationState.route!;
 
     return Positioned(
       top: 100,
@@ -721,7 +454,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -729,9 +462,9 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
         ),
         child: Column(
           children: [
-            Text(
+            const Text(
               "جاري التنقل...",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Row(
@@ -782,11 +515,11 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -805,6 +538,12 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
             label: 'بلاغ',
             onTap: _showReportDialog,
           ),
+          if (_isNavigating)
+            _buildControlButton(
+              icon: Icons.stop,
+              label: 'إيقاف',
+              onTap: _stopNavigation,
+            ),
           _buildControlButton(
             icon: Icons.emergency,
             label: 'طوارئ',
@@ -852,7 +591,7 @@ class _DrivingModeScreenState extends State<DrivingModeScreen>
   Widget _buildSearchOverlay() {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         child: Column(
           children: [
             Container(

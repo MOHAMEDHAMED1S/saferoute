@@ -1,4 +1,5 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'package:geolocator/geolocator.dart';
 
 enum WarningType {
   accident,
@@ -23,7 +24,7 @@ class DrivingWarning {
   final String message;
   final int distance; // Distance in meters
   final WarningSeverity severity;
-  final LatLng location;
+  final Position location;
   final DateTime timestamp;
   final bool isActive;
   final String? additionalInfo;
@@ -48,7 +49,7 @@ class DrivingWarning {
     String? message,
     int? distance,
     WarningSeverity? severity,
-    LatLng? location,
+    Position? location,
     DateTime? timestamp,
     bool? isActive,
     String? additionalInfo,
@@ -99,9 +100,17 @@ class DrivingWarning {
         (e) => e.toString().split('.').last == json['severity'],
         orElse: () => WarningSeverity.low,
       ),
-      location: LatLng(
-        json['location']['latitude'],
-        json['location']['longitude'],
+      location: Position(
+        latitude: json['location']['latitude'],
+        longitude: json['location']['longitude'],
+        timestamp: DateTime.now(),
+        accuracy: 0.0,
+        altitude: 0.0,
+        altitudeAccuracy: 0.0,
+        heading: 0.0,
+        headingAccuracy: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
       ),
       timestamp: DateTime.parse(json['timestamp']),
       isActive: json['isActive'],

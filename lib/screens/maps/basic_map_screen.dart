@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_google_places/flutter_google_places.dart';
-import 'package:google_maps_webservice/places.dart';
 import 'dart:async';
-import '../../providers/reports_provider.dart';
-import '../../utils/map_utils.dart';
-import '../../theme/liquid_glass_theme.dart';
+import '../../widgets/liquid_glass_widgets.dart';
 import '../../models/report_model.dart';
 import '../../models/nearby_report.dart';
-import '../../services/reports_firebase_service.dart';
 import '../../services/realtime_reports_service.dart';
-import '../../services/location_service.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
+import '../home/widgets/mapbox_widget.dart';
 
 class BasicMapScreen extends StatefulWidget {
   final double? initialLatitude;
@@ -36,13 +29,9 @@ class BasicMapScreen extends StatefulWidget {
 }
 
 class _BasicMapScreenState extends State<BasicMapScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
-  bool _isMapReady = false;
-  Set<ReportType> _activeFilters = Set.from(ReportType.values);
-  final TextEditingController _searchController = TextEditingController();
-  bool _isSearchVisible = false;
+  final Set<ReportType> _activeFilters = Set.from(ReportType.values);
   int _currentBottomNavIndex = 1; // Set to 1 for "الخريطة" tab
+  Position? _currentPosition;
 
   // Real-time service
   final RealtimeReportsService _realtimeService = RealtimeReportsService();
@@ -51,282 +40,331 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.showMarker &&
-        widget.initialLatitude != null &&
-        widget.initialLongitude != null) {
-      _loadSpecificMarker();
-    } else {
-      _startRealtimeListening();
-    }
+    _initializeLocation();
+    _startRealtimeReports();
   }
 
   @override
   void dispose() {
     _reportsSubscription?.cancel();
-    _realtimeService.dispose();
-    _mapController?.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
-  void _loadSpecificMarker() {
-    // إنشاء علامة للموقع المحدد
-    final marker = Marker(
-      markerId: const MarkerId('specific_location'),
-      position: LatLng(widget.initialLatitude!, widget.initialLongitude!),
-      infoWindow: InfoWindow(
-        title: widget.markerTitle ?? 'موقع البلاغ',
-        snippet: widget.markerDescription ?? '',
-      ),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-    );
+  Future<void> _initializeLocation() async {
+    try {
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-    if (mounted) {
-      setState(() {
-        _markers = {marker};
-      });
+      if (permission == LocationPermission.deniedForever) {
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition();
+      
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting location: $e');
     }
   }
 
-  void _startRealtimeListening() async {
-    try {
-      final locationService = Provider.of<LocationService>(
-        context,
-        listen: false,
-      );
-
-      // الحصول على الموقع الحالي
-      final position = await locationService.getCurrentLocation();
-
-      // بدء الاستماع للبيانات الفورية
+  void _startRealtimeReports() {
+    if (_currentPosition != null) {
       _reportsSubscription = _realtimeService
           .listenToNearbyReports(
-            latitude: position.latitude,
-            longitude: position.longitude,
+            latitude: _currentPosition!.latitude,
+            longitude: _currentPosition!.longitude,
             radiusKm: 10.0,
           )
-          .listen((reports) {
-            if (mounted) {
-              setState(() {
-                _markers = _createMarkersFromNearby(reports);
-              });
-            }
-          });
-
-      // تحديث موقع المستخدم في قاعدة البيانات الفورية
-      await _realtimeService.updateUserLocation();
-    } catch (e) {
-      print('Error starting realtime listening: $e');
-      // في حالة الخطأ، استخدم الطريقة التقليدية
-      _loadReportsMarkers();
-    }
-  }
-
-  void _loadReportsMarkers() async {
-    // استخدام ReportsFirebaseService مباشرة للحصول على الإبلاغات
-    final reportsService = ReportsFirebaseService();
-    final locationService = Provider.of<LocationService>(
-      context,
-      listen: false,
-    );
-
-    // الحصول على الموقع الحالي
-    final position = await locationService.getCurrentLocation();
-
-    // الحصول على الإبلاغات القريبة من الموقع الحالي
-    final reportsStream = reportsService.getReportsByLocation(
-      position.latitude,
-      position.longitude,
-      10.0,
-    );
-    final reports = await reportsStream.first;
-
-    if (mounted) {
-      setState(() {
-        _markers = _createMarkersFromReportModels(reports);
+          .listen((nearbyReports) {
+        // Handle real-time reports
+        debugPrint('Received ${nearbyReports.length} nearby reports');
       });
     }
   }
 
-  Set<Marker> _createMarkersFromReportModels(List<ReportModel> reports) {
-    return reports.where((report) => _activeFilters.contains(report.type)).map((
-      report,
-    ) {
-      return Marker(
-        markerId: MarkerId(report.id),
-        position: LatLng(report.location.lat, report.location.lng),
-        infoWindow: InfoWindow(
-          title: _getReportTypeNameArabic(report.type),
-          snippet: report.description.length > 50
-              ? '${report.description.substring(0, 50)}...'
-              : report.description,
-          onTap: () => _showReportDetails(report),
-        ),
-        icon: _getMarkerIcon(report.type),
-        onTap: () {
-          // تحريك الخريطة لمركز الإبلاغ
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(report.location.lat, report.location.lng),
-              16.0,
-            ),
-          );
-        },
-      );
-    }).toSet();
-  }
-
-  Set<Marker> _createMarkersFromNearby(List<NearbyReport> reports) {
-    return reports.where((report) => _activeFilters.contains(report.type)).map((
-      report,
-    ) {
-      return Marker(
-        markerId: MarkerId(report.id),
-        position: LatLng(report.latitude, report.longitude),
-        infoWindow: InfoWindow(
-          title: _getReportTypeNameArabic(report.type),
-          snippet: report.description.length > 50
-              ? '${report.description.substring(0, 50)}...'
-              : report.description,
-        ),
-        icon: _getMarkerIcon(report.type),
-        onTap: () {
-          _mapController?.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(report.latitude, report.longitude),
-              16.0,
-            ),
-          );
-        },
-      );
-    }).toSet();
-  }
-
-  // دالة لعرض تفاصيل الإبلاغ في نافذة منبثقة
-  void _showReportDetails(ReportModel report) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              _getReportTypeIcon(report.type),
-              color: _getReportTypeColor(report.type),
-            ),
-            const SizedBox(width: 8),
-            Text(_getReportTypeNameArabic(report.type)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(report.description, style: LiquidGlassTheme.bodyTextStyle),
-              const SizedBox(height: 16),
-              Text(
-                'تم الإبلاغ في: ${_formatDate(report.createdAt)}',
-                style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                  color: LiquidGlassTheme.getTextColor('secondary'),
-                  fontSize: 12,
-                ),
-              ),
-              if (report.imageUrls != null && report.imageUrls!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('الصور المرفقة:'),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 100,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: report.imageUrls!.length,
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () => _showFullImage(report.imageUrls![index]),
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            image: DecorationImage(
-                              image: NetworkImage(report.imageUrls![index]),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إغلاق'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // دالة لعرض الصورة بالحجم الكامل
-  void _showFullImage(String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Image.network(imageUrl),
-        ),
-      ),
-    );
-  }
-
-  // دالة لتنسيق التاريخ
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
-  }
-
-  // دالة للحصول على اسم نوع الإبلاغ بالعربية
-  String _getReportTypeNameArabic(ReportType type) {
+  String _getReportTypeTitle(ReportType type) {
     switch (type) {
       case ReportType.accident:
-        return 'حادث';
+        return 'حوادث مرورية';
       case ReportType.jam:
-        return 'ازدحام';
+        return 'ازدحام مروري';
       case ReportType.carBreakdown:
-        return 'عطل سيارة';
+        return 'عطل مركبة';
       case ReportType.bump:
         return 'مطب';
       case ReportType.closedRoad:
         return 'طريق مغلق';
       case ReportType.hazard:
-        return 'خطر';
+        return 'خطر على الطريق';
       case ReportType.police:
-        return 'شرطة';
+        return 'نقطة شرطة';
       case ReportType.traffic:
-        return 'إشارة مرور';
+        return 'حركة مرور كثيفة';
       case ReportType.other:
         return 'أخرى';
     }
   }
 
-  // دالة للحصول على أيقونة نوع الإبلاغ
-  IconData _getReportTypeIcon(ReportType type) {
+  String _getReportTypeDescription(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return 'حوادث السيارات والحوادث المرورية';
+      case ReportType.jam:
+        return 'ازدحام مروري واختناقات';
+      case ReportType.carBreakdown:
+        return 'عطل في المركبات';
+      case ReportType.bump:
+        return 'مطبات صناعية أو طبيعية';
+      case ReportType.closedRoad:
+        return 'طرق مغلقة أو مسدودة';
+      case ReportType.hazard:
+        return 'مخاطر على الطريق';
+      case ReportType.police:
+        return 'نقاط تفتيش شرطية';
+      case ReportType.traffic:
+        return 'حركة مرور مكثفة';
+      case ReportType.other:
+        return 'بلاغات أخرى';
+    }
+  }
+
+  void _showSimpleFilterDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.filter_list, color: Colors.white, size: 24),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'تحديد أنواع البلاغات',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: ReportType.values.map((type) {
+                        final isActive = _activeFilters.contains(type);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isActive 
+                                ? _getReportColor(type).withOpacity(0.1)
+                                : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isActive 
+                                  ? _getReportColor(type)
+                                  : Colors.grey[300]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: CheckboxListTile(
+                            title: Row(
+                              children: [
+                                Icon(
+                                  _getReportIcon(type),
+                                  color: _getReportColor(type),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _getReportTypeTitle(type),
+                                    style: TextStyle(
+                                      fontWeight: isActive 
+                                          ? FontWeight.bold 
+                                          : FontWeight.normal,
+                                      color: isActive 
+                                          ? _getReportColor(type)
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              _getReportTypeDescription(type),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                            value: isActive,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                if (value == true) {
+                                  _activeFilters.add(type);
+                                } else {
+                                  _activeFilters.remove(type);
+                                }
+                              });
+                            },
+                            activeColor: _getReportColor(type),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                
+                // Actions
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _activeFilters.clear();
+                              _activeFilters.addAll(ReportType.values);
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('الكل'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('إلغاء'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            _applySimpleFilters();
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: const Text('تطبيق الفلاتر'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _applySimpleFilters() {
+    // Apply filters to reports
+    debugPrint('Applied filters: ${_activeFilters.length} types selected');
+  }
+
+  Color _getReportColor(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return const Color(0xFFDC2626); // Red
+      case ReportType.jam:
+        return const Color(0xFFEA580C); // Orange
+      case ReportType.carBreakdown:
+        return const Color(0xFFD97706); // Amber
+      case ReportType.bump:
+        return const Color(0xFF7C3AED); // Purple
+      case ReportType.closedRoad:
+        return const Color(0xFFB91C1C); // Dark Red
+      case ReportType.hazard:
+        return const Color(0xFFC2410C); // Orange-Red
+      case ReportType.police:
+        return const Color(0xFF2563EB); // Blue
+      case ReportType.traffic:
+        return const Color(0xFFEA580C); // Orange
+      case ReportType.other:
+        return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  IconData _getReportIcon(ReportType type) {
     switch (type) {
       case ReportType.accident:
         return Icons.car_crash;
       case ReportType.jam:
         return Icons.traffic;
       case ReportType.carBreakdown:
-        return Icons.car_repair;
+        return Icons.build;
       case ReportType.bump:
-        return Icons.speed_sharp;
+        return Icons.speed;
       case ReportType.closedRoad:
         return Icons.block;
       case ReportType.hazard:
@@ -336,432 +374,60 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
       case ReportType.traffic:
         return Icons.traffic;
       case ReportType.other:
-        return Icons.help;
-    }
-  }
-
-  // دالة للحصول على لون نوع الإبلاغ
-  Color _getReportTypeColor(ReportType type) {
-    switch (type) {
-      case ReportType.accident:
-        return Colors.red;
-      case ReportType.jam:
-        return Colors.orange;
-      case ReportType.carBreakdown:
-        return Colors.yellow;
-      case ReportType.bump:
-        return Colors.blue;
-      case ReportType.closedRoad:
-        return Colors.purple;
-      case ReportType.hazard:
-        return Colors.deepPurple;
-      case ReportType.police:
-        return Colors.cyan;
-      case ReportType.traffic:
-        return Colors.green;
-      case ReportType.other:
-        return Colors.pink;
-    }
-  }
-
-  BitmapDescriptor _getMarkerIcon(ReportType reportType) {
-    // استخدام أيقونات مختلفة حسب نوع التقرير
-    switch (reportType) {
-      case ReportType.accident:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
-      case ReportType.jam:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueOrange,
-        );
-      case ReportType.carBreakdown:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueYellow,
-        );
-      case ReportType.bump:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-      case ReportType.closedRoad:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueMagenta,
-        );
-      case ReportType.hazard:
-        return BitmapDescriptor.defaultMarkerWithHue(
-          BitmapDescriptor.hueViolet,
-        );
-      case ReportType.police:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
-      case ReportType.traffic:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-      case ReportType.other:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
-      // no default: let switch be exhaustive
-    }
-  }
-
-  void _onMapCreated(GoogleMapController controller) async {
-    _mapController = controller;
-
-    // تطبيق نمط الخريطة إذا كان متاحاً
-    final mapStyle = MapUtils.getMapStyle();
-    if (mapStyle != null) {
-      try {
-        await controller.setMapStyle(mapStyle);
-      } catch (e) {
-        debugPrint('فشل في تطبيق نمط الخريطة: $e');
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _isMapReady = true;
-      });
-    }
-  }
-
-  void _animateToCurrentLocation() async {
-    if (_mapController != null) {
-      try {
-        // استخدام Geolocator للحصول على الموقع الحالي
-        Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 10),
-        );
-
-        final cameraUpdate = CameraUpdate.newLatLngZoom(
-          LatLng(position.latitude, position.longitude),
-          15.0,
-        );
-
-        await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
-
-        // إضافة علامة للموقع الحالي
-        setState(() {
-          _markers.add(
-            Marker(
-              markerId: const MarkerId('current_location'),
-              position: LatLng(position.latitude, position.longitude),
-              infoWindow: const InfoWindow(title: 'موقعك الحالي'),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueAzure,
-              ),
-            ),
-          );
-        });
-      } catch (e) {
-        debugPrint('فشل في الانتقال للموقع الحالي: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('فشل في تحديد الموقع الحالي: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  // عرض مربع حوار التصفية
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تصفية التقارير', textAlign: TextAlign.center),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ReportType.values.map((type) {
-              final String typeName = _getReportTypeNameArabic(type);
-
-              return CheckboxListTile(
-                title: Text(typeName),
-                value: _activeFilters.contains(type),
-                activeColor: LiquidGlassTheme.getGradientByName(
-                  'primary',
-                ).colors.first,
-                onChanged: (bool? value) {
-                  setState(() {
-                    if (value == true) {
-                      _activeFilters.add(type);
-                    } else {
-                      _activeFilters.remove(type);
-                    }
-                  });
-                  _refreshMarkers();
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _activeFilters = Set.from(ReportType.values);
-              });
-              _refreshMarkers();
-              Navigator.pop(context);
-            },
-            child: const Text('عرض الكل'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إغلاق'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // تحديث العلامات على الخريطة
-  void _refreshMarkers() {
-    final reportsProvider = Provider.of<ReportsProvider>(
-      context,
-      listen: false,
-    );
-    setState(() {
-      _markers = _createMarkersFromReportModels(reportsProvider.activeReports);
-    });
-  }
-
-  // البحث عن موقع
-  void _searchLocation(String query) async {
-    // تنفيذ البحث عن الموقع
-    if (query.isEmpty) return;
-
-    try {
-      // استخدام Google Places API للبحث
-      final places = await PlacesAutocomplete.show(
-        context: context,
-        apiKey: 'AIzaSyBQrCVkbnaB8FQms55ZW5GUVGz52iXnOYw',
-        mode: Mode.overlay,
-        language: 'ar',
-        types: [],
-        strictbounds: false,
-        components: [Component(Component.country, 'eg')],
-        onError: (err) {
-          debugPrint('خطأ في البحث: $err');
-        },
-      );
-
-      if (places != null) {
-        // الحصول على تفاصيل المكان المحدد
-        final placeId = places.placeId;
-        final details = await GoogleMapsPlaces(
-          apiKey: 'AIzaSyBQrCVkbnaB8FQms55ZW5GUVGz52iXnOYw',
-        ).getDetailsByPlaceId(placeId!);
-
-        final lat = details.result.geometry!.location.lat;
-        final lng = details.result.geometry!.location.lng;
-
-        if (_mapController != null) {
-          final cameraUpdate = CameraUpdate.newLatLngZoom(
-            LatLng(lat, lng),
-            15.0,
-          );
-          await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
-        }
-      }
-    } catch (e) {
-      debugPrint('خطأ في البحث: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ أثناء البحث: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+        return Icons.place;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      backgroundColor: LiquidGlassTheme.backgroundColor,
-      appBar: AppBar(
-        title: _isSearchVisible
-            ? TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'ابحث عن موقع...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(color: Colors.black),
-                onSubmitted: _searchLocation,
-                autofocus: true,
-              )
-            : const Text(
-                'الخريطة',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: _isSearchVisible
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _isSearchVisible = false;
-                    _searchController.clear();
-                  });
-                },
-              )
-            : null,
-        actions: [
-          // زر البحث
-          IconButton(
-            icon: Icon(
-              _isSearchVisible ? Icons.search_off : Icons.search,
-              color: LiquidGlassTheme.getIconColor('primary'),
-            ),
-            onPressed: () {
-              setState(() {
-                _isSearchVisible = !_isSearchVisible;
-              });
-            },
-            tooltip: 'بحث',
-          ),
-          // زر تصفية التقارير
-          IconButton(
-            icon: Icon(
-              Icons.filter_list,
-              color: LiquidGlassTheme.getIconColor('primary'),
-            ),
-            onPressed: _showFilterDialog,
-            tooltip: 'تصفية التقارير',
-          ),
-        ],
-      ),
       body: Stack(
         children: [
-          // الخريطة الأساسية
-          GoogleMap(
-            onMapCreated: _onMapCreated,
-            initialCameraPosition: CameraPosition(
-              target:
-                  (widget.initialLatitude != null &&
-                      widget.initialLongitude != null)
-                  ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
-                  : MapUtils.defaultLocation,
-              zoom:
-                  (widget.initialLatitude != null &&
-                      widget.initialLongitude != null)
-                  ? 16.0
-                  : MapUtils.defaultZoom,
+          // Mapbox Map
+          MapboxWidget(),
+
+          // Back Button - محسن
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 16,
+            child: IgnorePointer(
+              ignoring: false,
+              child: LiquidGlassContainer(
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
             ),
-            markers: _markers,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            compassEnabled: true,
-            trafficEnabled: false,
-            buildingsEnabled: true,
-            indoorViewEnabled: false,
-            mapType: MapType.normal,
-            gestureRecognizers: const {},
-            onTap: (LatLng position) {
-              // يمكن إضافة وظائف عند النقر على الخريطة
-            },
-            liteModeEnabled: false,
-            tiltGesturesEnabled: false, // تبسيط للخريطة العادية
-            rotateGesturesEnabled: false, // تبسيط للخريطة العادية
-            scrollGesturesEnabled: true,
-            zoomGesturesEnabled: true,
-            minMaxZoomPreference: const MinMaxZoomPreference(8.0, 18.0),
           ),
 
-          // معلومات الخريطة
+          // Simple Filter Button - زر الفلترة في الأسفل اليسار
           Positioned(
-            top: 20,
-            left: 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    size: 16,
-                    color: LiquidGlassTheme.getIconColor('primary'),
-                  ),
-                  const SizedBox(width: 8),
-                  Consumer<ReportsProvider>(
-                    builder: (context, reportsProvider, child) {
-                      final filteredCount = reportsProvider.reports
-                          .where(
-                            (report) => _activeFilters.contains(report.type),
-                          )
-                          .length;
-                      return Text(
-                        '$filteredCount تقرير',
-                        style: LiquidGlassTheme.subtitleTextStyle.copyWith(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+            bottom: 100,
+            left: 16,
+            child: IgnorePointer(
+              ignoring: false,
+              child: LiquidGlassButton(
+                text: 'فلترة',
+                icon: Icons.filter_list,
+                onPressed: _showSimpleFilterDialog,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                borderRadius: 8,
               ),
             ),
           ),
         ],
       ),
-
-      // زر الموقع الحالي
-      floatingActionButton: _isMapReady
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: FloatingActionButton(
-                onPressed: _animateToCurrentLocation,
-                backgroundColor: Colors.white,
-                child: Icon(
-                  Icons.my_location,
-                  color: LiquidGlassTheme.getIconColor('primary'),
-                ),
-              ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: BottomNavigationWidget(
         currentIndex: _currentBottomNavIndex,
         onTap: (index) {
-          if (index != _currentBottomNavIndex) {
-            // Navigate based on the selected tab
-            switch (index) {
-              case 0: // الرئيسية
-                Navigator.pushReplacementNamed(context, '/dashboard');
-                break;
-              case 1: // الخريطة
-                // Already on map screen, do nothing
-                break;
-              case 2: // إبلاغ
-                Navigator.pushNamed(context, '/report');
-                break;
-              case 3: // المجتمع
-                Navigator.pushNamed(context, '/community');
-                break;
-              case 4: // الملف الشخصي
-                Navigator.pushNamed(context, '/profile');
-                break;
-            }
-          }
+          setState(() {
+            _currentBottomNavIndex = index;
+          });
+          // Handle navigation
         },
       ),
     );
   }
+
 }

@@ -111,9 +111,15 @@ class SafeRouteApp extends StatelessWidget {
             locale: const Locale('ar', 'SA'),
             theme: EnhancedTheme.lightTheme.copyWith(
               extensions: [CustomColors.light],
+              textTheme: EnhancedTheme.lightTheme.textTheme.apply(
+                fontFamily: 'NotoSansArabic',
+              ),
             ),
             darkTheme: EnhancedTheme.darkTheme.copyWith(
               extensions: [CustomColors.dark],
+              textTheme: EnhancedTheme.darkTheme.textTheme.apply(
+                fontFamily: 'NotoSansArabic',
+              ),
             ),
             themeMode: ThemeMode.system,
             home: AuthInitializer(

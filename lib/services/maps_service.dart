@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/route_model.dart';
+import '../config/mapbox_config.dart';
 import 'maps_firebase_service.dart';
 
 class MapsService {
@@ -16,12 +16,12 @@ class MapsService {
   // Controllers
   final _routeController = StreamController<RouteInfo?>.broadcast();
   final _navigationStatusController = StreamController<NavigationStatus>.broadcast();
-  final _locationController = StreamController<LatLng>.broadcast();
+  final _locationController = StreamController<Position>.broadcast();
   
   // Streams
   Stream<RouteInfo?> get routeStream => _routeController.stream;
   Stream<NavigationStatus> get navigationStatusStream => _navigationStatusController.stream;
-  Stream<LatLng> get locationStream => _locationController.stream;
+  Stream<Position> get locationStream => _locationController.stream;
   
   // Initialize service
   Future<void> initialize() async {
@@ -30,7 +30,7 @@ class MapsService {
   }
   
   // Calculate route
-  Future<RouteInfo> calculateRoute(LatLng start, LatLng end, RouteType type) async {
+  Future<RouteInfo> calculateRoute(Position start, Position end, RouteType type) async {
     // Update navigation status
     _navigationStatus = NavigationStatus.calculating;
     _navigationStatusController.add(_navigationStatus);
@@ -53,7 +53,7 @@ class MapsService {
           RouteInstruction(
             text: 'Start navigation',
             maneuver: 'start',
-            location: LatLng(24.7136, 46.6753), // الرياض
+            location: Position(latitude: 24.7136, longitude: 46.6753), // الرياض
             distance: 0,
             time: const Duration(seconds: 0),
             instruction: 'Start navigation',
@@ -63,7 +63,7 @@ class MapsService {
           RouteInstruction(
             text: 'Arrive at destination',
             maneuver: 'arrive',
-            location: LatLng(24.7255, 46.6468), // وجهة في الرياض
+            location: Position(latitude: 24.7255, longitude: 46.6468), // وجهة في الرياض
             distance: 5000,
             time: const Duration(minutes: 15),
             instruction: 'Arrive at destination',
@@ -117,17 +117,17 @@ class MapsService {
   }
   
   // Update current location
-  Future<void> updateCurrentLocation(LatLng location) async {
+  Future<void> updateCurrentLocation(Position location) async {
     // Update location stream
     _locationController.add(location);
     
     // Update user location in Firebase
-    await _firebaseService.updateUserLocation(location);
+    await _firebaseService.updateUserLocation(LatLng(location.latitude, location.longitude));
   }
   
   // Save favorite location
-  Future<void> saveFavoriteLocation(String name, LatLng location, String icon) async {
-    await _firebaseService.saveFavoriteLocation(name, location, icon);
+  Future<void> saveFavoriteLocation(String name, Position location, String icon) async {
+    await _firebaseService.saveFavoriteLocation(name, LatLng(location.latitude, location.longitude), icon);
   }
   
   // Get favorite locations

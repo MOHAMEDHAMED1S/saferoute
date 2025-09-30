@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/warning_model.dart';
 import '../models/report_model.dart';
 
@@ -89,7 +88,18 @@ class WarningService {
       message: message,
       distance: distance.round(),
       severity: severity,
-      location: LatLng(report.location.lat, report.location.lng),
+      location: Position(
+        latitude: report.location.lat,
+        longitude: report.location.lng,
+        timestamp: DateTime.now(),
+        accuracy: 0.0,
+        altitude: 0.0,
+        altitudeAccuracy: 0.0,
+        heading: 0.0,
+        headingAccuracy: 0.0,
+        speed: 0.0,
+        speedAccuracy: 0.0,
+      ),
       timestamp: DateTime.now(),
       isActive: true,
     );
@@ -167,9 +177,17 @@ class WarningService {
           message: 'حادث خلال 800م في المسار الأيسر',
           distance: 800,
           severity: WarningSeverity.high,
-          location: LatLng(
-            _currentPosition!.latitude + 0.007,
-            _currentPosition!.longitude + 0.007,
+          location: Position(
+            latitude: _currentPosition!.latitude + 0.007,
+            longitude: _currentPosition!.longitude + 0.007,
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            altitudeAccuracy: 0.0,
+            heading: 0.0,
+            headingAccuracy: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
           ),
           timestamp: DateTime.now(),
           isActive: true,
@@ -186,9 +204,17 @@ class WarningService {
           message: 'ازدحام مروري خلال 1.2 كم',
           distance: 1200,
           severity: WarningSeverity.medium,
-          location: LatLng(
-            _currentPosition!.latitude + 0.01,
-            _currentPosition!.longitude + 0.01,
+          location: Position(
+            latitude: _currentPosition!.latitude + 0.01,
+            longitude: _currentPosition!.longitude + 0.01,
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            altitudeAccuracy: 0.0,
+            heading: 0.0,
+            headingAccuracy: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
           ),
           timestamp: DateTime.now(),
           isActive: true,

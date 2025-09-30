@@ -602,125 +602,125 @@ class LiquidGlassTheme extends InheritedWidget {
   // أنماط الحاويات الجديدة
   static BoxDecoration get primaryGlassDecoration => BoxDecoration(
     color: primaryGlass,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: borderLight, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: borderLight, width: 0.5),
     boxShadow: glassBoxShadow,
   );
 
   static BoxDecoration get headerCardDecoration => BoxDecoration(
     color: headerCardBackground,
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(color: headerCardBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: headerCardBorder, width: 0.5),
     boxShadow: headerCardShadow,
   );
 
   static BoxDecoration get welcomeCardDecoration => BoxDecoration(
     gradient: welcomeCardGradient,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: welcomeCardBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: welcomeCardBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x333B82F6), // rgba(59, 130, 246, 0.2)
-        blurRadius: 12,
-        offset: Offset(0, 4),
+        blurRadius: 8,
+        offset: Offset(0, 2),
       ),
     ],
   );
 
   static BoxDecoration get reportsCardDecoration => BoxDecoration(
     gradient: reportsCardGradient,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: reportsCardBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: reportsCardBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x3310B981), // rgba(16, 185, 129, 0.2)
-        blurRadius: 12,
-        offset: Offset(0, 4),
+        blurRadius: 8,
+        offset: Offset(0, 2),
       ),
     ],
   );
 
   static BoxDecoration get trustPointsCardDecoration => BoxDecoration(
     gradient: trustPointsCardGradient,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: trustPointsCardBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: trustPointsCardBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x33F59E0B), // rgba(245, 158, 11, 0.2)
-        blurRadius: 12,
-        offset: Offset(0, 4),
+        blurRadius: 8,
+        offset: Offset(0, 2),
       ),
     ],
   );
 
   static BoxDecoration get nearbyRisksCardDecoration => BoxDecoration(
     gradient: nearbyRisksCardGradient,
-    borderRadius: BorderRadius.circular(16),
-    border: Border.all(color: nearbyRisksCardBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: nearbyRisksCardBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x33EF4444), // rgba(239, 68, 68, 0.2)
-        blurRadius: 12,
-        offset: Offset(0, 4),
+        blurRadius: 8,
+        offset: Offset(0, 2),
       ),
     ],
   );
 
   static BoxDecoration get quickActionsDecoration => BoxDecoration(
     color: quickActionsBackground,
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(color: quickActionsBorder, width: 1),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: quickActionsBorder, width: 0.5),
     boxShadow: glassBoxShadow,
   );
 
   static BoxDecoration get mapViewButtonDecoration => BoxDecoration(
     gradient: mapViewGradient,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: mapViewBorder, width: 1),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: mapViewBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x3310B981), // rgba(16, 185, 129, 0.2)
-        blurRadius: 8,
-        offset: Offset(0, 2),
+        blurRadius: 6,
+        offset: Offset(0, 1),
       ),
     ],
   );
 
   static BoxDecoration get quickReportButtonDecoration => BoxDecoration(
     gradient: quickReportGradient,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: quickReportBorder, width: 1),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: quickReportBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x33EF4444), // rgba(239, 68, 68, 0.2)
-        blurRadius: 8,
-        offset: Offset(0, 2),
+        blurRadius: 6,
+        offset: Offset(0, 1),
       ),
     ],
   );
 
   static BoxDecoration get communityButtonDecoration => BoxDecoration(
     gradient: communityGradient,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: communityBorder, width: 1),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: communityBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x336366F1), // rgba(99, 102, 241, 0.2)
-        blurRadius: 8,
-        offset: Offset(0, 2),
+        blurRadius: 6,
+        offset: Offset(0, 1),
       ),
     ],
   );
 
   static BoxDecoration get myStatsButtonDecoration => BoxDecoration(
     gradient: myStatsGradient,
-    borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: myStatsBorder, width: 1),
+    borderRadius: BorderRadius.circular(8),
+    border: Border.all(color: myStatsBorder, width: 0.5),
     boxShadow: const [
       BoxShadow(
         color: Color(0x33A855F7), // rgba(168, 85, 247, 0.2)
-        blurRadius: 8,
-        offset: Offset(0, 2),
+        blurRadius: 6,
+        offset: Offset(0, 1),
       ),
     ],
   );
@@ -785,100 +785,100 @@ class LiquidGlassTheme extends InheritedWidget {
     letterSpacing: 0.1,
   );
 
-  // أنماط النصوص المطلوبة للتطبيق
+  // أنماط النصوص المطلوبة للتطبيق - محسنة للأحجام الأصغر جداً
   static const TextStyle headerTextStyle = TextStyle(
     color: primaryTextColor,
-    fontSize: 18,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.2,
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.05,
   );
 
   static const TextStyle bodyTextStyle = TextStyle(
     color: secondaryTextColor,
-    fontSize: 14,
+    fontSize: 9,
     fontWeight: FontWeight.w400,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle subtitleTextStyle = TextStyle(
     color: secondaryTextColor,
-    fontSize: 12,
+    fontSize: 8,
     fontWeight: FontWeight.w400,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle accentTextStyle = TextStyle(
     color: accentTextColor,
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-    letterSpacing: 0.2,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.05,
   );
 
   static const TextStyle successTextStyle = TextStyle(
     color: successTextColor,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: FontWeight.w500,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle warningTextStyle = TextStyle(
     color: warningTextColor,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: FontWeight.w500,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle dangerTextStyle = TextStyle(
     color: dangerTextColor,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: FontWeight.w500,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle temperatureTextStyle = TextStyle(
     color: temperatureColor,
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle weatherDescriptionTextStyle = TextStyle(
     color: weatherDescriptionColor,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: FontWeight.w400,
-    letterSpacing: 0.1,
+    letterSpacing: 0.02,
   );
 
   static const TextStyle activeTabTextStyle = TextStyle(
     color: Colors.white,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: FontWeight.w600,
-    letterSpacing: 0.1,
+    letterSpacing: 0.05,
   );
 
-  // أنماط الأزرار الجديدة
+  // أنماط الأزرار الجديدة - محسنة للأحجام الأصغر جداً
   static ButtonStyle get primaryButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: primaryTextColor,
     elevation: 0,
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
   static ButtonStyle get secondaryButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: secondaryTextColor,
     elevation: 0,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
   );
 
   static ButtonStyle get activeTabButtonStyle => ElevatedButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: Colors.white,
     elevation: 0,
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
   // تأثيرات التفاعل

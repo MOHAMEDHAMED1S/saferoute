@@ -75,33 +75,33 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                 offset: Offset(
                   0,
                   MediaQuery.of(context).size.height *
-                      0.6 *
+                      0.35 *
                       _slideAnimation.value,
                 ),
                 child: LiquidGlassContainer(
                   type: LiquidGlassType.secondary,
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
+                    top: Radius.circular(12),
                   ),
-                  height: MediaQuery.of(context).size.height * 0.6,
+                  height: MediaQuery.of(context).size.height * 0.35,
                   child: Column(
                     children: [
                       // Handle
                       Container(
-                        margin: const EdgeInsets.only(top: 12),
-                        width: 40,
-                        height: 4,
+                        margin: const EdgeInsets.only(top: 8),
+                        width: 30,
+                        height: 3,
                         decoration: BoxDecoration(
                           color: LiquidGlassTheme.getTextColor(
                             'secondary',
                           ).withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(1.5),
                         ),
                       ),
 
                       // Header
                       Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             Expanded(
@@ -109,7 +109,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                                 'البلاغات القريبة',
                                 style: LiquidGlassTheme.headerTextStyle
                                     .copyWith(
-                                      fontSize: 20,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -206,7 +206,7 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
 
                             return ListView.builder(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
+                                horizontal: 12,
                               ),
                               itemCount: reports.length,
                               itemBuilder: (context, index) {
@@ -230,24 +230,24 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
 
   Widget _buildReportCard(ReportModel report) {
     return LiquidGlassContainer(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
       type: LiquidGlassType.secondary,
       isInteractive: true,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Row(
         children: [
           LiquidGlassContainer(
             type: LiquidGlassType.primary,
-            padding: const EdgeInsets.all(10),
-            borderRadius: BorderRadius.circular(12),
+            padding: const EdgeInsets.all(6),
+            borderRadius: BorderRadius.circular(6),
             child: Icon(
               _getReportIcon(report.type),
               color: LiquidGlassTheme.getIconColor('primary'),
-              size: 22,
+              size: 14,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,25 +256,25 @@ class _ReportsBottomSheetState extends State<ReportsBottomSheet>
                   _getReportTypeTitle(report.type),
                   style: LiquidGlassTheme.headerTextStyle.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    fontSize: 10,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Text(
                   '${_calculateDistance(report)} كم • ${_formatDateTime(report.createdAt)}',
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 13),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 8),
                 ),
               ],
             ),
           ),
           LiquidGlassContainer(
             type: LiquidGlassType.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            borderRadius: BorderRadius.circular(4),
             child: Text(
               '${report.confirmations?.trueVotes ?? 0}',
               style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                fontSize: 12,
+                fontSize: 8,
                 fontWeight: FontWeight.bold,
                 color: LiquidGlassTheme.getIconColor('primary'),
               ),

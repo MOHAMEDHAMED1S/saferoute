@@ -207,10 +207,10 @@ class LiquidGlassButton extends StatelessWidget {
       isInteractive: true,
       width: width,
       height: height,
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(borderRadius ?? 50),
+        borderRadius: BorderRadius.circular(borderRadius ?? 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -219,13 +219,15 @@ class LiquidGlassButton extends StatelessWidget {
               Icon(
                 icon,
                 color: LiquidGlassTheme.getTextColor('primary'),
-                size: 20,
+                size: 16,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
             ],
             Text(
               text,
-              style: LiquidGlassTheme.headerTextStyle,
+              style: LiquidGlassTheme.headerTextStyle.copyWith(
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -260,11 +262,11 @@ class LiquidGlassCard extends StatelessWidget {
       isInteractive: onTap != null,
       width: width,
       height: height,
-      padding: padding ?? const EdgeInsets.all(16),
+      padding: padding ?? const EdgeInsets.all(8),
       margin: margin,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(8),
         child: child,
       ),
     );
@@ -296,8 +298,8 @@ class LiquidGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
         title: Text(
           title,
           style: LiquidGlassTheme.headerTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
         centerTitle: centerTitle,
@@ -345,7 +347,7 @@ class LiquidGlassTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return LiquidGlassContainer(
       type: LiquidGlassType.ultraLight,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,

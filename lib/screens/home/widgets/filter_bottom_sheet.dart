@@ -115,38 +115,38 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
               left: 0,
               right: 0,
               child: Transform.translate(
-                offset: Offset(0, MediaQuery.of(context).size.height * 0.7 * _slideAnimation.value),
+                offset: Offset(0, MediaQuery.of(context).size.height * 0.4 * _slideAnimation.value),
                 child: Container(
-                  height: MediaQuery.of(context).size.height * 0.7,
+                  height: MediaQuery.of(context).size.height * 0.4,
                   decoration: const BoxDecoration(
                     color: LiquidGlassTheme.backgroundColor,
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
+                      top: Radius.circular(12),
                     ),
                   ),
                   child: Column(
                     children: [
                       // Handle
                       Container(
-                        margin: const EdgeInsets.only(top: 12),
-                        width: 40,
-                        height: 4,
+                        margin: const EdgeInsets.only(top: 8),
+                        width: 30,
+                        height: 3,
                         decoration: BoxDecoration(
                           color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(1.5),
                         ),
                       ),
                       
                       // Header
                       Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             Expanded(
                               child: Text(
                                 'تصفية البلاغات',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: LiquidGlassTheme.getTextColor('primary') ?? Colors.black,
                                 ),
@@ -176,7 +176,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                       // Content
                       Expanded(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -184,43 +184,43 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                               Text(
                                 'نوع البلاغ',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
                               _buildReportTypesGrid(),
                               
-                              const SizedBox(height: 32),
+                              const SizedBox(height: 16),
                               
                               // Search Radius Section
                               Text(
                                 'نطاق البحث',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
                               _buildSearchRadiusSlider(),
                               
-                              const SizedBox(height: 32),
+                              const SizedBox(height: 16),
                               
                               // Status Filter Section
                               Text(
                                 'حالة البلاغ',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: LiquidGlassTheme.getTextColor('primary'),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
                               _buildStatusFilter(),
                               
-                              const SizedBox(height: 32),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -228,7 +228,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                       
                       // Apply Button
                       Padding(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         child: CustomButton(
                           text: 'تطبيق التصفية',
                           onPressed: _applyFilters,
@@ -250,9 +250,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      childAspectRatio: 3,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
+      childAspectRatio: 4,
+      crossAxisSpacing: 6,
+      mainAxisSpacing: 6,
       children: ReportType.values.map((type) {
         final isSelected = _selectedTypes.contains(type);
         return GestureDetector(
@@ -266,13 +266,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
             });
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: isSelected ? LiquidGlassTheme.getGradientByName('primary').colors.first : LiquidGlassTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(
                 color: isSelected ? LiquidGlassTheme.getGradientByName('primary').colors.first : (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey).withOpacity(0.3),
-                width: 1,
+                width: 0.5,
               ),
             ),
             child: Row(
@@ -280,15 +280,15 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
               children: [
                 Icon(
                   _getReportIcon(type),
-                  size: 16,
+                  size: 12,
                   color: isSelected ? LiquidGlassTheme.getIconColor('primary') : _getReportColor(type),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     _getReportTypeTitle(type),
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 8,
                       fontWeight: FontWeight.w500,
                       color: isSelected ? LiquidGlassTheme.getIconColor('primary') : LiquidGlassTheme.getTextColor('primary'),
                     ),
@@ -312,14 +312,14 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
             Text(
               '1 كم',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 8,
                 color: LiquidGlassTheme.getTextColor('secondary'),
               ),
             ),
             Text(
               '${_searchRadius.toStringAsFixed(1)} كم',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 9,
                 fontWeight: FontWeight.w600,
                 color: LiquidGlassTheme.getTextColor('primary'),
               ),
@@ -327,7 +327,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
             Text(
               '20 كم',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 8,
                 color: LiquidGlassTheme.getTextColor('secondary'),
               ),
             ),
@@ -361,23 +361,23 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
 
   Widget _buildStatusFilter() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: LiquidGlassTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: LiquidGlassTheme.getTextColor('secondary')?.withOpacity(0.2) ?? Colors.grey[200]!,
-          width: 1,
+          width: 0.5,
         ),
       ),
       child: Row(
         children: [
           Icon(
             Icons.info_outline,
-            size: 20,
+            size: 12,
             color: LiquidGlassTheme.getTextColor('secondary'),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,7 +385,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                 Text(
                   'البلاغات النشطة فقط',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 9,
                     fontWeight: FontWeight.w500,
                     color: LiquidGlassTheme.getTextColor('primary'),
                   ),
@@ -393,7 +393,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet>
                 Text(
                   'إظهار البلاغات النشطة وغير المنتهية الصلاحية فقط',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 7,
                     color: LiquidGlassTheme.getTextColor('secondary'),
                   ),
                 ),

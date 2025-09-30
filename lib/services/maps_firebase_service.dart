@@ -1,7 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/route_model.dart';
+
+class LatLng {
+  final double latitude;
+  final double longitude;
+
+  const LatLng(this.latitude, this.longitude);
+}
 
 class MapsFirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

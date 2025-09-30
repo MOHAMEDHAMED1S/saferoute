@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import '../models/report_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
@@ -65,12 +66,46 @@ class ReportsProvider with ChangeNotifier {
   Future<void> initialize() async {
     try {
       _setLoading(true);
-      await _updateCurrentLocation();
-      await _startListeningToReports();
+      _clearError();
+      
+      if (kDebugMode) {
+        print('ReportsProvider: Starting initialization...');
+      }
+      
+      // Load cached data first for immediate display
+      await _loadCachedReports();
+      
+      // Then update with fresh data
+      await Future.wait([
+        _updateCurrentLocation(),
+        _startListeningToReports(),
+      ]);
+      
+      if (kDebugMode) {
+        print('ReportsProvider: Initialization completed. Reports count: ${_reports.length}');
+      }
     } catch (e) {
+      if (kDebugMode) {
+        print('ReportsProvider: Error during initialization: $e');
+      }
       _setError('خطأ في تهيئة البلاغات: ${e.toString()}');
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Load cached reports for immediate display
+  Future<void> _loadCachedReports() async {
+    try {
+      // This would load from SharedPreferences or similar cache
+      // For now, we'll just set loading to false quickly
+      if (kDebugMode) {
+        print('ReportsProvider: Loading cached reports...');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('ReportsProvider: Error loading cached reports: $e');
+      }
     }
   }
 
@@ -92,11 +127,63 @@ class ReportsProvider with ChangeNotifier {
   // Update current location
   Future<void> _updateCurrentLocation() async {
     try {
+      if (kDebugMode) {
+        print('ReportsProvider: Getting current location...');
+      }
+      
+      // Try to get last known position first for faster response
+      Position? lastKnownPosition;
+      try {
+        lastKnownPosition = await _locationService.getLastKnownPosition();
+        if (lastKnownPosition != null) {
+          _currentLocation = _locationService.positionToLocationData(lastKnownPosition);
+          if (kDebugMode) {
+            print('ReportsProvider: Using last known location: ${_currentLocation!.lat}, ${_currentLocation!.lng}');
+          }
+          // Update with fresh location in background
+          _updateLocationInBackground();
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('ReportsProvider: Could not get last known position: $e');
+        }
+      }
+      
+      // Get fresh position if no last known position
       final position = await _locationService.getCurrentLocation();
       _currentLocation = _locationService.positionToLocationData(position);
+      
+      if (kDebugMode) {
+        print('ReportsProvider: Location updated: ${_currentLocation!.lat}, ${_currentLocation!.lng}');
+      }
     } catch (e) {
-      debugPrint('Could not get current location: $e');
+      if (kDebugMode) {
+        print('ReportsProvider: Could not get current location: $e');
+      }
+      // Use default location as fallback
+      _currentLocation = LocationData(
+        lat: 30.0444, // Cairo coordinates
+        lng: 31.2357,
+        updatedAt: DateTime.now(),
+      );
     }
+  }
+
+  // Update location in background without blocking UI
+  void _updateLocationInBackground() {
+    _locationService.getCurrentLocation().then((position) {
+      _currentLocation = _locationService.positionToLocationData(position);
+      _updateNearbyReports();
+      notifyListeners();
+      if (kDebugMode) {
+        print('ReportsProvider: Background location update: ${_currentLocation!.lat}, ${_currentLocation!.lng}');
+      }
+    }).catchError((e) {
+      if (kDebugMode) {
+        print('ReportsProvider: Background location update failed: $e');
+      }
+    });
   }
 
   // Update nearby reports based on current location

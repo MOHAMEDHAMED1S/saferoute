@@ -302,8 +302,9 @@ class VoiceAssistantService {
         }
       }
       
-      if (state.route != null && state.route!.estimatedTimeRemaining.inMinutes > 0) {
-        response += '${state.route!.estimatedTimeRemaining.inMinutes} دقيقة متبقية';
+      RouteInfo? currentRoute = _navigationService!.currentRoute;
+      if (currentRoute != null && currentRoute.estimatedTimeRemaining.inMinutes > 0) {
+        response += '${currentRoute.estimatedTimeRemaining.inMinutes} دقيقة متبقية';
       }
       
       if (warnings.isNotEmpty) {
@@ -334,14 +335,14 @@ class VoiceAssistantService {
       }
       
       RouteInfo bestAlternative = alternatives.first;
-      NavigationState currentState = _navigationService!.currentState;
+      RouteInfo? currentRoute = _navigationService!.currentRoute;
       
-      if (currentState.route == null) {
+      if (currentRoute == null) {
         await speak('لا يوجد مسار حالي للمقارنة');
         return;
       }
       
-      int timeDifference = bestAlternative.estimatedTimeRemaining.inMinutes - currentState.route!.estimatedTimeRemaining.inMinutes;
+      int timeDifference = bestAlternative.estimatedTimeRemaining.inMinutes - currentRoute.estimatedTimeRemaining.inMinutes;
       
       if (timeDifference < 0) {
         await speak('يوجد طريق بديل أسرع بـ ${timeDifference.abs()} دقيقة، هل تريد التغيير؟');
@@ -412,10 +413,10 @@ class VoiceAssistantService {
     }
     
     try {
-      NavigationState state = _navigationService!.currentState;
+      RouteInfo? currentRoute = _navigationService!.currentRoute;
       
-      if (state.route != null && state.route!.estimatedTimeRemaining.inMinutes > 0) {
-        int minutes = state.route!.estimatedTimeRemaining.inMinutes;
+      if (currentRoute != null && currentRoute.estimatedTimeRemaining.inMinutes > 0) {
+        int minutes = currentRoute.estimatedTimeRemaining.inMinutes;
         await speak('ستصل خلال $minutes دقيقة تقريباً');
       } else {
         await speak('لا توجد وجهة محددة حالياً');

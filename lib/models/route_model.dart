@@ -1,4 +1,24 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+// Define Position class for Mapbox compatibility
+class Position {
+  final double latitude;
+  final double longitude;
+  
+  const Position({required this.latitude, required this.longitude});
+  
+  @override
+  String toString() => 'Position($latitude, $longitude)';
+  
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Position &&
+        other.latitude == latitude &&
+        other.longitude == longitude;
+  }
+  
+  @override
+  int get hashCode => latitude.hashCode ^ longitude.hashCode;
+}
 
 enum RouteType {
   fastest,
@@ -26,9 +46,9 @@ enum NavigationStatus {
 
 class RouteInfo {
   final String id;
-  final LatLng startLocation;
-  final LatLng endLocation;
-  final List<LatLng> polylinePoints;
+  final Position startLocation;
+  final Position endLocation;
+  final List<Position> polylinePoints;
   final int totalDistance; // in meters
   final int remainingDistance; // in meters
   final Duration estimatedTotalTime;
@@ -51,17 +71,86 @@ class RouteInfo {
     required this.estimatedTimeRemaining,
     required this.routeType,
     required this.trafficCondition,
-    this.instructions = const [],
+    required this.instructions,
     this.fuelConsumption,
     this.tollCost,
-    this.safetyScore = 85,
+    required this.safetyScore,
   });
-  
+
+  // Convert to map for Firebase storage
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'startLocation': {
+        'latitude': startLocation.latitude,
+        'longitude': startLocation.longitude,
+      },
+      'endLocation': {
+        'latitude': endLocation.latitude,
+        'longitude': endLocation.longitude,
+      },
+      'polylinePoints': polylinePoints.map((point) => {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+      }).toList(),
+      'totalDistance': totalDistance,
+      'remainingDistance': remainingDistance,
+      'estimatedTotalTime': estimatedTotalTime.inMilliseconds,
+      'estimatedTimeRemaining': estimatedTimeRemaining.inMilliseconds,
+      'routeType': routeType.name,
+      'trafficCondition': trafficCondition.name,
+      'instructions': instructions.map((instruction) => instruction.toMap()).toList(),
+      'fuelConsumption': fuelConsumption,
+      'tollCost': tollCost,
+      'safetyScore': safetyScore,
+    };
+  }
+
+  // Create from map (Firebase data)
+  factory RouteInfo.fromMap(Map<String, dynamic> map) {
+    return RouteInfo(
+      id: map['id'] ?? '',
+      startLocation: Position(
+        latitude: map['startLocation']['latitude']?.toDouble() ?? 0.0,
+        longitude: map['startLocation']['longitude']?.toDouble() ?? 0.0,
+      ),
+      endLocation: Position(
+        latitude: map['endLocation']['latitude']?.toDouble() ?? 0.0,
+        longitude: map['endLocation']['longitude']?.toDouble() ?? 0.0,
+      ),
+      polylinePoints: (map['polylinePoints'] as List<dynamic>?)
+          ?.map((point) => Position(
+                latitude: point['latitude']?.toDouble() ?? 0.0,
+                longitude: point['longitude']?.toDouble() ?? 0.0,
+              ))
+          .toList() ?? [],
+      totalDistance: map['totalDistance']?.toInt() ?? 0,
+      remainingDistance: map['remainingDistance']?.toInt() ?? 0,
+      estimatedTotalTime: Duration(milliseconds: map['estimatedTotalTime']?.toInt() ?? 0),
+      estimatedTimeRemaining: Duration(milliseconds: map['estimatedTimeRemaining']?.toInt() ?? 0),
+      routeType: RouteType.values.firstWhere(
+        (type) => type.name == map['routeType'],
+        orElse: () => RouteType.fastest,
+      ),
+      trafficCondition: TrafficCondition.values.firstWhere(
+        (condition) => condition.name == map['trafficCondition'],
+        orElse: () => TrafficCondition.moderate,
+      ),
+      instructions: (map['instructions'] as List<dynamic>?)
+          ?.map((instruction) => RouteInstruction.fromMap(instruction))
+          .toList() ?? [],
+      fuelConsumption: map['fuelConsumption']?.toDouble(),
+      tollCost: map['tollCost']?.toDouble(),
+      safetyScore: map['safetyScore']?.toInt() ?? 0,
+    );
+  }
+
+  // Copy with method
   RouteInfo copyWith({
     String? id,
-    LatLng? startLocation,
-    LatLng? endLocation,
-    List<LatLng>? polylinePoints,
+    Position? startLocation,
+    Position? endLocation,
+    List<Position>? polylinePoints,
     int? totalDistance,
     int? remainingDistance,
     Duration? estimatedTotalTime,
@@ -90,155 +179,53 @@ class RouteInfo {
       safetyScore: safetyScore ?? this.safetyScore,
     );
   }
-  
-  String get formattedDistance {
-    if (remainingDistance < 1000) {
-      return '$remainingDistanceم';
-    } else {
-      return '${(remainingDistance / 1000).toStringAsFixed(1)} كم';
-    }
-  }
-  
-  String get formattedTime {
-    final hours = estimatedTimeRemaining.inHours;
-    final minutes = estimatedTimeRemaining.inMinutes % 60;
-    
-    if (hours > 0) {
-      return '$hoursس $minutesد';
-    } else {
-      return '$minutes دقيقة';
-    }
-  }
-  
-  String get routeTypeText {
-    switch (routeType) {
-      case RouteType.fastest:
-        return 'الأسرع';
-      case RouteType.shortest:
-        return 'الأقصر';
-      case RouteType.scenic:
-        return 'المناظر الطبيعية';
-      case RouteType.safest:
-        return 'الأكثر أماناً';
-      case RouteType.economical:
-        return 'الاقتصادي';
-    }
-  }
-  
-  String get trafficConditionText {
-    switch (trafficCondition) {
-      case TrafficCondition.light:
-        return 'حركة مرور خفيفة';
-      case TrafficCondition.moderate:
-        return 'حركة مرور متوسطة';
-      case TrafficCondition.heavy:
-        return 'حركة مرور كثيفة';
-      case TrafficCondition.severe:
-        return 'ازدحام شديد';
-    }
-  }
-  
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'startLocation': {
-        'latitude': startLocation.latitude,
-        'longitude': startLocation.longitude,
-      },
-      'endLocation': {
-        'latitude': endLocation.latitude,
-        'longitude': endLocation.longitude,
-      },
-      'polylinePoints': polylinePoints
-          .map((point) => {
-                'latitude': point.latitude,
-                'longitude': point.longitude,
-              })
-          .toList(),
-      'totalDistance': totalDistance,
-      'remainingDistance': remainingDistance,
-      'estimatedTotalTime': estimatedTotalTime.inMinutes,
-      'estimatedTimeRemaining': estimatedTimeRemaining.inMinutes,
-      'routeType': routeType.toString().split('.').last,
-      'trafficCondition': trafficCondition.toString().split('.').last,
-      'instructions': instructions.map((i) => i.toJson()).toList(),
-      'fuelConsumption': fuelConsumption,
-      'tollCost': tollCost,
-      'safetyScore': safetyScore,
-    };
-  }
-  
-  factory RouteInfo.fromJson(Map<String, dynamic> json) {
-    return RouteInfo(
-      id: json['id'],
-      startLocation: LatLng(
-        json['startLocation']['latitude'],
-        json['startLocation']['longitude'],
-      ),
-      endLocation: LatLng(
-        json['endLocation']['latitude'],
-        json['endLocation']['longitude'],
-      ),
-      polylinePoints: (json['polylinePoints'] as List)
-          .map((point) => LatLng(point['latitude'], point['longitude']))
-          .toList(),
-      totalDistance: json['totalDistance'],
-      remainingDistance: json['remainingDistance'],
-      estimatedTotalTime: Duration(minutes: json['estimatedTotalTime']),
-      estimatedTimeRemaining: Duration(minutes: json['estimatedTimeRemaining']),
-      routeType: RouteType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['routeType'],
-        orElse: () => RouteType.fastest,
-      ),
-      trafficCondition: TrafficCondition.values.firstWhere(
-        (e) => e.toString().split('.').last == json['trafficCondition'],
-        orElse: () => TrafficCondition.moderate,
-      ),
-      instructions: (json['instructions'] as List? ?? [])
-          .map((i) => RouteInstruction.fromJson(i))
-          .toList(),
-      fuelConsumption: json['fuelConsumption']?.toDouble(),
-      tollCost: json['tollCost']?.toDouble(),
-      safetyScore: json['safetyScore'] ?? 85,
-    );
-  }
 }
 
 enum ManeuverType {
   start,
-  turnRight,
-  turnLeft,
   straight,
-  roundabout,
+  turnLeft,
+  turnRight,
+  turnSlightLeft,
+  turnSlightRight,
+  turnSharpLeft,
+  turnSharpRight,
+  uturn,
   merge,
   exit,
   arrive,
+  roundabout,
 }
 
 class RouteInstruction {
   final String text;
   final String maneuver;
-  final LatLng location;
-  final int distance; // meters to next instruction
-  final Duration time; // time to next instruction
+  final Position location;
+  final int distance; // meters to this instruction
+  final Duration time; // time to reach this instruction
+  final String instruction;
+  final Duration timeToInstruction;
+  final ManeuverType maneuverType;
   final String? streetName;
-  final ManeuverType? maneuverType;
-  final Duration? timeToInstruction;
-  final String? instruction;
-  
+  final String? exitNumber;
+  final int? roundaboutExit;
+
   const RouteInstruction({
     required this.text,
     required this.maneuver,
     required this.location,
     required this.distance,
     required this.time,
+    required this.instruction,
+    required this.timeToInstruction,
+    required this.maneuverType,
     this.streetName,
-    this.maneuverType,
-    this.timeToInstruction,
-    this.instruction,
+    this.exitNumber,
+    this.roundaboutExit,
   });
-  
-  Map<String, dynamic> toJson() {
+
+  // Convert to map for Firebase storage
+  Map<String, dynamic> toMap() {
     return {
       'text': text,
       'maneuver': maneuver,
@@ -247,268 +234,153 @@ class RouteInstruction {
         'longitude': location.longitude,
       },
       'distance': distance,
-      'time': time.inSeconds,
+      'time': time.inMilliseconds,
+      'instruction': instruction,
+      'timeToInstruction': timeToInstruction.inMilliseconds,
+      'maneuverType': maneuverType.name,
       'streetName': streetName,
+      'exitNumber': exitNumber,
+      'roundaboutExit': roundaboutExit,
     };
   }
-  
-  factory RouteInstruction.fromJson(Map<String, dynamic> json) {
+
+  // Create from map (Firebase data)
+  factory RouteInstruction.fromMap(Map<String, dynamic> map) {
     return RouteInstruction(
-      text: json['text'],
-      maneuver: json['maneuver'],
-      location: LatLng(
-        json['location']['latitude'],
-        json['location']['longitude'],
+      text: map['text'] ?? '',
+      maneuver: map['maneuver'] ?? '',
+      location: Position(
+        latitude: map['location']['latitude']?.toDouble() ?? 0.0,
+        longitude: map['location']['longitude']?.toDouble() ?? 0.0,
       ),
-      distance: json['distance'],
-      time: Duration(seconds: json['time']),
-      streetName: json['streetName'],
-    );
-  }
-}
-
-class NavigationState {
-  final NavigationStatus status;
-  final RouteInfo? route;
-  final List<RouteInfo> alternativeRoutes;
-  final String? destinationName;
-  final String? errorMessage;
-  final String? statusMessage;
-  final bool hasRouteUpdate;
-  
-  const NavigationState({
-    required this.status,
-    this.route,
-    this.alternativeRoutes = const [],
-    this.destinationName,
-    this.errorMessage,
-    this.statusMessage,
-    this.hasRouteUpdate = false,
-  });
-  
-  // Factory constructors for different states
-  factory NavigationState.idle() {
-    return const NavigationState(status: NavigationStatus.idle);
-  }
-  
-  factory NavigationState.calculating() {
-    return const NavigationState(
-      status: NavigationStatus.calculating,
-      statusMessage: 'جاري حساب المسار...',
-    );
-  }
-  
-  factory NavigationState.navigating({
-    required RouteInfo route,
-    List<RouteInfo> alternativeRoutes = const [],
-    String? destinationName,
-    bool hasRouteUpdate = false,
-  }) {
-    return NavigationState(
-      status: NavigationStatus.navigating,
-      route: route,
-      alternativeRoutes: alternativeRoutes,
-      destinationName: destinationName,
-      hasRouteUpdate: hasRouteUpdate,
-    );
-  }
-  
-  factory NavigationState.recalculating(String reason) {
-    return NavigationState(
-      status: NavigationStatus.recalculating,
-      statusMessage: 'إعادة حساب المسار: $reason',
-    );
-  }
-  
-  factory NavigationState.arrived() {
-    return const NavigationState(
-      status: NavigationStatus.arrived,
-      statusMessage: 'وصلت إلى وجهتك',
-    );
-  }
-  
-  factory NavigationState.error(String message) {
-    return NavigationState(
-      status: NavigationStatus.error,
-      errorMessage: message,
-    );
-  }
-  
-  // Getters for convenience
-  bool get isIdle => status == NavigationStatus.idle;
-  bool get isCalculating => status == NavigationStatus.calculating;
-  bool get isNavigating => status == NavigationStatus.navigating;
-  bool get isRecalculating => status == NavigationStatus.recalculating;
-  bool get hasArrived => status == NavigationStatus.arrived;
-  bool get hasError => status == NavigationStatus.error;
-  bool get isActive => isNavigating || isRecalculating;
-  
-  NavigationState copyWith({
-    NavigationStatus? status,
-    RouteInfo? route,
-    List<RouteInfo>? alternativeRoutes,
-    String? destinationName,
-    String? errorMessage,
-    String? statusMessage,
-    bool? hasRouteUpdate,
-  }) {
-    return NavigationState(
-      status: status ?? this.status,
-      route: route ?? this.route,
-      alternativeRoutes: alternativeRoutes ?? this.alternativeRoutes,
-      destinationName: destinationName ?? this.destinationName,
-      errorMessage: errorMessage ?? this.errorMessage,
-      statusMessage: statusMessage ?? this.statusMessage,
-      hasRouteUpdate: hasRouteUpdate ?? this.hasRouteUpdate,
-    );
-  }
-}
-
-class NavigationSettings {
-  final bool enableVoiceGuidance;
-  final bool enableAutoReroute;
-  final bool avoidTolls;
-  final bool avoidHighways;
-  final bool avoidFerries;
-  final RouteType preferredRouteType;
-  final double rerouteThreshold; // meters
-  final Duration recalculationInterval;
-  final bool enableTrafficData;
-  final bool enableAlternativeRoutes;
-  
-  const NavigationSettings({
-    this.enableVoiceGuidance = true,
-    this.enableAutoReroute = true,
-    this.avoidTolls = false,
-    this.avoidHighways = false,
-    this.avoidFerries = true,
-    this.preferredRouteType = RouteType.fastest,
-    this.rerouteThreshold = 100.0,
-    this.recalculationInterval = const Duration(seconds: 30),
-    this.enableTrafficData = true,
-    this.enableAlternativeRoutes = true,
-  });
-  
-  NavigationSettings copyWith({
-    bool? enableVoiceGuidance,
-    bool? enableAutoReroute,
-    bool? avoidTolls,
-    bool? avoidHighways,
-    bool? avoidFerries,
-    RouteType? preferredRouteType,
-    double? rerouteThreshold,
-    Duration? recalculationInterval,
-    bool? enableTrafficData,
-    bool? enableAlternativeRoutes,
-  }) {
-    return NavigationSettings(
-      enableVoiceGuidance: enableVoiceGuidance ?? this.enableVoiceGuidance,
-      enableAutoReroute: enableAutoReroute ?? this.enableAutoReroute,
-      avoidTolls: avoidTolls ?? this.avoidTolls,
-      avoidHighways: avoidHighways ?? this.avoidHighways,
-      avoidFerries: avoidFerries ?? this.avoidFerries,
-      preferredRouteType: preferredRouteType ?? this.preferredRouteType,
-      rerouteThreshold: rerouteThreshold ?? this.rerouteThreshold,
-      recalculationInterval: recalculationInterval ?? this.recalculationInterval,
-      enableTrafficData: enableTrafficData ?? this.enableTrafficData,
-      enableAlternativeRoutes: enableAlternativeRoutes ?? this.enableAlternativeRoutes,
-    );
-  }
-  
-  Map<String, dynamic> toJson() {
-    return {
-      'enableVoiceGuidance': enableVoiceGuidance,
-      'enableAutoReroute': enableAutoReroute,
-      'avoidTolls': avoidTolls,
-      'avoidHighways': avoidHighways,
-      'avoidFerries': avoidFerries,
-      'preferredRouteType': preferredRouteType.toString().split('.').last,
-      'rerouteThreshold': rerouteThreshold,
-      'recalculationInterval': recalculationInterval.inSeconds,
-      'enableTrafficData': enableTrafficData,
-      'enableAlternativeRoutes': enableAlternativeRoutes,
-    };
-  }
-  
-  factory NavigationSettings.fromJson(Map<String, dynamic> json) {
-    return NavigationSettings(
-      enableVoiceGuidance: json['enableVoiceGuidance'] ?? true,
-      enableAutoReroute: json['enableAutoReroute'] ?? true,
-      avoidTolls: json['avoidTolls'] ?? false,
-      avoidHighways: json['avoidHighways'] ?? false,
-      avoidFerries: json['avoidFerries'] ?? true,
-      preferredRouteType: RouteType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['preferredRouteType'],
-        orElse: () => RouteType.fastest,
+      distance: map['distance']?.toInt() ?? 0,
+      time: Duration(milliseconds: map['time']?.toInt() ?? 0),
+      instruction: map['instruction'] ?? '',
+      timeToInstruction: Duration(milliseconds: map['timeToInstruction']?.toInt() ?? 0),
+      maneuverType: ManeuverType.values.firstWhere(
+        (type) => type.name == map['maneuverType'],
+        orElse: () => ManeuverType.straight,
       ),
-      rerouteThreshold: json['rerouteThreshold']?.toDouble() ?? 100.0,
-      recalculationInterval: Duration(seconds: json['recalculationInterval'] ?? 30),
-      enableTrafficData: json['enableTrafficData'] ?? true,
-      enableAlternativeRoutes: json['enableAlternativeRoutes'] ?? true,
+      streetName: map['streetName'],
+      exitNumber: map['exitNumber'],
+      roundaboutExit: map['roundaboutExit']?.toInt(),
     );
   }
 }
 
+// Route model for saved routes
 class RouteModel {
   final String id;
   final String name;
-  final String startPoint;
-  final String endPoint;
-  final double distance;
-  final Duration estimatedTime;
-  final RouteType type;
-  final int safetyScore;
-  final double fuelConsumption;
-  final List<LatLng> waypoints;
+  final Position? startLocation;
+  final Position? endLocation;
+  final List<Position> waypoints;
+  final RouteType routeType;
+  final DateTime createdAt;
+  final DateTime? lastUsed;
+  final bool isFavorite;
+  final String? description;
+  final List<String> tags;
 
   const RouteModel({
     required this.id,
     required this.name,
-    required this.startPoint,
-    required this.endPoint,
-    required this.distance,
-    required this.estimatedTime,
-    this.type = RouteType.fastest,
-    this.safetyScore = 85,
-    this.fuelConsumption = 0.0,
-    this.waypoints = const [],
+    this.startLocation,
+    this.endLocation,
+    required this.waypoints,
+    required this.routeType,
+    required this.createdAt,
+    this.lastUsed,
+    this.isFavorite = false,
+    this.description,
+    this.tags = const [],
   });
 
-  Map<String, dynamic> toJson() {
+  // Convert to map for Firebase storage
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'startPoint': startPoint,
-      'endPoint': endPoint,
-      'distance': distance,
-      'estimatedTime': estimatedTime.inMinutes,
-      'type': type.toString(),
-      'safetyScore': safetyScore,
-      'fuelConsumption': fuelConsumption,
+      'startLocation': startLocation != null ? {
+        'latitude': startLocation!.latitude,
+        'longitude': startLocation!.longitude,
+      } : null,
+      'endLocation': endLocation != null ? {
+        'latitude': endLocation!.latitude,
+        'longitude': endLocation!.longitude,
+      } : null,
       'waypoints': waypoints.map((point) => {
         'latitude': point.latitude,
         'longitude': point.longitude,
       }).toList(),
+      'routeType': routeType.name,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'lastUsed': lastUsed?.millisecondsSinceEpoch,
+      'isFavorite': isFavorite,
+      'description': description,
+      'tags': tags,
     };
   }
 
-  factory RouteModel.fromJson(Map<String, dynamic> json) {
+  // Create from map (Firebase data)
+  factory RouteModel.fromMap(Map<String, dynamic> map) {
     return RouteModel(
-      id: json['id'],
-      name: json['name'],
-      startPoint: json['startPoint'],
-      endPoint: json['endPoint'],
-      distance: json['distance'].toDouble(),
-      estimatedTime: Duration(minutes: json['estimatedTime']),
-      type: RouteType.values.firstWhere(
-        (e) => e.toString() == json['type'],
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      startLocation: map['startLocation'] != null ? Position(
+        latitude: map['startLocation']['latitude']?.toDouble() ?? 0.0,
+        longitude: map['startLocation']['longitude']?.toDouble() ?? 0.0,
+      ) : null,
+      endLocation: map['endLocation'] != null ? Position(
+        latitude: map['endLocation']['latitude']?.toDouble() ?? 0.0,
+        longitude: map['endLocation']['longitude']?.toDouble() ?? 0.0,
+      ) : null,
+      waypoints: (map['waypoints'] as List<dynamic>?)
+          ?.map((point) => Position(
+                latitude: point['latitude']?.toDouble() ?? 0.0,
+                longitude: point['longitude']?.toDouble() ?? 0.0,
+              ))
+          .toList() ?? [],
+      routeType: RouteType.values.firstWhere(
+        (type) => type.name == map['routeType'],
         orElse: () => RouteType.fastest,
       ),
-      safetyScore: json['safetyScore'] ?? 85,
-      fuelConsumption: json['fuelConsumption']?.toDouble() ?? 0.0,
-      waypoints: (json['waypoints'] as List<dynamic>?)?.map((point) => 
-        LatLng(point['latitude'], point['longitude'])
-      ).toList() ?? [],
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
+      lastUsed: map['lastUsed'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(map['lastUsed'])
+          : null,
+      isFavorite: map['isFavorite'] ?? false,
+      description: map['description'],
+      tags: List<String>.from(map['tags'] ?? []),
+    );
+  }
+
+  // Copy with method
+  RouteModel copyWith({
+    String? id,
+    String? name,
+    Position? startLocation,
+    Position? endLocation,
+    List<Position>? waypoints,
+    RouteType? routeType,
+    DateTime? createdAt,
+    DateTime? lastUsed,
+    bool? isFavorite,
+    String? description,
+    List<String>? tags,
+  }) {
+    return RouteModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      startLocation: startLocation ?? this.startLocation,
+      endLocation: endLocation ?? this.endLocation,
+      waypoints: waypoints ?? this.waypoints,
+      routeType: routeType ?? this.routeType,
+      createdAt: createdAt ?? this.createdAt,
+      lastUsed: lastUsed ?? this.lastUsed,
+      isFavorite: isFavorite ?? this.isFavorite,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
     );
   }
 }
