@@ -988,22 +988,27 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Welcome Message
-            Text(
-              'مرحباً بك في تطبيق سلامة السائقين',
-              style: TextStyle(
-                fontSize: screenWidth * 0.055,
-                fontWeight: FontWeight.w800,
-                color: const Color.fromARGB(255, 12, 12, 12),
-                height: 1.3,
-                letterSpacing: 0.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+            Consumer<auth_provider.AuthProvider>(
+              builder: (context, authProvider, child) {
+                final userName = authProvider.userModel?.name ?? 'مستخدم';
+                return Text(
+                  'مرحباً $userName',
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.055,
+                    fontWeight: FontWeight.w800,
+                    color: const Color.fromARGB(255, 12, 12, 12),
+                    height: 1.3,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             const SizedBox(height: 6),
             Text(
@@ -1147,25 +1152,25 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                                const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.8),
-                                const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.6),
+                                Colors.blue.shade400.withValues(alpha: 0.9),
+                                Colors.blue.shade600.withValues(alpha: 0.8),
                             ],
                           ),
                             borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              width: 1.5,
+                              color: Colors.blue.shade300.withValues(alpha: 0.8),
+                              width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                                color: Colors.blue.shade200.withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                                color: Colors.blue.shade300.withValues(alpha: 0.5),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
                               ),
                               BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                                color: Colors.white.withValues(alpha: 0.8),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -1174,100 +1179,34 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                                Icon(
-                                  Icons.navigation,
-                                  color: const Color.fromARGB(255, 2, 2, 2),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
                                 Text(
                                   'وضع القيادة',
                                   style: TextStyle(
-                                    color: const Color.fromARGB(255, 13, 13, 13),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.3,
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
                                     shadows: [
                                       Shadow(
-                                        color: Colors.white.withValues(alpha: 0.8),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 1),
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
-                                    ),
+                                ),
+                                const SizedBox(width: 10),
+                                Transform.rotate(
+                                 angle: -1.5708, // -90 درجة -> اتجاه لليسار
+                                  child: Icon(
+                                    Icons.navigation,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                ),
                                   ],
                                 ),
                           ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Map Button
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _switchToMap,
-                    child: Container(
-                      height: 56,
-                                decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.8),
-                            const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.6),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(
-                          color: const Color.fromARGB(255, 233, 233, 233).withValues(alpha: 0.7),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                          BoxShadow(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.map_outlined,
-                              color: const Color.fromARGB(255, 0, 0, 0),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'الخريطة',
-                              style: TextStyle(
-                                color: const Color.fromARGB(255, 0, 0, 0),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
