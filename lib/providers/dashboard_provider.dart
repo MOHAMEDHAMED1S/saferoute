@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import '../models/dashboard_models.dart';
+import '../models/dashboard_models.dart'
+    hide NearbyReport; // إخفاء NearbyReport من dashboard_models
 import '../models/report_model.dart';
+import '../models/nearby_report.dart'; // إضافة استيراد نموذج البلاغات القريبة
 import 'package:saferoute/services/firebase_schema_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:async'; // إضافة استيراد dart:async
+import '../services/realtime_reports_service.dart'; // إضافة الخدمة الجديدة
 
 class DashboardProvider extends ChangeNotifier {
   DashboardStats _stats = DashboardStats(
@@ -37,6 +41,10 @@ class DashboardProvider extends ChangeNotifier {
   EmergencyAlert? _currentAlert;
   bool _isLoading = false;
 
+  // خدمة البيانات الفورية
+  final RealtimeReportsService _realtimeService = RealtimeReportsService();
+  StreamSubscription<List<NearbyReport>>? _realtimeSubscription;
+
   // Getters
   DashboardStats get stats => _stats;
   List<NearbyReport> _filteredReports = [];
@@ -56,19 +64,18 @@ class DashboardProvider extends ChangeNotifier {
     try {
       // Load cached reports first for immediate display
       await _loadCachedReports();
-      
-      // Load data from Firebase
+
+      // بدء الاستماع للبيانات الفورية دائماً
+      await _startRealtimeListening();
+
+      // Load other data from Firebase
       await _loadStats();
-      await _loadNearbyReportsFromFirebase();
       await _loadWeather();
       await _loadDailyTip();
       await _checkEmergencyAlerts();
       _filteredReports = List.from(
         _nearbyReports,
       ); // Initialize filtered reports
-      
-      // Save reports to cache after loading from Firebase
-      await _saveReportsToCache();
     } catch (e) {
       debugPrint('Error loading dashboard data: $e');
     } finally {
@@ -77,26 +84,143 @@ class DashboardProvider extends ChangeNotifier {
     }
   }
 
+  /// بدء الاستماع للبيانات الفورية
+  Future<void> _startRealtimeListening() async {
+    try {
+      // الحصول على الموقع الحالي
+      Position? position = await _getCurrentPosition();
+      if (position == null) return;
+
+      // إلغاء الاشتراك السابق إن وجد
+      _realtimeSubscription?.cancel();
+
+      // بدء الاستماع للبلاغات الفورية
+      _realtimeService.startListeningToNearbyReports(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        radiusKm: 10.0,
+      );
+
+      // الاشتراك في stream البلاغات
+      _realtimeSubscription = _realtimeService
+          .listenToNearbyReports(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radiusKm: 10.0,
+          )
+          .listen(
+            (reports) {
+              _nearbyReports.clear();
+              _nearbyReports.addAll(reports);
+              _filteredReports = List.from(_nearbyReports);
+
+              // تحديث الإحصائيات
+              _updateStatsFromReports(reports);
+
+              notifyListeners();
+            },
+            onError: (error) {
+              debugPrint('خطأ في stream البلاغات الفورية: $error');
+            },
+          );
+
+      // تحديث موقع المستخدم في قاعدة البيانات الفورية
+      await _realtimeService.updateUserLocation();
+    } catch (e) {
+      debugPrint('خطأ في بدء الاستماع للبيانات الفورية: $e');
+    }
+  }
+
+  /// الحصول على الموقع الحالي
+  Future<Position?> _getCurrentPosition() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return null;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return null;
+      }
+
+      if (permission == LocationPermission.deniedForever) return null;
+      try {
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } on TimeoutException {
+        // استخدم آخر موقع معروف عند انتهاء المهلة
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) return last;
+        // عودة إلى موقع افتراضي داخل مصر
+        return Position(
+          latitude: 30.0444,
+          longitude: 31.2357,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      }
+    } catch (e) {
+      debugPrint('خطأ في الحصول على الموقع: $e');
+      // محاولة استخدام آخر موقع معروف
+      try {
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) return last;
+      } catch (_) {}
+      // موقع افتراضي كحل أخير
+      return Position(
+        latitude: 30.0444,
+        longitude: 31.2357,
+        timestamp: DateTime.now(),
+        accuracy: 0,
+        altitude: 0,
+        altitudeAccuracy: 0,
+        heading: 0,
+        headingAccuracy: 0,
+        speed: 0,
+        speedAccuracy: 0,
+      );
+    }
+  }
+
+  /// تحديث الإحصائيات من البلاغات
+  void _updateStatsFromReports(List<NearbyReport> reports) {
+    final activeReports = reports.length;
+    _stats = _stats.copyWith(nearbyRisks: activeReports);
+  }
+
   // حفظ البلاغات محلياً
   Future<void> _saveReportsToCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final reportsJson = _nearbyReports
-          .map((report) => jsonEncode({
-                'id': report.id,
-                'title': report.title,
-                'description': report.description,
-                'distance': report.distance,
-                'timeAgo': report.timeAgo,
-                'confirmations': report.confirmations,
-                'type': report.type.toString(),
-                'latitude': report.latitude,
-                'longitude': report.longitude,
-              }))
+          .map(
+            (report) => jsonEncode({
+              'id': report.id,
+              'title': report.title,
+              'description': report.description,
+              'distance': report.distance,
+              'timeAgo': report.timeAgo,
+              'confirmations': report.confirmations,
+              'type': report.type.toString(),
+              'latitude': report.latitude,
+              'longitude': report.longitude,
+            }),
+          )
           .toList();
-      
+
       await prefs.setStringList('dashboard_nearby_reports', reportsJson);
-      await prefs.setString('dashboard_cache_timestamp', DateTime.now().toIso8601String());
+      await prefs.setString(
+        'dashboard_cache_timestamp',
+        DateTime.now().toIso8601String(),
+      );
       debugPrint('تم حفظ ${_nearbyReports.length} بلاغ محلياً');
     } catch (e) {
       debugPrint('خطأ في حفظ البلاغات محلياً: $e');
@@ -109,38 +233,44 @@ class DashboardProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final reportsJson = prefs.getStringList('dashboard_nearby_reports');
       final cacheTimestamp = prefs.getString('dashboard_cache_timestamp');
-      
+
       if (reportsJson != null && cacheTimestamp != null) {
         final cacheTime = DateTime.parse(cacheTimestamp);
         final now = DateTime.now();
-        
+
         // تقليل وقت التخزين المؤقت إلى 30 ثانية فقط لضمان الحصول على البيانات الحديثة
         if (now.difference(cacheTime).inSeconds < 30) {
           final List<NearbyReport> cachedReports = [];
-          
+
           for (String reportJson in reportsJson) {
             final Map<String, dynamic> reportData = jsonDecode(reportJson);
-            cachedReports.add(NearbyReport(
-              id: reportData['id'],
-              title: reportData['title'],
-              description: reportData['description'],
-              distance: reportData['distance'],
-              timeAgo: reportData['timeAgo'],
-              confirmations: reportData['confirmations'],
-              type: _parseReportType(reportData['type']),
-              latitude: reportData['latitude'],
-              longitude: reportData['longitude'],
-            ));
+            cachedReports.add(
+              NearbyReport(
+                id: reportData['id'],
+                title: reportData['title'],
+                description: reportData['description'],
+                distance: reportData['distance'],
+                timeAgo: reportData['timeAgo'],
+                confirmations: reportData['confirmations'],
+                type: _parseReportType(reportData['type']),
+                latitude: reportData['latitude'],
+                longitude: reportData['longitude'],
+              ),
+            );
           }
-          
+
           _nearbyReports.clear();
           _nearbyReports.addAll(cachedReports);
           _filteredReports = List.from(_nearbyReports);
-          debugPrint('تم تحميل ${cachedReports.length} بلاغ من الذاكرة المحلية');
+          debugPrint(
+            'تم تحميل ${cachedReports.length} بلاغ من الذاكرة المحلية',
+          );
           notifyListeners();
         } else {
           // إذا انتهت صلاحية التخزين المؤقت، امسح البيانات القديمة
-          debugPrint('انتهت صلاحية التخزين المؤقت، سيتم تحميل البيانات من قاعدة البيانات');
+          debugPrint(
+            'انتهت صلاحية التخزين المؤقت، سيتم تحميل البيانات من قاعدة البيانات',
+          );
           await prefs.remove('dashboard_nearby_reports');
           await prefs.remove('dashboard_cache_timestamp');
         }
@@ -261,22 +391,24 @@ class DashboardProvider extends ChangeNotifier {
           .where('status', isEqualTo: 'active')
           .get();
 
-      debugPrint('عدد البلاغات المسترجعة من Firebase: ${querySnapshot.docs.length}');
+      debugPrint(
+        'عدد البلاغات المسترجعة من Firebase: ${querySnapshot.docs.length}',
+      );
 
       final List<NearbyReport> reports = [];
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
         final location = data['location'] as Map<String, dynamic>?;
-        
+
         // تحقق من وجود بيانات الموقع
-        if (location == null || 
-            location['lat'] == null || 
+        if (location == null ||
+            location['lat'] == null ||
             location['lng'] == null) {
           debugPrint('تخطي البلاغ ${doc.id} - بيانات الموقع مفقودة');
           continue;
         }
-        
+
         final double reportLat = (location['lat'] as num).toDouble();
         final double reportLng = (location['lng'] as num).toDouble();
 
@@ -291,20 +423,21 @@ class DashboardProvider extends ChangeNotifier {
         // Only include reports within 5km
         if (distanceInMeters <= 5000) {
           // تحقق من وجود البيانات المطلوبة مع قيم افتراضية
-          final createdAt = data['createdAt'] != null 
+          final createdAt = data['createdAt'] != null
               ? (data['createdAt'] as Timestamp).toDate()
               : DateTime.now().subtract(const Duration(minutes: 30));
-          
+
           final description = data['description'] as String? ?? 'بلاغ جديد';
           final reportType = data['type'] as String? ?? 'other';
-          
+
           final timeAgo = _getTimeAgo(createdAt);
           final distance = _formatDistance(distanceInMeters);
 
           reports.add(
             NearbyReport(
               id: doc.id,
-              title: '${_getReportTypeNameArabic(reportType)} - ${description.isNotEmpty ? description.substring(0, math.min(20, description.length)) : 'بلاغ'}...',
+              title:
+                  '${_getReportTypeNameArabic(reportType)} - ${description.isNotEmpty ? description.substring(0, math.min(20, description.length)) : 'بلاغ'}...',
               description: description,
               distance: distance,
               timeAgo: timeAgo,
@@ -345,7 +478,7 @@ class DashboardProvider extends ChangeNotifier {
   List<NearbyReport> _createSampleReports(Position? position) {
     final defaultLat = position?.latitude ?? 24.7136;
     final defaultLng = position?.longitude ?? 46.6753;
-    
+
     return [
       NearbyReport(
         id: 'sample_1',
@@ -393,6 +526,7 @@ class DashboardProvider extends ChangeNotifier {
       ),
     ];
   }
+
   String _formatDistance(double meters) {
     if (meters < 1000) {
       return '${meters.round()}م';
@@ -557,7 +691,8 @@ class DashboardProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('خطأ في مسح البيانات المحفوظة: $e');
     }
-    
+
+    // بعد مسح الكاش، أعد تشغيل الاستماع الفوري لضمان التحديث
     await loadDashboardData();
   }
 
@@ -603,5 +738,50 @@ class DashboardProvider extends ChangeNotifier {
   void updateWeather(WeatherInfo newWeather) {
     _weather = newWeather;
     notifyListeners();
+  }
+
+  /// تنظيف الموارد عند إغلاق الـ Provider
+  @override
+  void dispose() {
+    _realtimeSubscription?.cancel();
+    _realtimeService.dispose();
+    super.dispose();
+  }
+
+  /// إضافة بلاغ جديد باستخدام البيانات الفورية
+  Future<String?> addRealtimeReport({
+    required String type,
+    required double latitude,
+    required double longitude,
+    required String description,
+    List<String>? imageUrls,
+    int priority = 1,
+  }) async {
+    return await _realtimeService.addReport(
+      type: type,
+      latitude: latitude,
+      longitude: longitude,
+      description: description,
+      imageUrls: imageUrls,
+      priority: priority,
+    );
+  }
+
+  /// حذف بلاغ باستخدام البيانات الفورية
+  Future<bool> deleteRealtimeReport(String reportId) async {
+    return await _realtimeService.deleteReport(reportId);
+  }
+
+  /// تحديث بلاغ باستخدام البيانات الفورية
+  Future<bool> updateRealtimeReport({
+    required String reportId,
+    String? status,
+    int? priority,
+  }) async {
+    return await _realtimeService.updateReport(
+      reportId: reportId,
+      status: status,
+      priority: priority,
+    );
   }
 }

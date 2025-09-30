@@ -13,6 +13,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart' as auth_provider;
 import '../../providers/reports_provider.dart';
 import '../../models/dashboard_models.dart';
+import '../../models/nearby_report.dart';
 import '../../models/report_model.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
 import '../../theme/liquid_glass_theme.dart';
@@ -299,15 +300,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha:  0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: Colors.white.withValues(alpha:  0.25),
+          color: Colors.white.withValues(alpha: 0.25),
           width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:  0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -325,7 +326,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha:  0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -402,8 +403,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white.withValues(alpha:  0.95),
-                                Colors.white.withValues(alpha:  0.9),
+                                Colors.white.withValues(alpha: 0.95),
+                                Colors.white.withValues(alpha: 0.9),
                               ],
                             ),
                             borderRadius: const BorderRadius.vertical(
@@ -415,7 +416,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha:  0.15),
+                                color: Colors.black.withValues(alpha: 0.15),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -780,7 +781,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha:  0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -856,7 +857,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF667eea).withValues(alpha:  0.35),
+                  color: const Color(0xFF667eea).withValues(alpha: 0.35),
                   blurRadius: 25,
                   offset: const Offset(0, 12),
                 ),
@@ -870,15 +871,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
-                color: Colors.white.withValues(alpha:  0.25),
+                color: Colors.white.withValues(alpha: 0.25),
                 width: 1.2,
               ),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha:  0.25),
-                  Colors.white.withValues(alpha:  0.05),
+                  Colors.white.withValues(alpha: 0.25),
+                  Colors.white.withValues(alpha: 0.05),
                 ],
               ),
             ),
@@ -939,10 +940,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               vertical: 7,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha:  0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha:  0.3),
+                                color: Colors.white.withValues(alpha: 0.3),
                               ),
                             ),
                             child: Text(
@@ -963,14 +964,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha:  0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha:  0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha:  0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -994,7 +995,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           Text(
                             weather.condition,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha:  0.85),
+                              color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 11,
                             ),
                           ),
@@ -1023,18 +1024,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.white.withValues(alpha:  0.28),
-                              Colors.white.withValues(alpha:  0.1),
+                              Colors.white.withValues(alpha: 0.28),
+                              Colors.white.withValues(alpha: 0.1),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(26),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha:  0.3),
+                            color: Colors.white.withValues(alpha: 0.3),
                             width: 1.3,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withValues(alpha:  0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                               blurRadius: 22,
                               offset: const Offset(0, 8),
                             ),
@@ -1091,10 +1092,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha:  0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha:  0.3),
+                                    color: Colors.white.withValues(alpha: 0.3),
                                   ),
                                 ),
                                 child: const Icon(
@@ -1131,7 +1132,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:  0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1189,7 +1190,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withValues(alpha:  0.3),
+                          color: Colors.blue.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -1279,8 +1280,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               (report) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _buildEnhancedReportCard(
-                  '${report.type.displayName} - ${report.title}',
-                  '${report.distance}م',
+                  report.title,
+                  report.distance,
                   report.timeAgo,
                   report.type.icon,
                   severity: 'متوسط',
@@ -1317,14 +1318,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.blue.withValues(alpha:  0.3),
+                    color: Colors.blue.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha:  0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -1378,17 +1379,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: severityColor.withValues(alpha:  0.2),
+            color: severityColor.withValues(alpha: 0.2),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: severityColor.withValues(alpha:  0.15),
+              color: severityColor.withValues(alpha: 0.15),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha:  0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -1405,13 +1406,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     gradient: LinearGradient(
                       colors: [
                         severityColor,
-                        severityColor.withValues(alpha:  0.8),
+                        severityColor.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: severityColor.withValues(alpha:  0.3),
+                        color: severityColor.withValues(alpha: 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -1460,7 +1461,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: severityColor.withValues(alpha:  0.1),
+                    color: severityColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1500,7 +1501,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   child: GestureDetector(
                     onTap: () {
                       // عرض التفاصيل المحسنة
-                      _showEnhancedReportDetails(title, distance, time, icon, severity);
+                      _showEnhancedReportDetails(
+                        title,
+                        distance,
+                        time,
+                        icon,
+                        severity,
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1511,7 +1518,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.blue.withValues(alpha:  0.3),
+                            color: Colors.blue.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -1533,7 +1540,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                   _shareEnhancedReport(title, distance, time, severity, null);
+                      _shareEnhancedReport(
+                        title,
+                        distance,
+                        time,
+                        severity,
+                        null,
+                      );
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1601,7 +1614,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withValues(alpha:  0.4),
+            color: Colors.red.withValues(alpha: 0.4),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1612,7 +1625,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha:  0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -1638,7 +1651,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 Text(
                   alert?.message ?? 'يرجى توخي الحذر الشديد',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha:  0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                   ),
                 ),
@@ -1663,7 +1676,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withValues(alpha:  0.3),
+            color: Colors.green.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1674,7 +1687,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha:  0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
@@ -1702,7 +1715,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                       ? tip.content
                       : 'احتفظ بمسافة آمنة بينك وبين السيارة التي أمامك',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha:  0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1747,21 +1760,33 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     );
   }
 
-  void _showEnhancedReportDetails(String title, String distance, String time, IconData icon, String severity) async {
+  void _showEnhancedReportDetails(
+    String title,
+    String distance,
+    String time,
+    IconData icon,
+    String severity,
+  ) async {
     // البحث عن البلاغ في قائمة البلاغات المفلترة للحصول على معلومات إضافية
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(
+      context,
+      listen: false,
+    );
     NearbyReport? reportData;
     Map<String, dynamic>? fullReportData;
-    
+
     try {
       reportData = dashboardProvider.filteredReports.firstWhere(
-        (report) => report.title.contains(title.split(' - ').first),
+        (report) => report.title == title,
         orElse: () => throw StateError('Report not found'),
       );
-      
+
       // جلب البيانات الكاملة من Firebase للحصول على التأكيدات والرفض
       try {
-        final doc = await FirebaseFirestore.instance.collection('reports').doc(reportData.id).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('reports')
+            .doc(reportData.relatedReportId ?? reportData.id)
+            .get();
         if (doc.exists) {
           fullReportData = doc.data();
         }
@@ -1773,7 +1798,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
     }
 
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -1781,7 +1806,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
         final isSmallScreen = screenWidth < 400;
-        
+
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: EdgeInsets.symmetric(
@@ -1853,13 +1878,19 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           gradient: LinearGradient(
                             colors: [
                               _getSeverityColor(severity),
-                              _getSeverityColor(severity).withValues(alpha: 0.9),
+                              _getSeverityColor(
+                                severity,
+                              ).withValues(alpha: 0.9),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                          borderRadius: BorderRadius.circular(
+                            isSmallScreen ? 12 : 16,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: _getSeverityColor(severity).withValues(alpha: 0.25),
+                              color: _getSeverityColor(
+                                severity,
+                              ).withValues(alpha: 0.25),
                               blurRadius: isSmallScreen ? 8 : 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1902,7 +1933,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     ],
                   ),
                 ),
-                
+
                 // Severity Badge
                 Padding(
                   padding: EdgeInsets.symmetric(
@@ -1917,10 +1948,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           vertical: isSmallScreen ? 4 : 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _getSeverityColor(severity).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 10),
+                          color: _getSeverityColor(
+                            severity,
+                          ).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(
+                            isSmallScreen ? 8 : 10,
+                          ),
                           border: Border.all(
-                            color: _getSeverityColor(severity).withValues(alpha: 0.3),
+                            color: _getSeverityColor(
+                              severity,
+                            ).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -1936,9 +1973,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     ],
                   ),
                 ),
-                
+
                 Divider(color: Colors.grey.shade300, height: 1),
-                
+
                 // Content
                 Flexible(
                   child: SingleChildScrollView(
@@ -1960,14 +1997,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           ),
                           const SizedBox(height: 24),
                         ],
-                        
+
                         // معلومات البلاغ
                         _buildEnhancedDetailSection(
                           'معلومات البلاغ',
                           Icons.info_outline,
                           null,
                           children: [
-                            _buildDetailRow(Icons.location_on, 'المسافة:', distance),
+                            _buildDetailRow(
+                              Icons.location_on,
+                              'المسافة:',
+                              distance,
+                            ),
                             const SizedBox(height: 16),
                             _buildDetailRow(Icons.access_time, 'الوقت:', time),
                             if (reportData != null) ...[
@@ -1977,10 +2018,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [
-                                      Colors.grey.shade50,
-                                      Colors.white,
-                                    ],
+                                    colors: [Colors.grey.shade50, Colors.white],
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
@@ -2036,7 +2074,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             ],
                           ],
                         ),
-                        
+
                         // إحداثيات الموقع
                         if (reportData != null) ...[
                           const SizedBox(height: 20),
@@ -2056,7 +2094,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                         initialLongitude: reportData?.longitude,
                                         showMarker: true,
                                         markerTitle: 'موقع البلاغ',
-                                        markerDescription: reportData?.description,
+                                        markerDescription:
+                                            reportData?.description,
                                       ),
                                     ),
                                   );
@@ -2081,7 +2120,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'عرض الموقع على الخريطة',
@@ -2118,9 +2158,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     ),
                   ),
                 ),
-                
+
                 Divider(color: Colors.grey.shade300, height: 1),
-                
+
                 // Action Buttons
                 Container(
                   padding: EdgeInsets.fromLTRB(
@@ -2158,10 +2198,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       Colors.green.shade600,
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                                  borderRadius: BorderRadius.circular(
+                                    isSmallScreen ? 12 : 16,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.green.withValues(alpha: 0.25),
+                                      color: Colors.green.withValues(
+                                        alpha: 0.25,
+                                      ),
                                       blurRadius: isSmallScreen ? 8 : 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -2189,9 +2233,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               ),
                             ),
                           ),
-                          
+
                           SizedBox(width: isSmallScreen ? 10 : 12),
-                          
+
                           // رفض البلاغ
                           Expanded(
                             child: GestureDetector(
@@ -2211,7 +2255,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                                  borderRadius: BorderRadius.circular(
+                                    isSmallScreen ? 12 : 16,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.red.withValues(alpha: 0.25),
@@ -2219,13 +2265,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       offset: const Offset(0, 4),
                                     ),
                                     BoxShadow(
-                                      color: Colors.red.withValues(alpha:  0.1),
+                                      color: Colors.red.withValues(alpha: 0.1),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Colors.red.shade300.withValues(alpha:  0.3),
+                                    color: Colors.red.shade300.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -2254,9 +2302,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           ),
                         ],
                       ),
-                      
+
                       SizedBox(height: isSmallScreen ? 8 : 10),
-                      
+
                       // Other Action Buttons
                       Row(
                         children: [
@@ -2281,16 +2329,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
-                                    borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                                    borderRadius: BorderRadius.circular(
+                                      isSmallScreen ? 12 : 16,
+                                    ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.blue.withValues(alpha: 0.25),
+                                        color: Colors.blue.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         blurRadius: isSmallScreen ? 8 : 10,
                                         offset: const Offset(0, 4),
                                       ),
                                     ],
                                     border: Border.all(
-                                      color: Colors.blue.shade300.withValues(alpha: 0.3),
+                                      color: Colors.blue.shade300.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -2317,15 +2371,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 ),
                               ),
                             ),
-                          
-                          if (reportData != null) SizedBox(width: isSmallScreen ? 8 : 10),
-                          
+
+                          if (reportData != null)
+                            SizedBox(width: isSmallScreen ? 8 : 10),
+
                           // مشاركة
                           Expanded(
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.of(context).pop();
-                                _shareEnhancedReport(title, distance, time, severity, reportData);
+                                _shareEnhancedReport(
+                                  title,
+                                  distance,
+                                  time,
+                                  severity,
+                                  reportData,
+                                );
                               },
                               child: Container(
                                 padding: EdgeInsets.symmetric(
@@ -2340,16 +2401,22 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 16),
+                                  borderRadius: BorderRadius.circular(
+                                    isSmallScreen ? 12 : 16,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.orange.withValues(alpha: 0.25),
+                                      color: Colors.orange.withValues(
+                                        alpha: 0.25,
+                                      ),
                                       blurRadius: isSmallScreen ? 8 : 10,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Colors.orange.shade300.withValues(alpha: 0.3),
+                                    color: Colors.orange.shade300.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -2357,8 +2424,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.share_rounded, 
-                                      color: Colors.white, 
+                                      Icons.share_rounded,
+                                      color: Colors.white,
                                       size: screenWidth < 600 ? 18 : 20,
                                     ),
                                     SizedBox(width: screenWidth < 600 ? 8 : 10),
@@ -2376,14 +2443,16 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: 12),
-                          
+
                           // إغلاق
                           GestureDetector(
                             onTap: () => Navigator.of(context).pop(),
                             child: Container(
-                              padding: EdgeInsets.all(screenWidth < 600 ? 12 : 16),
+                              padding: EdgeInsets.all(
+                                screenWidth < 600 ? 12 : 16,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -2393,14 +2462,18 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
-                                borderRadius: BorderRadius.circular(screenWidth < 600 ? 16 : 20),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth < 600 ? 16 : 20,
+                                ),
                                 border: Border.all(
-                                  color: Colors.grey.shade300.withValues(alpha:  0.5),
+                                  color: Colors.grey.shade300.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.grey.withValues(alpha:  0.2),
+                                    color: Colors.grey.withValues(alpha: 0.2),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
@@ -2429,7 +2502,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
   // دالة التحقق من البلاغ
   void _verifyReport(NearbyReport? reportData, bool isVerified) async {
     if (reportData == null) return;
-    
+
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2440,23 +2513,28 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       );
       return;
     }
-    
+
     try {
       // استخدام ReportsProvider للتصويت على البلاغ
-      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
-      
+      final reportsProvider = Provider.of<ReportsProvider>(
+        context,
+        listen: false,
+      );
+
       // التحقق من إمكانية التصويت
+      // إن كان البلاغ من Realtime DB قد يحمل معرف تقرير Firestore
+      final targetId = reportData.relatedReportId ?? reportData.id;
       final reportDoc = await FirebaseFirestore.instance
           .collection('reports')
-          .doc(reportData.id)
+          .doc(targetId)
           .get();
-          
+
       if (!reportDoc.exists) {
         throw 'البلاغ غير موجود';
       }
-      
+
       final report = ReportModel.fromFirestore(reportDoc);
-      
+
       // التحقق من التصويت المسبق
       if (report.confirmedBy.contains(currentUser.uid) ||
           report.deniedBy.contains(currentUser.uid)) {
@@ -2470,7 +2548,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         Navigator.of(context).pop();
         return;
       }
-      
+
       // التحقق من أن المستخدم ليس منشئ البلاغ
       if (report.createdBy == currentUser.uid) {
         if (!mounted) return;
@@ -2483,17 +2561,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         Navigator.of(context).pop();
         return;
       }
-      
+
       // التصويت على البلاغ
       bool success = await reportsProvider.voteOnReport(
         reportId: reportData.id,
         userId: currentUser.uid,
         isTrue: isVerified,
       );
-      
+
       if (!mounted) return;
       Navigator.of(context).pop();
-      
+
       if (success) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2506,7 +2584,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             duration: const Duration(seconds: 2),
           ),
         );
-        
+
         // تحديث البيانات
         _loadReports();
       } else {
@@ -2522,17 +2600,17 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
       );
     }
   }
 
   // دالة تحديث البلاغات
   void _loadReports() {
-    final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+    final dashboardProvider = Provider.of<DashboardProvider>(
+      context,
+      listen: false,
+    );
     dashboardProvider.loadDashboardData();
   }
 
@@ -2551,8 +2629,15 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
   }
 
   // دالة مشاركة البلاغ
-  void _shareEnhancedReport(String title, String distance, String time, String severity, NearbyReport? reportData) {
-    final shareText = '''
+  void _shareEnhancedReport(
+    String title,
+    String distance,
+    String time,
+    String severity,
+    NearbyReport? reportData,
+  ) {
+    final shareText =
+        '''
 تفاصيل البلاغ:
 العنوان: $title
 المسافة: $distance
@@ -2560,22 +2645,24 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
 الخطورة: $severity
 ${reportData != null ? 'الموقع: ${reportData.latitude}, ${reportData.longitude}' : ''}
     ''';
-    
+
     // استخدام مكتبة share_plus لمشاركة البلاغ
     Share.share(shareText, subject: 'بلاغ من تطبيق SafeRoute');
   }
 
   // دالة بناء بطاقة الإحصائيات
-  Widget _buildStatCard(IconData icon, String title, String value, Color color) {
+  Widget _buildStatCard(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
@@ -2592,10 +2679,7 @@ ${reportData != null ? 'الموقع: ${reportData.latitude}, ${reportData.longi
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -2604,68 +2688,71 @@ ${reportData != null ? 'الموقع: ${reportData.latitude}, ${reportData.longi
 }
 
 // Global function for building enhanced detail sections
-Widget _buildEnhancedDetailSection(String title, IconData icon, String? content, {List<Widget>? children}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha:  0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
+Widget _buildEnhancedDetailSection(
+  String title,
+  IconData icon,
+  String? content, {
+  List<Widget>? children,
+}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.7),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade200, width: 1),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha:  0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: LiquidGlassTheme.getGradientByName('primary').colors.first.withValues(alpha:  0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: LiquidGlassTheme.getGradientByName('primary').colors.first,
-                  size: 18,
-                ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey.shade800,
-                ),
+              child: Icon(
+                icon,
+                color: LiquidGlassTheme.getGradientByName(
+                  'primary',
+                ).colors.first,
+                size: 18,
               ),
-            ],
-          ),
-          if (content != null) ...[
-            const SizedBox(height: 12),
+            ),
+            const SizedBox(width: 12),
             Text(
-              content,
+              title,
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.4,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade800,
               ),
             ),
           ],
-          if (children != null) ...[
-            const SizedBox(height: 12),
-            ...children,
-          ],
+        ),
+        if (content != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              height: 1.4,
+            ),
+          ),
         ],
-      ),
-    );
+        if (children != null) ...[const SizedBox(height: 12), ...children],
+      ],
+    ),
+  );
 }

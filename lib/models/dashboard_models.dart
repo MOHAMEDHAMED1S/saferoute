@@ -14,6 +14,20 @@ class DashboardStats {
     required this.trustLevel,
   });
 
+  DashboardStats copyWith({
+    int? nearbyRisks,
+    int? trustPoints,
+    int? monthlyReports,
+    String? trustLevel,
+  }) {
+    return DashboardStats(
+      nearbyRisks: nearbyRisks ?? this.nearbyRisks,
+      trustPoints: trustPoints ?? this.trustPoints,
+      monthlyReports: monthlyReports ?? this.monthlyReports,
+      trustLevel: trustLevel ?? this.trustLevel,
+    );
+  }
+
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
     return DashboardStats(
       nearbyRisks: json['nearbyRisks'] ?? 0,
@@ -33,60 +47,7 @@ class DashboardStats {
   }
 }
 
-class NearbyReport {
-  final String id;
-  final String title;
-  final String description;
-  final String distance;
-  final String timeAgo;
-  final int confirmations;
-  final ReportType type;
-  final double latitude;
-  final double longitude;
-
-  NearbyReport({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.distance,
-    required this.timeAgo,
-    required this.confirmations,
-    required this.type,
-    required this.latitude,
-    required this.longitude,
-  });
-
-  factory NearbyReport.fromJson(Map<String, dynamic> json) {
-    return NearbyReport(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      distance: json['distance'] ?? '',
-      timeAgo: json['timeAgo'] ?? '',
-      confirmations: json['confirmations'] ?? 0,
-      type: ReportType.values.firstWhere(
-        (e) => e.toString() == 'ReportType.${json['type']}',
-        orElse: () => ReportType.other,
-      ),
-      latitude: json['latitude']?.toDouble() ?? 0.0,
-      longitude: json['longitude']?.toDouble() ?? 0.0,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'distance': distance,
-      'timeAgo': timeAgo,
-      'confirmations': confirmations,
-      'type': type.toString().split('.').last,
-      'latitude': latitude,
-      'longitude': longitude,
-    };
-  }
-}
+// NearbyReport model is defined in lib/models/nearby_report.dart
 
 class WeatherInfo {
   final String condition;
@@ -195,7 +156,9 @@ class EmergencyAlert {
       message: json['message'] ?? '',
       location: json['location'] ?? '',
       distanceInMeters: json['distanceInMeters'] ?? 0,
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.parse(
+        json['timestamp'] ?? DateTime.now().toIso8601String(),
+      ),
       severity: AlertSeverity.values.firstWhere(
         (e) => e.toString() == 'AlertSeverity.${json['severity']}',
         orElse: () => AlertSeverity.low,
@@ -223,12 +186,7 @@ class EmergencyAlert {
   }
 }
 
-enum AlertSeverity {
-  low,
-  medium,
-  high,
-  critical,
-}
+enum AlertSeverity { low, medium, high, critical }
 
 extension AlertSeverityExtension on AlertSeverity {
   String get displayName {

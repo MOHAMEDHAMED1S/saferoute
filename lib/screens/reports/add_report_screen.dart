@@ -9,7 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/reports_provider.dart';
 import '../../models/report_model.dart';
-import '../../models/dashboard_models.dart';
+import '../../models/nearby_report.dart';
 import '../../models/incident_report.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
@@ -246,12 +246,16 @@ class _AddReportScreenState extends State<AddReportScreen>
       // إضافة البلاغ إلى Dashboard و Map بدلاً من المجتمع
       try {
         debugPrint('AddReportScreen: إضافة البلاغ إلى Dashboard والخريطة');
-        
+
         // إضافة البلاغ إلى Dashboard Provider
-        final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+        final dashboardProvider = Provider.of<DashboardProvider>(
+          context,
+          listen: false,
+        );
         final nearbyReport = NearbyReport(
           id: reportId,
-          title: '${_getReportTypeNameArabic(_selectedType!)} - ${_descriptionController.text.trim().substring(0, math.min(20, _descriptionController.text.trim().length))}...',
+          title:
+              '${_getReportTypeNameArabic(_selectedType!)} - ${_descriptionController.text.trim().substring(0, math.min(20, _descriptionController.text.trim().length))}...',
           description: _descriptionController.text.trim(),
           distance: '0م', // سيتم حساب المسافة الفعلية في Dashboard Provider
           timeAgo: 'الآن',
@@ -261,14 +265,34 @@ class _AddReportScreenState extends State<AddReportScreen>
           longitude: currentLocation.longitude,
         );
         dashboardProvider.addNearbyReport(nearbyReport);
-        
+        // إضافة نسخة للقاعدة الفورية لضمان ظهورها فوراً في لوحة التحكم
+        try {
+          await dashboardProvider.addRealtimeReport(
+            type: _reportTypeToString(_selectedType!),
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            description: _descriptionController.text.trim(),
+            imageUrls: _reportImages.map((x) => x.path).toList(),
+            priority: 1,
+          );
+        } catch (e) {
+          debugPrint('AddReportScreen: فشل إضافة البلاغ للريل تايم: $e');
+        }
+
         // تحديث Reports Provider لإظهار البلاغ على الخريطة
-        final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+        final reportsProvider = Provider.of<ReportsProvider>(
+          context,
+          listen: false,
+        );
         await reportsProvider.refreshLocation();
-        
-        debugPrint('AddReportScreen: تم إضافة البلاغ إلى Dashboard والخريطة بنجاح');
+
+        debugPrint(
+          'AddReportScreen: تم إضافة البلاغ إلى Dashboard والخريطة بنجاح',
+        );
       } catch (e) {
-        debugPrint('AddReportScreen: خطأ في إضافة البلاغ إلى Dashboard والخريطة: $e');
+        debugPrint(
+          'AddReportScreen: خطأ في إضافة البلاغ إلى Dashboard والخريطة: $e',
+        );
         // لا نوقف العملية هنا، البلاغ تم حفظه في Firestore
       }
 
@@ -280,6 +304,29 @@ class _AddReportScreenState extends State<AddReportScreen>
       setState(() {
         _isSubmitting = false;
       });
+    }
+  }
+
+  String _reportTypeToString(ReportType type) {
+    switch (type) {
+      case ReportType.accident:
+        return 'accident';
+      case ReportType.jam:
+        return 'jam';
+      case ReportType.carBreakdown:
+        return 'car_breakdown';
+      case ReportType.bump:
+        return 'bump';
+      case ReportType.closedRoad:
+        return 'closed_road';
+      case ReportType.hazard:
+        return 'hazard';
+      case ReportType.police:
+        return 'police';
+      case ReportType.traffic:
+        return 'traffic';
+      case ReportType.other:
+        return 'other';
     }
   }
 

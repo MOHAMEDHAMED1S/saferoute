@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import '../../utils/map_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/reports_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../models/report_model.dart';
+import '../../models/nearby_report.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../widgets/liquid_glass_widgets.dart';
 
@@ -51,13 +54,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fabAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
+    );
   }
 
   Future<void> _initializeLocation() async {
@@ -70,25 +69,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           throw Exception('تم رفض إذن الموقع');
         }
       }
-      
+
       if (permission == LocationPermission.deniedForever) {
         throw Exception('تم رفض إذن الموقع نهائياً. يرجى تفعيله من الإعدادات');
       }
-      
+
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception('خدمات الموقع غير مفعلة. يرجى تفعيلها');
       }
-      
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.initialize();
-      
+
       _currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
       );
-      
+
       if (mounted) {
         setState(() {
           // Update UI after location update
@@ -100,7 +99,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تحديد الموقع: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+            backgroundColor: LiquidGlassTheme.getGradientByName(
+              'danger',
+            ).colors.first,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -114,7 +115,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadReports() async {
     try {
-      final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
+      final reportsProvider = Provider.of<ReportsProvider>(
+        context,
+        listen: false,
+      );
       await reportsProvider.initialize();
       _updateMapMarkers();
     } catch (e) {
@@ -122,7 +126,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('خطأ في تحميل البلاغات: ${e.toString()}'),
-            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+            backgroundColor: LiquidGlassTheme.getGradientByName(
+              'danger',
+            ).colors.first,
           ),
         );
       }
@@ -130,31 +136,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _updateMapMarkers() {
-    final reportsProvider = Provider.of<ReportsProvider>(context, listen: false);
-    final reports = reportsProvider.nearbyReports;
-    
+    final dashboardProvider = Provider.of<DashboardProvider>(
+      context,
+      listen: false,
+    );
+    final reports = dashboardProvider.nearbyReports;
+
     Set<Marker> newMarkers = {};
-    
-    for (ReportModel report in reports) {
+
+    for (var report in reports) {
       newMarkers.add(
         Marker(
           markerId: MarkerId(report.id),
-          position: LatLng(report.location.lat, report.location.lng),
+          position: LatLng(report.latitude, report.longitude),
           icon: _getMarkerIcon(report.type),
           infoWindow: InfoWindow(
-            title: _getReportTypeTitle(report.type),
-            snippet: report.description,
-            onTap: () => _showReportDetails(report),
+            title: report.title,
+            snippet: report.description.length > 50
+                ? '${report.description.substring(0, 50)}...'
+                : report.description,
+            onTap: () => _showReportDetailsFromNearby(report),
           ),
         ),
       );
     }
-    
+
     if (mounted) {
       setState(() {
         _markers = newMarkers;
       });
     }
+  }
+
+  // _getReportTypeFromString removed; NearbyReport already carries ReportType
+
+  void _showReportDetailsFromNearby(NearbyReport report) {
+    // تحويل NearbyReport إلى ReportModel للعرض
+    final reportModel = ReportModel(
+      id: report.id,
+      type: report.type,
+      description: report.description,
+      location: ReportLocation(lat: report.latitude, lng: report.longitude),
+      createdAt: DateTime.now(),
+      createdBy: '',
+    );
+    _showReportDetails(reportModel);
   }
 
   BitmapDescriptor _getMarkerIcon(ReportType type) {
@@ -163,19 +189,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       case ReportType.accident:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
       case ReportType.jam:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueOrange,
+        );
       case ReportType.carBreakdown:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
       case ReportType.bump:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueYellow,
+        );
       case ReportType.closedRoad:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueViolet,
+        );
       case ReportType.hazard:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
       case ReportType.police:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
       case ReportType.traffic:
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+        return BitmapDescriptor.defaultMarkerWithHue(
+          BitmapDescriptor.hueOrange,
+        );
       case ReportType.other:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
     }
@@ -247,15 +281,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(8),
                   icon: Icons.close,
                 ),
-               
               ],
             ),
             const SizedBox(height: 16),
             Text(
               report.description,
-              style: LiquidGlassTheme.headerTextStyle.copyWith(
-                fontSize: 16,
-              ),
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
             ),
             const SizedBox(height: 16),
             Row(
@@ -268,9 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const SizedBox(width: 8),
                 Text(
                   _formatDateTime(report.createdAt),
-                  style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                    fontSize: 14,
-                  ),
+                  style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 14),
                 ),
               ],
             ),
@@ -309,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inMinutes < 60) {
       return 'منذ ${difference.inMinutes} دقيقة';
     } else if (difference.inHours < 24) {
@@ -321,8 +350,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _animateToCurrentLocation() async {
     if (_mapController != null && _currentPosition != null) {
-      final latLng = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
-      
+      final latLng = LatLng(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+      );
+
       // Validate location is within Egypt bounds
       if (!MapUtils.isLocationInEgypt(latLng)) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -332,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         );
       }
-      
+
       final cameraUpdate = MapUtils.safeCameraUpdate(latLng);
       await MapUtils.animateCameraSafely(_mapController, cameraUpdate);
     }
@@ -375,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             markers: _markers,
             onMarkerTapped: (report) => _showReportDetails(report),
           ),
-          
+
           // Top App Bar
           SafeArea(
             child: LiquidGlassContainer(
@@ -393,11 +425,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       builder: (context, authProvider, child) {
                         return CircleAvatar(
                           radius: 20,
-                          backgroundImage: authProvider.userModel?.photoUrl != null
+                          backgroundImage:
+                              authProvider.userModel?.photoUrl != null
                               ? NetworkImage(authProvider.userModel!.photoUrl!)
                               : null,
                           child: authProvider.userModel?.photoUrl == null
-                              ? Icon(Icons.person, color: LiquidGlassTheme.getIconColor('primary'))
+                              ? Icon(
+                                  Icons.person,
+                                  color: LiquidGlassTheme.getIconColor(
+                                    'primary',
+                                  ),
+                                )
                               : null,
                         );
                       },
@@ -441,13 +479,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
+
           // Bottom Sheets
           if (_showReportsSheet)
             ReportsBottomSheet(
               onClose: () => setState(() => _showReportsSheet = false),
             ),
-          
+
           if (_showFilterSheet)
             FilterBottomSheet(
               onClose: () => setState(() => _showFilterSheet = false),
@@ -455,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
         ],
       ),
-      
+
       // Floating Action Buttons
       floatingActionButton: _isMapReady
           ? Column(
@@ -474,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Reports List Button
                 ScaleTransition(
                   scale: _fabAnimation,
@@ -488,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // AI Prediction Button
                 ScaleTransition(
                   scale: _fabAnimation,
@@ -504,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Smart Notifications Button
                 ScaleTransition(
                   scale: _fabAnimation,
@@ -520,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // 3D Maps Button
                 ScaleTransition(
                   scale: _fabAnimation,
@@ -536,7 +574,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Add Report Button
                 ScaleTransition(
                   scale: _fabAnimation,
@@ -554,7 +592,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ],
             )
           : null,
-
     );
   }
 }

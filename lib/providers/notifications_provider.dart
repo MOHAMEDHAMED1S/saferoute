@@ -3,15 +3,18 @@ import 'dart:async';
 import '../models/notification_model.dart';
 import '../models/report_model.dart';
 import '../services/notification_service.dart';
+import '../services/realtime_reports_service.dart';
 
 class NotificationsProvider extends ChangeNotifier {
   final NotificationService _notificationService = NotificationService();
+  final RealtimeReportsService _realtimeService = RealtimeReportsService();
 
   final List<NotificationModel> _notifications = [];
   List<NotificationModel> _unreadNotifications = [];
   bool _isLoading = false;
   String? _errorMessage;
   StreamSubscription<List<NotificationModel>>? _notificationsSubscription;
+  StreamSubscription<List<dynamic>>? _realtimeNotificationsSubscription;
   bool _isInitialized = false;
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
@@ -31,39 +34,48 @@ class NotificationsProvider extends ChangeNotifier {
 
   // Get notifications by type
   List<NotificationModel> getNotificationsByType(NotificationType type) {
-    return _notifications.where((notification) => notification.type == type).toList();
+    return _notifications
+        .where((notification) => notification.type == type)
+        .toList();
   }
 
   // Get alert notifications
   List<NotificationModel> get alertNotifications {
-    return _notifications.where((notification) => notification.isAlert).toList();
+    return _notifications
+        .where((notification) => notification.isAlert)
+        .toList();
   }
 
   // Get confirmation notifications
   List<NotificationModel> get confirmationNotifications {
-    return _notifications.where((notification) => !notification.isAlert).toList();
+    return _notifications
+        .where((notification) => !notification.isAlert)
+        .toList();
   }
 
   // Get recent notifications (last 24 hours)
   List<NotificationModel> get recentNotifications {
     DateTime yesterday = DateTime.now().subtract(const Duration(hours: 24));
-    return _notifications.where((notification) => 
-      notification.createdAt.isAfter(yesterday)
-    ).toList();
+    return _notifications
+        .where((notification) => notification.createdAt.isAfter(yesterday))
+        .toList();
   }
 
   // Initialize notifications provider
-  Future<void> initialize(String userId) async {
+  Future<void> initialize({required String userId}) async {
     try {
       _setLoading(true);
       _clearError();
 
       // Initialize notification service
       await _notificationService.initialize();
-      
+
       // Start listening to user notifications
       await _startListeningToNotifications(userId);
-      
+
+      // Start listening to real-time notifications
+      await _startRealtimeNotificationListening(currentUserId: userId);
+
       _isInitialized = true;
       notifyListeners();
     } catch (e) {
@@ -73,10 +85,87 @@ class NotificationsProvider extends ChangeNotifier {
     }
   }
 
+  // Start listening to real-time notifications
+  Future<void> _startRealtimeNotificationListening({
+    String? currentUserId,
+  }) async {
+    try {
+      _realtimeNotificationsSubscription = _realtimeService
+          .listenToActiveNotifications()
+          .listen(
+            (notifications) {
+              for (var notification in notifications) {
+                if (notification is Map<String, dynamic>) {
+                  final targetUser = notification['userId'];
+                  if (targetUser == 'all' ||
+                      (currentUserId != null && targetUser == currentUserId)) {
+                    _addRealtimeNotification(notification);
+                  }
+                }
+              }
+            },
+            onError: (error) {
+              print('Error listening to real-time notifications: $error');
+            },
+          );
+    } catch (e) {
+      print('Error starting real-time notification listening: $e');
+    }
+  }
+
+  // Add real-time notification to the list
+  void _addRealtimeNotification(dynamic notification) {
+    try {
+      final notificationModel = NotificationModel(
+        id:
+            notification['id'] ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: notification['userId']?.toString() ?? 'all',
+        reportId: notification['relatedReportId']?.toString(),
+        title: notification['title'] ?? 'إشعار جديد',
+        body: notification['body'] ?? '',
+        type: _getNotificationTypeFromString(notification['type'] ?? 'general'),
+        isRead: false,
+        createdAt: DateTime.now(),
+        data: notification,
+      );
+
+      _notifications.insert(0, notificationModel);
+      _updateUnreadNotifications();
+      notifyListeners();
+    } catch (e) {
+      print('Error adding real-time notification: $e');
+    }
+  }
+
+  // Convert string to NotificationType
+  NotificationType _getNotificationTypeFromString(String type) {
+    switch (type.toLowerCase()) {
+      case 'accident':
+        return NotificationType.accidentAlert;
+      case 'jam':
+        return NotificationType.jamAlert;
+      case 'breakdown':
+        return NotificationType.carBreakdownAlert;
+      case 'bump':
+        return NotificationType.bumpAlert;
+      case 'closed_road':
+        return NotificationType.closedRoadAlert;
+      case 'report_confirmed':
+        return NotificationType.reportConfirmed;
+      case 'report_denied':
+        return NotificationType.reportDenied;
+      case 'points_earned':
+        return NotificationType.pointsEarned;
+      default:
+        return NotificationType.accidentAlert; // قيمة افتراضية
+    }
+  }
+
   // Start listening to notifications stream
   Future<void> _startListeningToNotifications(String userId) async {
     _notificationsSubscription?.cancel();
-    
+
     // TODO: Implement getUserNotificationsStream in FirestoreService
     // _notificationsSubscription = _firestoreService.getUserNotificationsStream(userId).listen(
     //   (notifications) {
@@ -92,7 +181,9 @@ class NotificationsProvider extends ChangeNotifier {
 
   // Update unread notifications list
   void _updateUnreadNotifications() {
-    _unreadNotifications = _notifications.where((notification) => !notification.isRead).toList();
+    _unreadNotifications = _notifications
+        .where((notification) => !notification.isRead)
+        .toList();
   }
 
   // Send report alert notification
@@ -166,7 +257,7 @@ class NotificationsProvider extends ChangeNotifier {
   Future<void> markAllAsRead(String userId) async {
     try {
       _setLoading(true);
-      
+
       // Update local state
       for (int i = 0; i < _notifications.length; i++) {
         if (!_notifications[i].isRead) {
@@ -204,7 +295,7 @@ class NotificationsProvider extends ChangeNotifier {
   Future<void> clearAllNotifications(String userId) async {
     try {
       _setLoading(true);
-      
+
       // Clear local state
       _notifications.clear();
       _unreadNotifications.clear();
@@ -297,19 +388,27 @@ class NotificationsProvider extends ChangeNotifier {
     List<NotificationModel> filtered = List.from(_notifications);
 
     if (types != null && types.isNotEmpty) {
-      filtered = filtered.where((notification) => types.contains(notification.type)).toList();
+      filtered = filtered
+          .where((notification) => types.contains(notification.type))
+          .toList();
     }
 
     if (isRead != null) {
-      filtered = filtered.where((notification) => notification.isRead == isRead).toList();
+      filtered = filtered
+          .where((notification) => notification.isRead == isRead)
+          .toList();
     }
 
     if (fromDate != null) {
-      filtered = filtered.where((notification) => notification.createdAt.isAfter(fromDate)).toList();
+      filtered = filtered
+          .where((notification) => notification.createdAt.isAfter(fromDate))
+          .toList();
     }
 
     if (toDate != null) {
-      filtered = filtered.where((notification) => notification.createdAt.isBefore(toDate)).toList();
+      filtered = filtered
+          .where((notification) => notification.createdAt.isBefore(toDate))
+          .toList();
     }
 
     return filtered;
@@ -318,11 +417,11 @@ class NotificationsProvider extends ChangeNotifier {
   // Search notifications
   List<NotificationModel> searchNotifications(String query) {
     if (query.isEmpty) return _notifications;
-    
+
     String lowerQuery = query.toLowerCase();
     return _notifications.where((notification) {
       return notification.title.toLowerCase().contains(lowerQuery) ||
-             notification.body.toLowerCase().contains(lowerQuery);
+          notification.body.toLowerCase().contains(lowerQuery);
     }).toList();
   }
 
@@ -346,13 +445,17 @@ class NotificationsProvider extends ChangeNotifier {
 
   // Check if notification exists
   bool hasNotification(String notificationId) {
-    return _notifications.any((notification) => notification.id == notificationId);
+    return _notifications.any(
+      (notification) => notification.id == notificationId,
+    );
   }
 
   // Get notification by ID
   NotificationModel? getNotificationById(String notificationId) {
     try {
-      return _notifications.firstWhere((notification) => notification.id == notificationId);
+      return _notifications.firstWhere(
+        (notification) => notification.id == notificationId,
+      );
     } catch (e) {
       return null;
     }
@@ -363,7 +466,7 @@ class NotificationsProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      
+
       // TODO: Reload notifications from Firestore
       // List<NotificationModel> notifications = await _firestoreService.getUserNotifications(userId);
       // _notifications = notifications;
@@ -400,12 +503,15 @@ class NotificationsProvider extends ChangeNotifier {
     _errorMessage = null;
     _isInitialized = false;
     _notificationsSubscription?.cancel();
+    _realtimeNotificationsSubscription?.cancel();
     notifyListeners();
   }
 
   @override
   void dispose() {
     _notificationsSubscription?.cancel();
+    _realtimeNotificationsSubscription?.cancel();
+    _realtimeService.dispose();
     super.dispose();
   }
 }

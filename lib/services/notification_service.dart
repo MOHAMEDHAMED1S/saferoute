@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../models/notification_model.dart';
 import '../models/report_model.dart';
+import 'realtime_reports_service.dart';
 
 // Top-level function for background message handling
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -21,11 +22,13 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final RealtimeReportsService _realtimeService = RealtimeReportsService();
 
   String? _fcmToken;
   bool _isInitialized = false;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
+  StreamSubscription<List<dynamic>>? _activeNotificationsSubscription;
 
   // Getters
   String? get fcmToken => _fcmToken;
@@ -44,12 +47,48 @@ class NotificationService {
       // Initialize Firebase messaging
       await _initializeFirebaseMessaging();
 
+      // Start listening to real-time notifications
+      await _startRealtimeNotificationListening();
+
       _isInitialized = true;
       print('Notification service initialized successfully');
     } catch (e) {
       print('Error initializing notification service: $e');
       throw 'خطأ في تهيئة خدمة الإشعارات: ${e.toString()}';
     }
+  }
+
+  // Start listening to real-time notifications
+  Future<void> _startRealtimeNotificationListening() async {
+    try {
+      _activeNotificationsSubscription = _realtimeService.listenToActiveNotifications().listen(
+        (notifications) {
+          for (var notification in notifications) {
+            _showRealtimeNotification(notification);
+          }
+        },
+        onError: (error) {
+          print('Error listening to real-time notifications: $error');
+        },
+      );
+    } catch (e) {
+      print('Error starting real-time notification listening: $e');
+    }
+  }
+
+  // Show real-time notification
+  void _showRealtimeNotification(dynamic notification) {
+    final title = notification['title'] ?? 'إشعار جديد';
+    final body = notification['body'] ?? '';
+    final type = notification['type'] ?? 'general';
+    final priority = notification['priority'] ?? 'medium';
+    
+    _showLocalNotification(
+      title: title,
+      body: body,
+      payload: notification.toString(),
+      isAlert: priority == 'high' || type == 'emergency',
+    );
   }
 
   // Initialize local notifications
@@ -502,6 +541,8 @@ class NotificationService {
 
   // Dispose resources
   void dispose() {
+    _activeNotificationsSubscription?.cancel();
+    _realtimeService.dispose();
     _audioPlayer.dispose();
   }
 }

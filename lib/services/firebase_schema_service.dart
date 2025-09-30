@@ -67,7 +67,7 @@ class FirebaseSchemaService {
 
   // نهاية: تمت إزالة النسخة الأولى المكررة من المخطط لتجنب التكرار
 
-  // هيكل قاعدة البيانات (إصدار مبسط واحد بدون تكرار)
+  // هيكل قاعدة البيانات (إصدار محدث لدعم Real-time Database)
   Map<String, dynamic> get databaseSchema => {
     FirebaseSchemaService.usersCollection: {
       'userId': {
@@ -81,21 +81,28 @@ class FirebaseSchemaService {
         'createdAt': 'Timestamp',
         'lastLogin': 'Timestamp',
         'isDriverMode': 'bool',
+        'isOnline': 'bool', // حالة الاتصال الفوري
+        'lastSeen': 'Timestamp', // آخر ظهور
         'location': {
           'latitude': 'double',
           'longitude': 'double',
           'timestamp': 'Timestamp',
+          'accuracy': 'double?', // دقة الموقع
+          'speed': 'double?', // السرعة الحالية
         },
         'settings': {
           'notifications': 'bool',
           'darkMode': 'bool',
           'language': 'String',
+          'realTimeUpdates': 'bool', // تفعيل التحديثات الفورية
+          'locationSharing': 'bool', // مشاركة الموقع الفوري
         },
         'drivingSettings': {
           'voiceAlerts': 'bool',
           'autoReport': 'bool',
           'safetyMode': 'String',
           'distanceUnit': 'String',
+          'realTimeAlerts': 'bool', // التنبيهات الفورية أثناء القيادة
         },
       },
     },
@@ -134,6 +141,24 @@ class FirebaseSchemaService {
             'String', // active, pending, verified, rejected, expired, removed
         'verifiedBy': 'List<String>', // List of user IDs who verified
         'rejectedBy': 'List<String>', // List of user IDs who rejected
+        'priority': 'int', // 1-5 (1 = منخفض، 5 = عاجل)
+        'severity': 'String', // low, medium, high, critical
+        'isRealTime': 'bool', // تحديد إذا كان البلاغ يحتاج تحديث فوري
+        'expiresAt': 'Timestamp?', // تاريخ انتهاء صلاحية البلاغ
+        'viewCount': 'int', // عدد المشاهدات
+        'interactionCount': 'int', // عدد التفاعلات (تأكيد، رفض، إلخ)
+        'lastInteraction': 'Timestamp?', // آخر تفاعل مع البلاغ
+        'nearbyUsers': 'List<String>', // المستخدمين القريبين من البلاغ
+        'tags': 'List<String>', // علامات إضافية للبلاغ
+        'weather': {
+          'condition': 'String?', // حالة الطقس وقت البلاغ
+          'temperature': 'double?',
+          'visibility': 'double?',
+        },
+        'traffic': {
+          'congestionLevel': 'String?', // مستوى الازدحام
+          'estimatedDelay': 'int?', // التأخير المتوقع بالدقائق
+        },
       },
     },
     FirebaseSchemaService.incidentsCollection: {
@@ -155,11 +180,27 @@ class FirebaseSchemaService {
         'userId': 'String',
         'title': 'String',
         'body': 'String',
-        'type': 'String', // alert, info, warning
+        'type': 'String', // alert, info, warning, report_update, real_time_alert
         'data': 'Map<String, dynamic>?',
         'createdAt': 'Timestamp',
         'read': 'bool',
         'readAt': 'Timestamp?',
+        'priority': 'String', // low, medium, high, urgent
+        'category': 'String', // traffic, safety, weather, system
+        'relatedReportId': 'String?', // ربط الإشعار ببلاغ معين
+        'location': {
+          'lat': 'double?',
+          'lng': 'double?',
+          'radius': 'double?', // نطاق الإشعار بالمتر
+        },
+        'expiresAt': 'Timestamp?', // انتهاء صلاحية الإشعار
+        'isRealTime': 'bool', // إشعار فوري
+        'actionRequired': 'bool', // يتطلب إجراء من المستخدم
+        'actionTaken': 'bool', // تم اتخاذ إجراء
+        'deviceInfo': {
+          'platform': 'String?', // iOS, Android, Web
+          'version': 'String?',
+        },
       },
     },
     FirebaseSchemaService.settingsCollection: {
@@ -334,6 +375,76 @@ class FirebaseSchemaService {
         'history': 'List<Map<String, dynamic>>', // action, points, timestamp
         'redeemableRewards':
             'List<Map<String, dynamic>>', // name, description, pointsCost, available
+      },
+    },
+  };
+
+  // مخطط Real-time Database للبيانات الفورية
+  Map<String, dynamic> get realtimeDatabaseSchema => {
+    'realtime_reports': {
+      'reportId': {
+        'userId': 'String',
+        'type': 'String',
+        'location': {
+          'lat': 'double',
+          'lng': 'double',
+        },
+        'status': 'String',
+        'priority': 'int',
+        'isActive': 'bool',
+        'createdAt': 'int', // timestamp
+        'updatedAt': 'int', // timestamp
+        'expiresAt': 'int', // timestamp
+      },
+    },
+    'user_locations': {
+      'userId': {
+        'lat': 'double',
+        'lng': 'double',
+        'timestamp': 'int',
+        'isOnline': 'bool',
+        'speed': 'double?',
+        'heading': 'double?',
+      },
+    },
+    'active_notifications': {
+      'notificationId': {
+        'userId': 'String',
+        'type': 'String',
+        'priority': 'String',
+        'relatedReportId': 'String?',
+        'location': {
+          'lat': 'double?',
+          'lng': 'double?',
+          'radius': 'double?',
+        },
+        'createdAt': 'int',
+        'expiresAt': 'int?',
+        'isActive': 'bool',
+      },
+    },
+    'traffic_updates': {
+      'areaId': {
+        'congestionLevel': 'String',
+        'averageSpeed': 'double',
+        'incidentCount': 'int',
+        'lastUpdated': 'int',
+        'affectedRoutes': 'List<String>',
+      },
+    },
+    'emergency_alerts': {
+      'alertId': {
+        'type': 'String', // weather, accident, road_closure
+        'severity': 'String',
+        'location': {
+          'lat': 'double',
+          'lng': 'double',
+          'radius': 'double',
+        },
+        'message': 'String',
+        'isActive': 'bool',
+        'createdAt': 'int',
+        'expiresAt': 'int',
       },
     },
   };

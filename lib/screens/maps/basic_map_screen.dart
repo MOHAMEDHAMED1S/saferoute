@@ -4,11 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_google_places/flutter_google_places.dart';
 import 'package:google_maps_webservice/places.dart';
+import 'dart:async';
 import '../../providers/reports_provider.dart';
 import '../../utils/map_utils.dart';
 import '../../theme/liquid_glass_theme.dart';
 import '../../models/report_model.dart';
+import '../../models/nearby_report.dart';
 import '../../services/reports_firebase_service.dart';
+import '../../services/realtime_reports_service.dart';
 import '../../services/location_service.dart';
 import '../../widgets/common/bottom_navigation_widget.dart';
 
@@ -41,14 +44,29 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
   bool _isSearchVisible = false;
   int _currentBottomNavIndex = 1; // Set to 1 for "الخريطة" tab
 
+  // Real-time service
+  final RealtimeReportsService _realtimeService = RealtimeReportsService();
+  StreamSubscription<List<NearbyReport>>? _reportsSubscription;
+
   @override
   void initState() {
     super.initState();
-    if (widget.showMarker && widget.initialLatitude != null && widget.initialLongitude != null) {
+    if (widget.showMarker &&
+        widget.initialLatitude != null &&
+        widget.initialLongitude != null) {
       _loadSpecificMarker();
     } else {
-      _loadReportsMarkers();
+      _startRealtimeListening();
     }
+  }
+
+  @override
+  void dispose() {
+    _reportsSubscription?.cancel();
+    _realtimeService.dispose();
+    _mapController?.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _loadSpecificMarker() {
@@ -67,6 +85,40 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
       setState(() {
         _markers = {marker};
       });
+    }
+  }
+
+  void _startRealtimeListening() async {
+    try {
+      final locationService = Provider.of<LocationService>(
+        context,
+        listen: false,
+      );
+
+      // الحصول على الموقع الحالي
+      final position = await locationService.getCurrentLocation();
+
+      // بدء الاستماع للبيانات الفورية
+      _reportsSubscription = _realtimeService
+          .listenToNearbyReports(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radiusKm: 10.0,
+          )
+          .listen((reports) {
+            if (mounted) {
+              setState(() {
+                _markers = _createMarkersFromNearby(reports);
+              });
+            }
+          });
+
+      // تحديث موقع المستخدم في قاعدة البيانات الفورية
+      await _realtimeService.updateUserLocation();
+    } catch (e) {
+      print('Error starting realtime listening: $e');
+      // في حالة الخطأ، استخدم الطريقة التقليدية
+      _loadReportsMarkers();
     }
   }
 
@@ -91,12 +143,12 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
 
     if (mounted) {
       setState(() {
-        _markers = _createMarkersFromReports(reports);
+        _markers = _createMarkersFromReportModels(reports);
       });
     }
   }
 
-  Set<Marker> _createMarkersFromReports(List<ReportModel> reports) {
+  Set<Marker> _createMarkersFromReportModels(List<ReportModel> reports) {
     return reports.where((report) => _activeFilters.contains(report.type)).map((
       report,
     ) {
@@ -116,6 +168,32 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
           _mapController?.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(report.location.lat, report.location.lng),
+              16.0,
+            ),
+          );
+        },
+      );
+    }).toSet();
+  }
+
+  Set<Marker> _createMarkersFromNearby(List<NearbyReport> reports) {
+    return reports.where((report) => _activeFilters.contains(report.type)).map((
+      report,
+    ) {
+      return Marker(
+        markerId: MarkerId(report.id),
+        position: LatLng(report.latitude, report.longitude),
+        infoWindow: InfoWindow(
+          title: _getReportTypeNameArabic(report.type),
+          snippet: report.description.length > 50
+              ? '${report.description.substring(0, 50)}...'
+              : report.description,
+        ),
+        icon: _getMarkerIcon(report.type),
+        onTap: () {
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(report.latitude, report.longitude),
               16.0,
             ),
           );
@@ -283,8 +361,6 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
         return Colors.green;
       case ReportType.other:
         return Colors.pink;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -317,6 +393,7 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
       case ReportType.other:
         return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose);
+      // no default: let switch be exhaustive
     }
   }
 
@@ -442,7 +519,7 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
       listen: false,
     );
     setState(() {
-      _markers = _createMarkersFromReports(reportsProvider.activeReports);
+      _markers = _createMarkersFromReportModels(reportsProvider.activeReports);
     });
   }
 
@@ -563,10 +640,14 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
           GoogleMap(
             onMapCreated: _onMapCreated,
             initialCameraPosition: CameraPosition(
-              target: (widget.initialLatitude != null && widget.initialLongitude != null)
+              target:
+                  (widget.initialLatitude != null &&
+                      widget.initialLongitude != null)
                   ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
                   : MapUtils.defaultLocation,
-              zoom: (widget.initialLatitude != null && widget.initialLongitude != null)
+              zoom:
+                  (widget.initialLatitude != null &&
+                      widget.initialLongitude != null)
                   ? 16.0
                   : MapUtils.defaultZoom,
             ),
@@ -682,12 +763,5 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _mapController?.dispose();
-    _searchController.dispose();
-    super.dispose();
   }
 }
