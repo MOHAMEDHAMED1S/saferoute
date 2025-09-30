@@ -232,8 +232,9 @@ class WeatherService {
     final hour = now.hour;
     double timeVariation = 0;
     if (hour >= 6 && hour <= 18) {
-      // Daytime - warmer
-      timeVariation = 5 + (random.nextDouble() * 5);
+      // Daytime - warmer, peak at 2 PM
+      final hourFromSunrise = hour - 6;
+      timeVariation = 5 + sin((hourFromSunrise * pi) / 12) * 8;
     } else {
       // Nighttime - cooler
       timeVariation = -(2 + (random.nextDouble() * 3));
@@ -241,14 +242,14 @@ class WeatherService {
 
     final temperature = baseTemp + timeVariation;
 
-    // Generate other weather parameters
-    final humidity = 30 + random.nextDouble() * 60;
-    final windSpeed = random.nextDouble() * 30;
+    // Generate other weather parameters with more realistic variations
+    final humidity = _generateRealisticHumidity(temperature, now, random);
+    final windSpeed = _generateRealisticWindSpeed(now, random);
     final windDirection = random.nextDouble() * 360;
-    final pressure = 1000 + random.nextDouble() * 50;
-    final visibility = 5000 + random.nextDouble() * 15000;
+    final pressure = _generateRealisticPressure(now, random);
+    final visibility = _generateRealisticVisibility(humidity, random);
     final uvIndex = _calculateUVIndex(latitude, now);
-    final cloudCover = random.nextDouble() * 100;
+    final cloudCover = _generateRealisticCloudCover(humidity, random);
 
     // Determine weather condition based on parameters
     WeatherCondition condition = _determineWeatherCondition(
@@ -267,6 +268,8 @@ class WeatherService {
     } else if (condition == WeatherCondition.rain ||
         condition == WeatherCondition.heavyRain) {
       adjustedVisibility = 2000 + random.nextDouble() * 8000;
+    } else if (condition == WeatherCondition.thunderstorm) {
+      adjustedVisibility = 1000 + random.nextDouble() * 5000;
     }
 
     return WeatherData(
@@ -288,6 +291,95 @@ class WeatherService {
       dewPoint: temperature - ((100 - humidity) / 5),
       feelsLike: _calculateFeelsLike(temperature, humidity, windSpeed),
     );
+  }
+
+  double _generateRealisticHumidity(double temperature, DateTime now, Random random) {
+    // Base humidity varies by temperature and time
+    double baseHumidity = 50.0;
+    
+    // Higher humidity in early morning and evening
+    final hour = now.hour;
+    if (hour >= 5 && hour <= 8) {
+      baseHumidity += 20; // Morning dew
+    } else if (hour >= 18 && hour <= 22) {
+      baseHumidity += 15; // Evening moisture
+    }
+    
+    // Temperature effect on humidity
+    if (temperature > 30) {
+      baseHumidity -= 15; // Hot air holds less relative humidity
+    } else if (temperature < 15) {
+      baseHumidity += 10; // Cold air appears more humid
+    }
+    
+    // Add random variation
+    baseHumidity += (random.nextDouble() - 0.5) * 30;
+    
+    return baseHumidity.clamp(20.0, 95.0);
+  }
+
+  double _generateRealisticWindSpeed(DateTime now, Random random) {
+    // Base wind speed varies by time of day
+    double baseWind = 5.0;
+    
+    final hour = now.hour;
+    if (hour >= 12 && hour <= 16) {
+      baseWind += 8; // Afternoon thermal winds
+    } else if (hour >= 0 && hour <= 6) {
+      baseWind -= 2; // Calm nights
+    }
+    
+    // Add random variation
+    baseWind += random.nextDouble() * 15;
+    
+    return baseWind.clamp(0.0, 35.0);
+  }
+
+  double _generateRealisticPressure(DateTime now, Random random) {
+    // Base atmospheric pressure with daily variation
+    double basePressure = 1013.25;
+    
+    // Daily pressure cycle (simplified)
+    final hour = now.hour;
+    final dailyCycle = sin((hour * 2 * pi) / 24) * 3;
+    basePressure += dailyCycle;
+    
+    // Add random variation
+    basePressure += (random.nextDouble() - 0.5) * 20;
+    
+    return basePressure.clamp(980.0, 1040.0);
+  }
+
+  double _generateRealisticVisibility(double humidity, Random random) {
+    // Base visibility affected by humidity
+    double baseVisibility = 15000.0;
+    
+    if (humidity > 85) {
+      baseVisibility -= 8000; // High humidity reduces visibility
+    } else if (humidity > 70) {
+      baseVisibility -= 3000;
+    }
+    
+    // Add random variation
+    baseVisibility += (random.nextDouble() - 0.5) * 5000;
+    
+    return baseVisibility.clamp(1000.0, 20000.0);
+  }
+
+  double _generateRealisticCloudCover(double humidity, Random random) {
+    // Base cloud cover affected by humidity
+    double baseCloudCover = 30.0;
+    
+    if (humidity > 80) {
+      baseCloudCover += 40; // High humidity increases clouds
+    } else if (humidity > 60) {
+      baseCloudCover += 20;
+    }
+    
+    // Add random variation
+    baseCloudCover += (random.nextDouble() - 0.5) * 40;
+    
+    return baseCloudCover.clamp(0.0, 100.0);
   }
 
   double _calculateBaseTemperature(double latitude, DateTime date) {

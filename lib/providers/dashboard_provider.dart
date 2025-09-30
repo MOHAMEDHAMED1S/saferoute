@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import '../models/dashboard_models.dart'
-    hide NearbyReport; // إخفاء NearbyReport من dashboard_models
+import '../models/dashboard_models.dart';
 import '../models/report_model.dart';
 import '../models/nearby_report.dart'; // إضافة استيراد نموذج البلاغات القريبة
-import 'package:saferoute/services/firebase_schema_service.dart';
+import '../models/weather_model.dart'; // إضافة استيراد نموذج الطقس
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:async'; // إضافة استيراد dart:async
 import '../services/realtime_reports_service.dart'; // إضافة الخدمة الجديدة
+import '../services/weather_service.dart'; // إضافة خدمة الطقس
+import '../services/location_service.dart'; // إضافة خدمة الموقع
+import '../services/logging_service.dart'; // إضافة خدمة التسجيل
+
 
 class DashboardProvider extends ChangeNotifier {
   DashboardStats _stats = DashboardStats(
@@ -45,6 +46,25 @@ class DashboardProvider extends ChangeNotifier {
   final RealtimeReportsService _realtimeService = RealtimeReportsService();
   StreamSubscription<List<NearbyReport>>? _realtimeSubscription;
 
+  // خدمات الطقس والموقع
+  final WeatherService _weatherService = WeatherService();
+  final LocationService _locationService = LocationService();
+  WeatherData? _currentWeatherData;
+
+  // Constructor - تهيئة الخدمات
+  DashboardProvider() {
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      await _weatherService.initialize();
+      await _locationService.initialize();
+    } catch (e) {
+      LoggingService.instance.logError('خطأ في تهيئة الخدمات', e);
+    }
+  }
+
   // Getters
   DashboardStats get stats => _stats;
   List<NearbyReport> _filteredReports = [];
@@ -77,7 +97,7 @@ class DashboardProvider extends ChangeNotifier {
         _nearbyReports,
       ); // Initialize filtered reports
     } catch (e) {
-      debugPrint('Error loading dashboard data: $e');
+      LoggingService.instance.logError('Error loading dashboard data', e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -88,7 +108,7 @@ class DashboardProvider extends ChangeNotifier {
   Future<void> _startRealtimeListening() async {
     try {
       // الحصول على الموقع الحالي
-      Position? position = await _getCurrentPosition();
+      final position = await _getCurrentPosition();
       if (position == null) return;
 
       // إلغاء الاشتراك السابق إن وجد
@@ -120,14 +140,14 @@ class DashboardProvider extends ChangeNotifier {
               notifyListeners();
             },
             onError: (error) {
-              debugPrint('خطأ في stream البلاغات الفورية: $error');
+              LoggingService.instance.logError('خطأ في stream البلاغات الفورية', error);
             },
           );
 
       // تحديث موقع المستخدم في قاعدة البيانات الفورية
       await _realtimeService.updateUserLocation();
     } catch (e) {
-      debugPrint('خطأ في بدء الاستماع للبيانات الفورية: $e');
+      LoggingService.instance.logError('خطأ في بدء الاستماع للبيانات الفورية', e);
     }
   }
 
@@ -152,27 +172,14 @@ class DashboardProvider extends ChangeNotifier {
       } on TimeoutException {
         // استخدم آخر موقع معروف عند انتهاء المهلة
         final last = await Geolocator.getLastKnownPosition();
-        if (last != null) return last;
-        // عودة إلى موقع افتراضي داخل مصر
-        return Position(
-          latitude: 30.0444,
-          longitude: 31.2357,
-          timestamp: DateTime.now(),
-          accuracy: 0,
-          altitude: 0,
-          altitudeAccuracy: 0,
-          heading: 0,
-          headingAccuracy: 0,
-          speed: 0,
-          speedAccuracy: 0,
-        );
+        return last;
       }
     } catch (e) {
-      debugPrint('خطأ في الحصول على الموقع: $e');
+      LoggingService.instance.logError('خطأ في الحصول على الموقع', e);
       // محاولة استخدام آخر موقع معروف
       try {
         final last = await Geolocator.getLastKnownPosition();
-        if (last != null) return last;
+        return last;
       } catch (_) {}
       // موقع افتراضي كحل أخير
       return Position(
@@ -194,37 +201,6 @@ class DashboardProvider extends ChangeNotifier {
   void _updateStatsFromReports(List<NearbyReport> reports) {
     final activeReports = reports.length;
     _stats = _stats.copyWith(nearbyRisks: activeReports);
-  }
-
-  // حفظ البلاغات محلياً
-  Future<void> _saveReportsToCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final reportsJson = _nearbyReports
-          .map(
-            (report) => jsonEncode({
-              'id': report.id,
-              'title': report.title,
-              'description': report.description,
-              'distance': report.distance,
-              'timeAgo': report.timeAgo,
-              'confirmations': report.confirmations,
-              'type': report.type.toString(),
-              'latitude': report.latitude,
-              'longitude': report.longitude,
-            }),
-          )
-          .toList();
-
-      await prefs.setStringList('dashboard_nearby_reports', reportsJson);
-      await prefs.setString(
-        'dashboard_cache_timestamp',
-        DateTime.now().toIso8601String(),
-      );
-      debugPrint('تم حفظ ${_nearbyReports.length} بلاغ محلياً');
-    } catch (e) {
-      debugPrint('خطأ في حفظ البلاغات محلياً: $e');
-    }
   }
 
   // تحميل البلاغات المحفوظة محلياً
@@ -262,13 +238,13 @@ class DashboardProvider extends ChangeNotifier {
           _nearbyReports.clear();
           _nearbyReports.addAll(cachedReports);
           _filteredReports = List.from(_nearbyReports);
-          debugPrint(
+          LoggingService.instance.logInfo(
             'تم تحميل ${cachedReports.length} بلاغ من الذاكرة المحلية',
           );
           notifyListeners();
         } else {
           // إذا انتهت صلاحية التخزين المؤقت، امسح البيانات القديمة
-          debugPrint(
+          LoggingService.instance.logInfo(
             'انتهت صلاحية التخزين المؤقت، سيتم تحميل البيانات من قاعدة البيانات',
           );
           await prefs.remove('dashboard_nearby_reports');
@@ -276,7 +252,7 @@ class DashboardProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('خطأ في تحميل البلاغات المحفوظة: $e');
+      LoggingService.instance.logError('خطأ في تحميل البلاغات المحفوظة', e);
     }
   }
 
@@ -358,257 +334,57 @@ class DashboardProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _loadNearbyReportsFromFirebase() async {
+  Future<void> _loadWeather() async {
     try {
-      final firebaseService = FirebaseSchemaService();
-      final reportsCollection = firebaseService.reports;
-
-      // Get current location with fallback
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
-      } catch (e) {
-        debugPrint('خطأ في الحصول على الموقع: $e');
-        // استخدم موقع افتراضي (الرياض) للاختبار
-        position = Position(
-          latitude: 24.7136,
-          longitude: 46.6753,
-          timestamp: DateTime.now(),
-          accuracy: 0,
-          altitude: 0,
-          altitudeAccuracy: 0,
-          heading: 0,
-          headingAccuracy: 0,
-          speed: 0,
-          speedAccuracy: 0,
-        );
-      }
-
-      // Query only active reports (excluding removed/deleted ones)
-      final querySnapshot = await reportsCollection
-          .where('status', isEqualTo: 'active')
-          .get();
-
-      debugPrint(
-        'عدد البلاغات المسترجعة من Firebase: ${querySnapshot.docs.length}',
-      );
-
-      final List<NearbyReport> reports = [];
-
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final location = data['location'] as Map<String, dynamic>?;
-
-        // تحقق من وجود بيانات الموقع
-        if (location == null ||
-            location['lat'] == null ||
-            location['lng'] == null) {
-          debugPrint('تخطي البلاغ ${doc.id} - بيانات الموقع مفقودة');
-          continue;
-        }
-
-        final double reportLat = (location['lat'] as num).toDouble();
-        final double reportLng = (location['lng'] as num).toDouble();
-
-        // Calculate distance
-        final distanceInMeters = Geolocator.distanceBetween(
+      // الحصول على الموقع الحالي باستخدام الدالة المحلية
+      final position = await _getCurrentPosition();
+      
+      if (position != null) {
+        // جلب بيانات الطقس الحقيقية
+        _currentWeatherData = await _weatherService.getCurrentWeather(
           position.latitude,
           position.longitude,
-          reportLat,
-          reportLng,
         );
-
-        // Only include reports within 5km
-        if (distanceInMeters <= 5000) {
-          // تحقق من وجود البيانات المطلوبة مع قيم افتراضية
-          final createdAt = data['createdAt'] != null
-              ? (data['createdAt'] as Timestamp).toDate()
-              : DateTime.now().subtract(const Duration(minutes: 30));
-
-          final description = data['description'] as String? ?? 'بلاغ جديد';
-          final reportType = data['type'] as String? ?? 'other';
-
-          final timeAgo = _getTimeAgo(createdAt);
-          final distance = _formatDistance(distanceInMeters);
-
-          reports.add(
-            NearbyReport(
-              id: doc.id,
-              title:
-                  '${_getReportTypeNameArabic(reportType)} - ${description.isNotEmpty ? description.substring(0, math.min(20, description.length)) : 'بلاغ'}...',
-              description: description,
-              distance: distance,
-              timeAgo: timeAgo,
-              confirmations: (data['verifiedBy'] as List?)?.length ?? 0,
-              type: _mapFirebaseTypeToReportType(reportType),
-              latitude: reportLat,
-              longitude: reportLng,
-            ),
-          );
-        }
+        
+        // تحويل WeatherData إلى WeatherInfo للتوافق مع الكود الحالي
+        _weather = WeatherInfo(
+          condition: _currentWeatherData!.description,
+          temperature: _currentWeatherData!.temperature.round(),
+          visibility: _getVisibilityText(_currentWeatherData!.visibility),
+          drivingCondition: _currentWeatherData!.drivingCondition.arabicName,
+        );
+      } else {
+        // في حالة عدم توفر الموقع، لا تعرض بيانات طقس
+        _weather = WeatherInfo(
+          condition: 'الموقع غير متاح',
+          temperature: 0,
+          visibility: 'غير محددة',
+          drivingCondition: 'غير محدد',
+        );
+        LoggingService.instance.logWarning('لا يمكن الحصول على الموقع الحالي لجلب بيانات الطقس');
       }
-
-      // إذا لم توجد بلاغات، أضف بلاغات تجريبية للاختبار
-      if (reports.isEmpty) {
-        debugPrint('لا توجد بلاغات في قاعدة البيانات، إضافة بلاغات تجريبية');
-        reports.addAll(_createSampleReports(position));
-      }
-
-      debugPrint('عدد البلاغات المحملة من Firebase: ${reports.length}');
-
-      // Sort by distance
-      reports.sort(
-        (a, b) =>
-            _parseDistance(a.distance).compareTo(_parseDistance(b.distance)),
-      );
-
-      _nearbyReports.clear();
-      _nearbyReports.addAll(reports);
     } catch (e) {
-      debugPrint('Error loading reports from Firebase: $e');
-      // في حالة الخطأ، أضف بلاغات تجريبية
-      _nearbyReports.clear();
-      _nearbyReports.addAll(_createSampleReports(null));
+      LoggingService.instance.logError('خطأ في جلب بيانات الطقس', e);
+      // في حالة الخطأ، استخدم بيانات افتراضية
+      _weather = WeatherInfo(
+        condition: 'غير متاح',
+        temperature: 25,
+        visibility: 'غير متاحة',
+        drivingCondition: 'غير متاح',
+      );
     }
   }
 
-  // إنشاء بلاغات تجريبية للاختبار
-  List<NearbyReport> _createSampleReports(Position? position) {
-    final defaultLat = position?.latitude ?? 24.7136;
-    final defaultLng = position?.longitude ?? 46.6753;
-
-    return [
-      NearbyReport(
-        id: 'sample_1',
-        title: 'حادث مروري - تصادم بسيط',
-        description: 'حادث مروري بسيط على الطريق الرئيسي',
-        distance: '250م',
-        timeAgo: '15 دقيقة',
-        confirmations: 3,
-        type: ReportType.accident,
-        latitude: defaultLat + 0.002,
-        longitude: defaultLng + 0.001,
-      ),
-      NearbyReport(
-        id: 'sample_2',
-        title: 'ازدحام مروري - زحمة شديدة',
-        description: 'ازدحام مروري شديد في الشارع الرئيسي',
-        distance: '500م',
-        timeAgo: '30 دقيقة',
-        confirmations: 5,
-        type: ReportType.traffic,
-        latitude: defaultLat + 0.004,
-        longitude: defaultLng + 0.002,
-      ),
-      NearbyReport(
-        id: 'sample_3',
-        title: 'عطل سيارة - سيارة معطلة',
-        description: 'سيارة معطلة على جانب الطريق',
-        distance: '800م',
-        timeAgo: '45 دقيقة',
-        confirmations: 2,
-        type: ReportType.carBreakdown,
-        latitude: defaultLat + 0.006,
-        longitude: defaultLng + 0.003,
-      ),
-      NearbyReport(
-        id: 'sample_4',
-        title: 'خطر على الطريق - حفرة كبيرة',
-        description: 'حفرة كبيرة في منتصف الطريق',
-        distance: '1.2كم',
-        timeAgo: '1 ساعة',
-        confirmations: 4,
-        type: ReportType.hazard,
-        latitude: defaultLat + 0.008,
-        longitude: defaultLng + 0.004,
-      ),
-    ];
-  }
-
-  String _formatDistance(double meters) {
-    if (meters < 1000) {
-      return '${meters.round()}م';
+  String _getVisibilityText(double visibility) {
+    if (visibility >= 10000) {
+      return 'ممتازة';
+    } else if (visibility >= 5000) {
+      return 'جيدة';
+    } else if (visibility >= 2000) {
+      return 'متوسطة';
     } else {
-      return '${(meters / 1000).toStringAsFixed(1)}كم';
+      return 'ضعيفة';
     }
-  }
-
-  double _parseDistance(String distanceStr) {
-    if (distanceStr.contains('كم')) {
-      return double.parse(distanceStr.replaceAll('كم', '')) * 1000;
-    } else {
-      return double.parse(distanceStr.replaceAll('م', ''));
-    }
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    final difference = DateTime.now().difference(dateTime);
-
-    if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} دقيقة';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} ساعة';
-    } else {
-      return '${difference.inDays} يوم';
-    }
-  }
-
-  ReportType _mapFirebaseTypeToReportType(String type) {
-    switch (type) {
-      case 'accident':
-        return ReportType.accident;
-      case 'jam':
-        return ReportType.jam;
-      case 'car_breakdown':
-        return ReportType.carBreakdown;
-      case 'bump':
-        return ReportType.bump;
-      case 'closed_road':
-        return ReportType.closedRoad;
-      case 'hazard':
-        return ReportType.hazard;
-      case 'police':
-        return ReportType.police;
-      case 'traffic':
-        return ReportType.traffic;
-      default:
-        return ReportType.other;
-    }
-  }
-
-  String _getReportTypeNameArabic(String type) {
-    switch (type) {
-      case 'accident':
-        return 'حادث';
-      case 'jam':
-        return 'ازدحام';
-      case 'car_breakdown':
-        return 'سيارة معطلة';
-      case 'bump':
-        return 'مطب';
-      case 'closed_road':
-        return 'طريق مغلق';
-      case 'hazard':
-        return 'خطر';
-      case 'police':
-        return 'شرطة';
-      case 'traffic':
-        return 'حركة مرور';
-      default:
-        return 'أخرى';
-    }
-  }
-
-  Future<void> _loadWeather() async {
-    // In a real app, fetch from weather API
-    _weather = WeatherInfo(
-      condition: 'مشمس',
-      temperature: 28,
-      visibility: 'ممتازة',
-      drivingCondition: 'رؤية ممتازة',
-    );
   }
 
   Future<void> _loadDailyTip() async {
@@ -687,9 +463,9 @@ class DashboardProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('dashboard_nearby_reports');
       await prefs.remove('dashboard_cache_timestamp');
-      debugPrint('تم مسح البيانات المحفوظة محلياً');
+      LoggingService.instance.logInfo('تم مسح البيانات المحفوظة محلياً');
     } catch (e) {
-      debugPrint('خطأ في مسح البيانات المحفوظة: $e');
+      LoggingService.instance.logError('خطأ في مسح البيانات المحفوظة', e);
     }
 
     // بعد مسح الكاش، أعد تشغيل الاستماع الفوري لضمان التحديث

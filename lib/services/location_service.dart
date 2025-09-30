@@ -15,6 +15,17 @@ class LocationService {
   Position? get currentPosition => _currentPosition;
   bool get isTracking => _isTracking;
 
+  // Initialize location service
+  Future<void> initialize() async {
+    // Check permissions on initialization
+    try {
+      await checkAndRequestPermissions();
+    } catch (e) {
+      // Log error but don't throw to prevent app crash
+      print('LocationService initialization warning: $e');
+    }
+  }
+
   // Check and request location permissions
   Future<bool> checkAndRequestPermissions() async {
     try {

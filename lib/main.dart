@@ -11,6 +11,7 @@ import 'providers/app_settings_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'services/firestore_service.dart';
 import 'services/location_service.dart';
+import 'services/logging_service.dart'; // إضافة خدمة التسجيل
 import 'screens/splash/splash_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -39,6 +40,9 @@ void main() async {
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize logging service
+  await LoggingService.instance.initialize();
 
   // Initialize Firestore connection manager
   FirestoreConnectionManager().initialize();
