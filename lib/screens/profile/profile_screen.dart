@@ -16,7 +16,6 @@ import '../../services/user_service.dart';
 import '../../services/user_statistics_service.dart';
 import '../../models/user_statistics_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saferoute/models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -51,14 +50,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   int _confirmedReports = 0;
   double _accuracyRate = 0.0;
 
-  // Stream للاستماع لتغييرات بيانات المستخدم
-  Stream<DocumentSnapshot>? _userStream;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _setupUserStream();
     
     // تأخير استدعاء الدوال التي تحتوي على setState لتجنب مشكلة setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,17 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       _loadUserReports();
       _loadUserPoints();
     });
-  }
-
-  // إعداد Stream للاستماع لتغييرات بيانات المستخدم
-  void _setupUserStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      _userStream = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .snapshots();
-    }
   }
 
   // إشعار توضيحي للمكافآت التجريبية
@@ -163,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       {
         'name': 'كارفور',
         'discount': '15%',
-        'points': 100, // تقليل النقاط المطلوبة
+        'points': 0, // تقليل النقاط المطلوبة
         'code': 'SAFE15',
         'icon': '🛒',
         'description': 'خصم على جميع المنتجات',
@@ -601,9 +586,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   // تحميل نقاط المستخدم والمكافآت المتاحة
   Future<void> _loadUserPoints() async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
 
       // تحميل نقاط المستخدم
       final points = await _rewardsService.getUserPoints(
@@ -637,33 +624,50 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _loadUserData() async {
-    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
-      context,
-      listen: false,
-    );
+    try {
+      final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
+        context,
+        listen: false,
+      );
 
-    // استخدام خدمة المستخدم للحصول على البيانات من Firestore
-    final userData = await _userService.getCurrentUserData();
+      // استخدام خدمة المستخدم للحصول على البيانات من Firestore
+      final userData = await _userService.getCurrentUserData();
 
-    if (userData != null) {
+      if (userData != null) {
+        if (mounted) {
+          setState(() {
+            _nameController.text = userData.name;
+            _phoneController.text = userData.phone ?? '';
+          });
+        }
+      } else if (authProvider.userModel != null) {
+        // استخدام البيانات من AuthProvider كاحتياطي
+        if (mounted) {
+          setState(() {
+            _nameController.text = authProvider.userModel?.name ?? '';
+            _phoneController.text = authProvider.userModel?.phone ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // Fallback to empty values
       if (mounted) {
         setState(() {
-          _nameController.text = userData.name;
-          _phoneController.text = userData.phone ?? '';
+          _nameController.text = '';
+          _phoneController.text = '';
         });
       }
-    } else if (authProvider.userModel != null) {
-      // استخدام البيانات من AuthProvider كاحتياطي
-      _nameController.text = authProvider.userModel?.name ?? '';
-      _phoneController.text = authProvider.userModel?.phone ?? '';
     }
   }
 
   Future<void> _loadUserReports() async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
 
       print('ProfileScreen: _loadUserReports called');
       final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
@@ -848,209 +852,188 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: LiquidGlassTheme.backgroundColor,
-      body: _userStream != null
-          ? StreamBuilder<DocumentSnapshot>(
-              stream: _userStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      body: Consumer<AuthProviderCustom.AuthProvider>(
+        builder: (context, authProvider, child) {
+          // استخدام AuthProvider مباشرة بدلاً من StreamBuilder
+          final user = authProvider.userModel ?? UserModel(
+            id: '',
+            email: '',
+            name: 'Guest',
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+          );
 
-                UserModel? user;
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  // استخدام البيانات من Firestore
-                  user = UserModel.fromFirestore(snapshot.data!);
-                } else {
-                  // استخدام البيانات من AuthProvider كاحتياطي
-                  final authProvider =
-                      Provider.of<AuthProviderCustom.AuthProvider>(
-                        context,
-                        listen: false,
-                      );
-                  user =
-                      authProvider.userModel ??
-                      UserModel(
-                        id: '',
-                        email: '',
-                        name: 'Guest',
-                        createdAt: DateTime.now(),
-                        lastLogin: DateTime.now(),
-                      );
-                }
-
-                return CustomScrollView(
-                  slivers: [
-                    // Modern Profile Header
-                    SliverAppBar(
-                      expandedHeight: 200,
-                      floating: false,
-                      pinned: true,
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      actions: [
-                        Container(
-                          margin: const EdgeInsets.only(right: 16),
-                          child: IconButton(
-                            onPressed: _signOut,
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
+          return CustomScrollView(
+            slivers: [
+              // Modern Profile Header
+              SliverAppBar(
+                expandedHeight: 200,
+                floating: false,
+                pinned: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                actions: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    child: IconButton(
+                      onPressed: _signOut,
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(51),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LiquidGlassTheme.getGradientByName(
+                        'primary',
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Profile Avatar
+                            Container(
+                              width: 80,
+                              height: 80,
                               decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: Colors.white.withAlpha(51),
-                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
                               child: const Icon(
-                                Icons.logout,
+                                Icons.person,
+                                size: 40,
                                 color: Colors.white,
-                                size: 20,
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            // User Name
+                            Text(
+                              user.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            // User Email
+                            Text(
+                              user.email,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withAlpha(204),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tab Navigation
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SliverAppBarDelegate(
+                  minHeight: 60,
+                  maxHeight: 60,
+                  child: Container(
+                    color: LiquidGlassTheme.backgroundColor,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color:
+                                (LiquidGlassTheme.getTextColor(
+                                          'secondary',
+                                        ) ??
+                                        Colors.grey)
+                                    .withAlpha(25),
+                            width: 1,
                           ),
                         ),
-                      ],
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: Container(
-                          decoration: BoxDecoration(
-                            gradient: LiquidGlassTheme.getGradientByName(
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        labelColor: LiquidGlassTheme.getGradientByName(
+                          'primary',
+                        ).colors.first,
+                        unselectedLabelColor:
+                            LiquidGlassTheme.getTextColor('secondary'),
+                        indicatorColor:
+                            LiquidGlassTheme.getGradientByName(
                               'primary',
-                            ),
-                          ),
-                          child: SafeArea(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Profile Avatar
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white.withAlpha(51),
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 40,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  // User Name
-                                  Text(
-                                    user.name,
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  // User Email
-                                  Text(
-                                    user.email,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white.withAlpha(204),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                            ).colors.first,
+                        indicatorWeight: 2,
+                        labelStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        tabs: const [
+                          Tab(
+                            icon: Icon(Icons.person, size: 20),
+                            text: 'المعلومات',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.report, size: 20),
+                            text: 'البلاغات',
+                          ),
+                          Tab(
+                            icon: Icon(Icons.card_giftcard, size: 20),
+                            text: 'المكافآت',
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                ),
+              ),
 
-                    // Tab Navigation
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _SliverAppBarDelegate(
-                        minHeight: 60,
-                        maxHeight: 60,
-                        child: Container(
-                          color: LiquidGlassTheme.backgroundColor,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color:
-                                      (LiquidGlassTheme.getTextColor(
-                                                'secondary',
-                                              ) ??
-                                              Colors.grey)
-                                          .withAlpha(25),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: TabBar(
-                              controller: _tabController,
-                              labelColor: LiquidGlassTheme.getGradientByName(
-                                'primary',
-                              ).colors.first,
-                              unselectedLabelColor:
-                                  LiquidGlassTheme.getTextColor('secondary'),
-                              indicatorColor:
-                                  LiquidGlassTheme.getGradientByName(
-                                    'primary',
-                                  ).colors.first,
-                              indicatorWeight: 2,
-                              labelStyle: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              unselectedLabelStyle: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              tabs: const [
-                                Tab(
-                                  icon: Icon(Icons.person, size: 20),
-                                  text: 'المعلومات',
-                                ),
-                                Tab(
-                                  icon: Icon(Icons.report, size: 20),
-                                  text: 'البلاغات',
-                                ),
-                                Tab(
-                                  icon: Icon(Icons.card_giftcard, size: 20),
-                                  text: 'المكافآت',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Tab Content
-                    SliverFillRemaining(child: _buildTabBarView()),
-                  ],
-                );
-              },
-            )
-          : const Center(child: CircularProgressIndicator()),
+              // Tab Content
+              SliverFillRemaining(child: _buildTabBarView()),
+            ],
+          );
+        },
+      ),
     );
   }
 
+
   Widget _buildTabBarView() {
-    return Expanded(
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildProfileTab(),
-          _buildReportsTab(),
-          _buildRewardsTab(),
-        ],
-      ),
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildProfileTab(),
+        _buildReportsTab(),
+        _buildRewardsTab(),
+      ],
     );
   }
 
@@ -1551,15 +1534,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildProfileTab() {
     return Consumer<AuthProviderCustom.AuthProvider>(
       builder: (context, authProvider, child) {
-        final user =
-            authProvider.userModel ??
-            UserModel(
-              id: '',
-              email: '',
-              name: 'Guest',
-              createdAt: DateTime.now(),
-              lastLogin: DateTime.now(),
-            );
+        try {
+          final user =
+              authProvider.userModel ??
+              UserModel(
+                id: '',
+                email: '',
+                name: 'Guest',
+                createdAt: DateTime.now(),
+                lastLogin: DateTime.now(),
+              );
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -1744,6 +1728,26 @@ class _ProfileScreenState extends State<ProfileScreen>
             ],
           ),
         );
+        } catch (e) {
+          print('Error in _buildProfileTab: $e');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('خطأ في تحميل الملف الشخصي: $e'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          );
+        }
       },
     );
   }
@@ -1884,28 +1888,49 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildRewardsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // إشعار توضيحي
-          _buildDemoNotice(),
-          const SizedBox(height: 24),
+    try {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // إشعار توضيحي
+            _buildDemoNotice(),
+            const SizedBox(height: 24),
 
-          // قسم المكافآت التجريبية من الشراكات
-          Text(
-            'مكافآت الشراكات مع البراندات',
-            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
-          ),
-          const SizedBox(height: 16),
-          _buildDemoBrandRewards(),
-          
-          // مسافة فارغة في الأسفل لمنع التداخل مع القائمة السفلية
-          const SizedBox(height: 100),
-        ],
-      ),
-    );
+            // قسم المكافآت التجريبية من الشراكات
+            Text(
+              'مكافآت الشراكات مع البراندات',
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            _buildDemoBrandRewards(),
+            
+            // مسافة فارغة في الأسفل لمنع التداخل مع القائمة السفلية
+            const SizedBox(height: 100),
+          ],
+        ),
+      );
+    } catch (e) {
+      print('Error in _buildRewardsTab: $e');
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('خطأ في تحميل المكافآت: $e'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {});
+              },
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   // بطاقة المكافأة المتاحة
@@ -2125,12 +2150,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildReportsTab() {
     return Consumer<ReportsProvider>(
       builder: (context, reportsProvider, child) {
-        final userReports = reportsProvider.userReports;
-        
-        // إضافة تسجيل للتشخيص
-        print('ProfileScreen: _buildReportsTab - userReports.length = ${userReports.length}');
-        print('ProfileScreen: _buildReportsTab - isLoading = ${reportsProvider.isLoading}');
-        print('ProfileScreen: _buildReportsTab - errorMessage = ${reportsProvider.errorMessage}');
+        try {
+          final userReports = reportsProvider.userReports;
+          
+          // إضافة تسجيل للتشخيص
+          print('ProfileScreen: _buildReportsTab - userReports.length = ${userReports.length}');
+          print('ProfileScreen: _buildReportsTab - isLoading = ${reportsProvider.isLoading}');
+          print('ProfileScreen: _buildReportsTab - errorMessage = ${reportsProvider.errorMessage}');
 
         return RefreshIndicator(
           onRefresh: _loadUserReports,
@@ -2198,6 +2224,26 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         );
+        } catch (e) {
+          print('Error in _buildReportsTab: $e');
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('خطأ في تحميل البلاغات: $e'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {});
+                  },
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          );
+        }
       },
     );
   }

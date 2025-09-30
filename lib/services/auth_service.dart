@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import '../models/user_model.dart';
 import '../firebase_web_client_id.dart';
+import 'google_auth_web_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late final GoogleSignIn? _googleSignIn;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleAuthWebService _googleWebService = GoogleAuthWebService();
 
   AuthService() {
     // Initialize Google Sign-In safely for all platforms
@@ -114,69 +116,65 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      if (_googleSignIn == null) {
-        if (kIsWeb) {
-          // For web, use Firebase Auth directly with Google provider
-          GoogleAuthProvider googleProvider = GoogleAuthProvider();
-          googleProvider.addScope('email');
-          googleProvider.addScope('profile');
-          // Add client ID for web
-          googleProvider.setCustomParameters({
-            'client_id':
-                '74153425042-g4k4g4f3jb8b1up8nd59m7v5talt6oir.apps.googleusercontent.com',
-            'prompt': 'select_account',
-          });
+      if (kIsWeb) {
+        // For web, use popup method directly
+        print('AuthService: تسجيل الدخول بـ Google للويب باستخدام Popup');
+        
+        UserCredential? result = await _googleWebService.signInWithGoogle();
 
-          // Sign in with popup for better user experience
-          UserCredential result = await _auth.signInWithPopup(googleProvider);
+        if (result?.user != null) {
+          print('AuthService: تم تسجيل الدخول بنجاح، إنشاء/تحديث بيانات المستخدم');
+          await _createOrUpdateUserDocument(
+            uid: result!.user!.uid,
+            email: result.user!.email ?? '',
+            name: result.user!.displayName ?? 'مستخدم',
+            photoUrl: result.user!.photoURL,
+          );
+        }
 
-          if (result.user != null) {
-            await _createOrUpdateUserDocument(
-              uid: result.user!.uid,
-              email: result.user!.email ?? '',
-              name: result.user!.displayName ?? 'مستخدم',
-              photoUrl: result.user!.photoURL,
-            );
-          }
-
-          return result;
-        } else {
+        return result;
+      } else {
+        // For mobile platforms
+        if (_googleSignIn == null) {
           throw 'Google Sign-In غير متاح في هذه البيئة';
         }
-      }
 
-      // For mobile platforms
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
+        print('AuthService: تسجيل الدخول بـ Google للمحمول');
+        
+        // Trigger the authentication flow
+        final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
 
-      if (googleUser == null) {
-        return null; // User cancelled the sign-in
-      }
+        if (googleUser == null) {
+          print('AuthService: تم إلغاء تسجيل الدخول من قبل المستخدم');
+          return null; // User cancelled the sign-in
+        }
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+        // Obtain the auth details from the request
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      UserCredential result = await _auth.signInWithCredential(credential);
-
-      if (result.user != null) {
-        // Check if user document exists, create if not
-        await _createOrUpdateUserDocument(
-          uid: result.user!.uid,
-          email: result.user!.email ?? '',
-          name: result.user!.displayName ?? 'مستخدم',
-          photoUrl: result.user!.photoURL,
+        // Create a new credential
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
         );
-      }
 
-      return result;
+        // Sign in to Firebase with the Google credential
+        UserCredential result = await _auth.signInWithCredential(credential);
+
+        if (result.user != null) {
+          print('AuthService: تم تسجيل الدخول بنجاح للمحمول، إنشاء/تحديث بيانات المستخدم');
+          // Check if user document exists, create if not
+          await _createOrUpdateUserDocument(
+            uid: result.user!.uid,
+            email: result.user!.email ?? '',
+            name: result.user!.displayName ?? 'مستخدم',
+            photoUrl: result.user!.photoURL,
+          );
+        }
+
+        return result;
+      }
     } on FirebaseAuthException catch (e) {
       print(
         'خطأ Firebase Auth في تسجيل الدخول بـ Google: ${e.code} - ${e.message}',
@@ -185,6 +183,29 @@ class AuthService {
     } catch (e) {
       print('خطأ غير متوقع في تسجيل الدخول بـ Google: $e');
       throw 'حدث خطأ في تسجيل الدخول بـ Google: ${e.toString()}';
+    }
+  }
+
+  // Get redirect result (for web)
+  Future<UserCredential?> getGoogleRedirectResult() async {
+    if (!kIsWeb) return null;
+    
+    try {
+      UserCredential? result = await _googleWebService.getRedirectResult();
+      
+      if (result?.user != null) {
+        await _createOrUpdateUserDocument(
+          uid: result!.user!.uid,
+          email: result.user!.email ?? '',
+          name: result.user!.displayName ?? 'مستخدم',
+          photoUrl: result.user!.photoURL,
+        );
+      }
+      
+      return result;
+    } catch (e) {
+      print('Error getting redirect result: $e');
+      return null;
     }
   }
 

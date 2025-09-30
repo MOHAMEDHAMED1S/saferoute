@@ -236,7 +236,7 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
                             ),
                             value: isActive,
                             onChanged: (bool? value) {
-                              setState(() {
+    setState(() {
                                 if (value == true) {
                                   _activeFilters.add(type);
                                 } else {
@@ -395,8 +395,8 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
               child: LiquidGlassContainer(
                 child: IconButton(
                   icon: const Icon(Icons.arrow_forward, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
               ),
             ),
           ),

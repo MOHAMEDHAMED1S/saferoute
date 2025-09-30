@@ -1,12 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
-import 'firebase_schema_service.dart';
+import 'google_auth_web_service.dart';
 
 class AuthFirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseSchemaService _schemaService = FirebaseSchemaService();
+  final GoogleAuthWebService _googleWebService = GoogleAuthWebService();
 
   // الحصول على المستخدم الحالي
   User? get currentUser => _auth.currentUser;
@@ -27,7 +28,7 @@ class AuthFirebaseService {
       
       // تحديث وقت آخر تسجيل دخول
       if (userCredential.user != null) {
-        await _firestore.collection(FirebaseSchemaService.usersCollection)
+        await _firestore.collection('users')
             .doc(userCredential.user!.uid)
             .update({
           'lastLogin': FieldValue.serverTimestamp(),
@@ -65,7 +66,7 @@ class AuthFirebaseService {
           lastLogin: now,
         );
         
-        await _firestore.collection(FirebaseSchemaService.usersCollection)
+        await _firestore.collection('users')
             .doc(userCredential.user!.uid)
             .set(userModel.toFirestore());
             
@@ -89,6 +90,59 @@ class AuthFirebaseService {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
+  // تسجيل الدخول بـ Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      if (kIsWeb) {
+        print('AuthFirebaseService: تسجيل الدخول بـ Google للويب باستخدام Popup');
+        
+        // For web, use popup method directly
+        UserCredential? result = await _googleWebService.signInWithGoogle();
+
+        if (result?.user != null) {
+          print('AuthFirebaseService: تم تسجيل الدخول بنجاح، إنشاء/تحديث بيانات المستخدم');
+          // Create or update user document
+          await _createOrUpdateUserDocument(
+            uid: result!.user!.uid,
+            email: result.user!.email ?? '',
+            name: result.user!.displayName ?? 'مستخدم',
+            photoUrl: result.user!.photoURL,
+          );
+        }
+
+        return result;
+      } else {
+        throw UnsupportedError('Google Sign-In is only supported on web platform in this service');
+      }
+    } catch (e) {
+      print('Google Sign-In Error: $e');
+      rethrow;
+    }
+  }
+
+  // Get redirect result (for web)
+  Future<UserCredential?> getGoogleRedirectResult() async {
+    if (!kIsWeb) return null;
+    
+    try {
+      UserCredential? result = await _googleWebService.getRedirectResult();
+      
+      if (result?.user != null) {
+        await _createOrUpdateUserDocument(
+          uid: result!.user!.uid,
+          email: result.user!.email ?? '',
+          name: result.user!.displayName ?? 'مستخدم',
+          photoUrl: result.user!.photoURL,
+        );
+      }
+      
+      return result;
+    } catch (e) {
+      print('Error getting redirect result: $e');
+      return null;
+    }
+  }
+
   // تحديث بيانات المستخدم
   Future<void> updateUserProfile({
     required String userId,
@@ -96,7 +150,7 @@ class AuthFirebaseService {
     String? phone,
     String? photoUrl,
   }) async {
-    final userRef = _firestore.collection(FirebaseSchemaService.usersCollection).doc(userId);
+    final userRef = _firestore.collection('users').doc(userId);
     
     final Map<String, dynamic> updates = {};
     if (name != null) updates['name'] = name;
@@ -110,7 +164,7 @@ class AuthFirebaseService {
   Future<UserModel?> getUserData(String userId) async {
     try {
       final docSnapshot = await _firestore
-          .collection(FirebaseSchemaService.usersCollection)
+          .collection('users')
           .doc(userId)
           .get();
           
@@ -123,10 +177,45 @@ class AuthFirebaseService {
     }
   }
 
+  // إنشاء أو تحديث وثيقة المستخدم
+  Future<void> _createOrUpdateUserDocument({
+    required String uid,
+    required String email,
+    required String name,
+    String? photoUrl,
+  }) async {
+    DocumentReference userDoc = _firestore.collection('users').doc(uid);
+    DocumentSnapshot doc = await userDoc.get();
+
+    if (!doc.exists) {
+      // Create new user document
+      final now = DateTime.now();
+      final userModel = UserModel(
+        id: uid,
+        name: name,
+        email: email,
+        phone: '',
+        photoUrl: photoUrl,
+        createdAt: now,
+        lastLogin: now,
+      );
+      
+      await userDoc.set(userModel.toFirestore());
+      
+      // Create default settings
+      await _createDefaultUserSettings(uid);
+    } else {
+      // Update last login
+      await userDoc.update({
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   // إنشاء إعدادات المستخدم الافتراضية
   Future<void> _createDefaultUserSettings(String userId) async {
     // إعدادات عامة
-    await _firestore.collection(FirebaseSchemaService.settingsCollection).doc(userId).set({
+    await _firestore.collection('settings').doc(userId).set({
       'notifications': {
         'pushEnabled': true,
         'emailEnabled': true,
@@ -152,7 +241,7 @@ class AuthFirebaseService {
     });
     
     // إعدادات القيادة
-    await _firestore.collection(FirebaseSchemaService.drivingCollection).doc(userId).set({
+    await _firestore.collection('driving').doc(userId).set({
       'preferences': {
         'voiceAlerts': true,
         'autoReport': false,
@@ -175,7 +264,7 @@ class AuthFirebaseService {
     });
     
     // إعدادات الأمان
-    await _firestore.collection(FirebaseSchemaService.securityCollection).doc(userId).set({
+    await _firestore.collection('security').doc(userId).set({
       'emergencyContacts': [],
       'safeZones': [],
       'alertSettings': {
@@ -191,7 +280,7 @@ class AuthFirebaseService {
     });
     
     // إعدادات المكافآت
-    await _firestore.collection(FirebaseSchemaService.rewardsCollection).doc(userId).set({
+    await _firestore.collection('rewards').doc(userId).set({
       'points': 0,
       'level': 1,
       'badges': [],

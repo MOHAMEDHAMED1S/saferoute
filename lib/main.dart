@@ -38,30 +38,57 @@ import 'widgets/auth_initializer.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    // Initialize Firebase
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize logging service
-  await LoggingService.instance.initialize();
+    // Initialize logging service
+    await LoggingService.instance.initialize();
 
-  // Initialize Firestore connection manager
-  FirestoreConnectionManager().initialize();
+    // Initialize Firestore connection manager
+    FirestoreConnectionManager().initialize();
 
-  // Initialize Firestore schema (ensure base collections exist)
-  await FirebaseSchemaService().initializeDatabase();
+    // Initialize Firestore schema (ensure base collections exist)
+    await FirebaseSchemaService().initializeDatabase();
 
-  // Initialize performance monitoring
-  PerformanceMonitor.startPeriodicReporting();
-  MemoryOptimizer.startPeriodicCleanup();
+    // Initialize performance monitoring
+    PerformanceMonitor.startPeriodicReporting();
+    MemoryOptimizer.startPeriodicCleanup();
 
-  // Initialize network manager
-  NetworkManager().initialize();
-  BandwidthMonitor().startMonitoring();
+    // Initialize network manager
+    NetworkManager().initialize();
+    BandwidthMonitor().startMonitoring();
 
-  // Warm up shaders for better performance
-  PerformanceUtils.warmUpShaders();
+    // Warm up shaders for better performance
+    PerformanceUtils.warmUpShaders();
 
-  runApp(const SafeRouteApp());
+    runApp(const SafeRouteApp());
+  } catch (e) {
+    // Handle initialization errors gracefully
+    print('Error initializing app: $e');
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('خطأ في تهيئة التطبيق: $e'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  // Restart the app
+                  main();
+                },
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+  }
 }
 
 class SafeRouteApp extends StatelessWidget {

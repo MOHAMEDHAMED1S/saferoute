@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -43,6 +44,18 @@ class AuthProvider extends ChangeNotifier {
 
       // Listen to auth state changes
       _authService.authStateChanges.listen(_onAuthStateChanged);
+
+      // For web, check for Google redirect result first
+      if (kIsWeb) {
+        final redirectResult = await _authService.getGoogleRedirectResult();
+        if (redirectResult != null && redirectResult.user != null) {
+          _firebaseUser = redirectResult.user;
+          await _loadUserData(_firebaseUser!.uid);
+          await _saveLoginStateToStorage();
+          _isInitialized = true;
+          return;
+        }
+      }
 
       // Get current user if exists
       _firebaseUser = _authService.currentUser;
@@ -218,33 +231,52 @@ class AuthProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      print('AuthProvider: بدء تسجيل الدخول بـ Google');
+
+      // Try Google sign-in (popup for web, native for mobile)
       final userCredential = await _authService.signInWithGoogle();
       if (userCredential != null && userCredential.user != null) {
+        print('AuthProvider: تم تسجيل الدخول بـ Google بنجاح');
         _firebaseUser = userCredential.user;
-
-        // Check if user exists in Firestore
-        final existingUser = await _firestoreService.getUser(
-          _firebaseUser!.uid,
-        );
-
-        if (existingUser == null) {
-          // Create new user document if it doesn't exist
-          await _createUserDocumentFromFirebaseUser(_firebaseUser!);
-        }
-
-        // Load user data
-        await _loadUserData(_firebaseUser!.uid);
+        await _handleGoogleSignInSuccess();
         return true;
       } else {
+        print('AuthProvider: فشل في تسجيل الدخول بـ Google - userCredential is null');
         _setError('فشل في تسجيل الدخول بـ Google');
         return false;
       }
     } catch (e) {
+      print('AuthProvider: خطأ في تسجيل الدخول بـ Google: $e');
       _setError('خطأ في تسجيل الدخول بـ Google: ${e.toString()}');
       return false;
     } finally {
       _setLoading(false);
     }
+  }
+
+  // Handle successful Google sign-in
+  Future<void> _handleGoogleSignInSuccess() async {
+    if (_firebaseUser == null) {
+      print('AuthProvider: _handleGoogleSignInSuccess - _firebaseUser is null');
+      return;
+    }
+
+    print('AuthProvider: معالجة تسجيل الدخول الناجح للمستخدم: ${_firebaseUser!.uid}');
+
+    // Check if user exists in Firestore
+    final existingUser = await _firestoreService.getUser(_firebaseUser!.uid);
+
+    if (existingUser == null) {
+      print('AuthProvider: إنشاء مستند مستخدم جديد');
+      // Create new user document if it doesn't exist
+      await _createUserDocumentFromFirebaseUser(_firebaseUser!);
+    } else {
+      print('AuthProvider: المستخدم موجود في Firestore');
+    }
+
+    // Load user data
+    print('AuthProvider: تحميل بيانات المستخدم');
+    await _loadUserData(_firebaseUser!.uid);
   }
 
   // Sign out

@@ -335,14 +335,6 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   },
                 ),
                 _buildMenuButton(
-                  icon: Icons.settings_outlined,
-                  title: 'الإعدادات',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/settings');
-                  },
-                ),
-                _buildMenuButton(
                   icon: Icons.logout,
                   title: 'تسجيل الخروج',
                   onTap: () {
@@ -370,7 +362,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
+      decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -380,29 +372,29 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             ],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
+        border: Border.all(
             color: Colors.white.withValues(alpha: 0.3),
             width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
+        ),
+        boxShadow: [
+          BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
             Icon(
               icon,
               color: isDestructive ? Colors.red.shade600 : Colors.grey.shade700,
               size: 20,
             ),
             const SizedBox(width: 16),
-            Text(
+                Text(
               title,
-              style: TextStyle(
+                  style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: isDestructive ? Colors.red.shade600 : Colors.grey.shade800,
@@ -413,111 +405,111 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
               Icons.arrow_forward_ios,
               color: Colors.grey.shade400,
               size: 16,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   void _showNotifications(BuildContext context) {
-    final dashboardProvider = context.read<DashboardProvider>();
-    showModalBottomSheet(
-      context: context,
+                    final dashboardProvider = context.read<DashboardProvider>();
+                    showModalBottomSheet(
+                      context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
+                      builder: (context) {
         final reports = dashboardProvider.nearbyReports.take(5).toList();
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.95),
-                Colors.white.withValues(alpha: 0.9),
-              ],
-            ),
-            borderRadius: const BorderRadius.vertical(
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withValues(alpha: 0.95),
+                                Colors.white.withValues(alpha: 0.9),
+                              ],
+                            ),
+                            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(28),
-            ),
-            border: Border.all(
+                            ),
+                            border: Border.all(
               color: Colors.white.withValues(alpha: 0.3),
               width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 25,
                 offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
+                              ),
+                            ],
+                          ),
+                          child: SafeArea(
+                            child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Handle
-                  Container(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Handle
+                                  Container(
                     width: 50,
                     height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade400,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
                   const SizedBox(height: 20),
                   
-                  // Title
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.notifications_active_outlined,
+                                  // Title
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.notifications_active_outlined,
                         color: Colors.grey.shade700,
                         size: 24,
-                      ),
+                                      ),
                       const SizedBox(width: 12),
-                      Text(
-                        'آخر البلاغات',
-                        style: TextStyle(
+                                      Text(
+                                        'آخر البلاغات',
+                                        style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                   const SizedBox(height: 20),
                   
-                  if (reports.isEmpty)
-                    Container(
+                                  if (reports.isEmpty)
+                                    Container(
                       height: 120,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'لا توجد بلاغات حديثة',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'لا توجد بلاغات حديثة',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    )
-                  else
-                    Flexible(
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: reports.length,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Flexible(
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        itemCount: reports.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, i) {
-                          final r = reports[i];
+                                        itemBuilder: (context, i) {
+                                          final r = reports[i];
                           return Container(
                             padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [
+                                                        colors: [
                                   Colors.white.withValues(alpha: 0.8),
                                   Colors.white.withValues(alpha: 0.6),
                                 ],
@@ -532,9 +524,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                   color: Colors.black.withValues(alpha: 0.05),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
+                                                              ),
+                                                        ],
+                                                      ),
                             child: Row(
                               children: [
                                 Container(
@@ -551,12 +543,12 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Column(
+                                                    child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        r.title,
-                                        style: TextStyle(
+                                                      children: [
+                                                        Text(
+                                                          r.title,
+                                                          style: TextStyle(
                                           color: Colors.grey.shade800,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
@@ -632,7 +624,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   if (dashboardProvider.currentAlert != null)
                     SliverToBoxAdapter(
                       child: _buildEmergencyAlert(
-                        context,
+                                                                  context,
                         dashboardProvider.currentAlert!,
                       ),
                     ),
@@ -653,9 +645,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           scale: _scaleAnimation.value,
                           child: _buildEnhancedWelcomeSection(
                             dashboardProvider.weather,
-                          ),
-                        ),
-                      ),
+                                                            ),
+                                                          ),
+                                                        ),
                     ),
                   ),
 
@@ -691,9 +683,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   // Bottom padding for navigation - محسن
                   const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
-              ),
-            );
-          },
+                                                ),
+                                              );
+                                            },
         ),
       ),
     );
@@ -704,10 +696,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
       margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
             Colors.white.withValues(alpha: 0.25),
             Colors.white.withValues(alpha: 0.15),
           ],
@@ -716,9 +708,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.3),
           width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
@@ -730,19 +722,19 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             offset: const Offset(0, 4),
           ),
         ],
-      ),
-      child: Row(
-        children: [
+                                                ),
+                                                child: Row(
+                                                  children: [
           // App Logo
           Hero(
             tag: 'app_logo',
             child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
+                                                      decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
+                                                              colors: [
                     Colors.white.withValues(alpha: 0.8),
                     Colors.white.withValues(alpha: 0.6),
                   ],
@@ -757,9 +749,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+                                                                    ),
+                                                              ],
+                                                            ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.asset(
@@ -781,35 +773,35 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           const SizedBox(width: 16),
 
           // App Title
-          Expanded(
-            child: Column(
+                                                    Expanded(
+                                                      child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+                                                        children: [
+                                                          Text(
                   'سلامة السائقين',
-                  style: TextStyle(
+                                                            style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Colors.grey.shade800,
                     height: 1.2,
                     letterSpacing: 0.5,
                   ),
-                ),
-                Text(
+                                                              ),
+                                                              Text(
                   'قيادة آمنة، مستقبل أفضل',
-                  style: TextStyle(
-                    fontSize: 12,
+                                                                style: TextStyle(
+                                                                  fontSize: 12,
                     color: Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                      ),
 
           // Notifications
-          Container(
+                                                    Container(
             margin: const EdgeInsets.only(left: 8),
             child: Stack(
               children: [
@@ -817,7 +809,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   onTap: () => _showNotifications(context),
                   child: Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
+                                                      decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -827,7 +819,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         ],
                       ),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
+                                                        border: Border.all(
                         color: Colors.white.withValues(alpha: 0.3),
                         width: 1,
                       ),
@@ -956,11 +948,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
 
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-      decoration: BoxDecoration(
+            decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
             Colors.blue.shade50.withValues(alpha: 0.8),
             const Color.fromARGB(16, 61, 128, 244).withValues(alpha: 0.1),
             const Color.fromARGB(255, 228, 233, 252).withValues(alpha: 0.4),
@@ -971,11 +963,11 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           color: Colors.white.withValues(alpha: 0.6),
           width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
+              boxShadow: [
+                BoxShadow(
             color: Colors.blue.shade100.withValues(alpha: 0.3),
             blurRadius: 25,
-            offset: const Offset(0, 10),
+                  offset: const Offset(0, 10),
             spreadRadius: 1,
           ),
           BoxShadow(
@@ -1033,10 +1025,10 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
             const SizedBox(height: 20),
 
             // Time and Weather Row
-            Row(
-              children: [
+                Row(
+                  children: [
                 // Time Info
-                Expanded(
+                    Expanded(
                   child: Row(
                     children: [
                       Icon(
@@ -1050,23 +1042,23 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                         children: [
                           Text(
                             timeString,
-                            style: TextStyle(
+                                      style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: const Color.fromARGB(255, 16, 16, 16),
-                              shadows: [
-                                Shadow(
+                                        shadows: [
+                                          Shadow(
                                   color: Colors.white.withValues(alpha: 0.7),
-                                  blurRadius: 6,
+                                            blurRadius: 6,
                                   offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
+                                          ),
+                                        ],
+                                      ),
                           ),
                           Text(
                             dateFormat.format(now),
                             style: TextStyle(
-                              fontSize: 12,
+                                fontSize: 12,
                               color: Colors.blue.shade600,
                               shadows: [
                                 Shadow(
@@ -1078,29 +1070,29 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                             ),
                           ),
                         ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
                 const SizedBox(width: 16),
 
-                // Weather Widget
+                    // Weather Widget
                 Row(
-                  children: [
-                    Text(
-                      weather.icon,
+                        children: [
+                          Text(
+                            weather.icon,
                       style: const TextStyle(fontSize: 20),
-                    ),
+                          ),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${weather.temperature}°',
+                          Text(
+                            '${weather.temperature}°',
                           style: TextStyle(
                             color: const Color.fromARGB(255, 15, 15, 15),
-                            fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                             fontSize: 16,
                             shadows: [
                               Shadow(
@@ -1109,13 +1101,13 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 offset: const Offset(0, 1),
                               ),
                             ],
+                            ),
                           ),
-                        ),
-                        Text(
-                          weather.condition,
-                          style: TextStyle(
+                          Text(
+                            weather.condition,
+                            style: TextStyle(
                             color: Colors.blue.shade600,
-                            fontSize: 10,
+                              fontSize: 10,
                             fontWeight: FontWeight.w500,
                             shadows: [
                               Shadow(
@@ -1124,14 +1116,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 offset: const Offset(0, 1),
                               ),
                             ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                  ],
                     ),
                   ],
                 ),
-              ],
-            ),
 
             const SizedBox(height: 24),
 
@@ -1141,31 +1133,31 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                 // Driving Mode Button
                 Expanded(
                   child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) => Transform.scale(
-                      scale: _pulseAnimation.value,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/driving-mode');
-                        },
-                        child: Container(
+                  animation: _pulseAnimation,
+                  builder: (context, child) => Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/driving-mode');
+                      },
+                      child: Container(
                           height: 56,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
                                 const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.8),
                                 const Color.fromARGB(255, 255, 255, 255).withValues(alpha: 0.6),
-                              ],
-                            ),
+                            ],
+                          ),
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
+                          border: Border.all(
                               color: Colors.white.withValues(alpha: 0.7),
                               width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
+                          ),
+                          boxShadow: [
+                            BoxShadow(
                                 color: Colors.blue.shade200.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
@@ -1174,14 +1166,14 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                 color: Colors.white.withValues(alpha: 0.6),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
+                            ),
+                          ],
+                        ),
+                        child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
+                          child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                            children: [
                                 Icon(
                                   Icons.navigation,
                                   color: const Color.fromARGB(255, 2, 2, 2),
@@ -1203,9 +1195,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                       ),
                                     ],
                                   ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                           ),
                         ),
                       ),
@@ -1221,7 +1213,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                     onTap: _switchToMap,
                     child: Container(
                       height: 56,
-                      decoration: BoxDecoration(
+                                decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -1231,7 +1223,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                           ],
                         ),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
+                                  border: Border.all(
                           color: const Color.fromARGB(255, 233, 233, 233).withValues(alpha: 0.7),
                           width: 1.5,
                         ),
@@ -1271,9 +1263,9 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                                     color: Colors.white.withValues(alpha: 0.8),
                                     blurRadius: 6,
                                     offset: const Offset(0, 1),
-                                  ),
-                                ],
                               ),
+                            ],
+                          ),
                             ),
                           ],
                         ),
@@ -1282,8 +1274,8 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
                   ),
                 ),
               ],
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
