@@ -71,50 +71,52 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // معلومات التطبيق
-            LiquidGlassContainer(
-          type: LiquidGlassType.ultraLight,
-              borderRadius: BorderRadius.circular(20),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LiquidGlassTheme.getGradientByName('primary'),
-                      borderRadius: BorderRadius.circular(20),
+            // معلومات التطبيق - توسيط الكارد
+            Center(
+              child: LiquidGlassContainer(
+                type: LiquidGlassType.ultraLight,
+                borderRadius: BorderRadius.circular(20),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LiquidGlassTheme.getGradientByName('primary'),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.shield,
+                        color: Colors.white,
+                        size: 40,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.shield,
-                      color: Colors.white,
-                      size: 40,
+                    const SizedBox(height: 16),
+                    Text(
+                      'SafeRoute',
+                      style: LiquidGlassTheme.headerTextStyle.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'SafeRoute',
-                    style: LiquidGlassTheme.headerTextStyle.copyWith(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Text(
+                      'الإصدار 1.0.0',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'الإصدار 1.0.0',
-                    style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                      fontSize: 16,
+                    const SizedBox(height: 16),
+                    Text(
+                      'تطبيق السلامة على الطرق الذكي',
+                      style: LiquidGlassTheme.bodyTextStyle.copyWith(
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'تطبيق السلامة على الطرق الذكي',
-                    style: LiquidGlassTheme.bodyTextStyle.copyWith(
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -137,52 +139,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                   ),
                   const SizedBox(height: 20),
                   ..._faqItems.map((item) => _buildFAQItem(item)),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // التواصل معنا
-            LiquidGlassContainer(
-            type: LiquidGlassType.ultraLight,
-              borderRadius: BorderRadius.circular(20),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'تواصل معنا',
-                    style: LiquidGlassTheme.headerTextStyle.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildContactTile(
-                    'البريد الإلكتروني',
-                    'support@saferoute.com',
-                    Icons.email,
-                    () => _launchEmail('support@saferoute.com'),
-                  ),
-                  _buildContactTile(
-                    'الهاتف',
-                    '+966 11 123 4567',
-                    Icons.phone,
-                    () => _launchPhone('+966111234567'),
-                  ),
-                  _buildContactTile(
-                    'الموقع الإلكتروني',
-                    'www.saferoute.com',
-                    Icons.web,
-                    () => _launchWebsite('https://www.saferoute.com'),
-                  ),
-                  _buildContactTile(
-                    'تويتر',
-                    '@SafeRouteApp',
-                    Icons.alternate_email,
-                    () => _launchWebsite('https://twitter.com/SafeRouteApp'),
-                  ),
                 ],
               ),
             ),
@@ -294,47 +250,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     );
   }
 
-  Widget _buildContactTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: LiquidGlassTheme.getGradientByName(
-            'primary',
-          ).colors.first.withAlpha(51),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          color: LiquidGlassTheme.getGradientByName('primary').colors.first,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        title,
-        style: LiquidGlassTheme.headerTextStyle.copyWith(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: LiquidGlassTheme.bodyTextStyle.copyWith(fontSize: 14),
-      ),
-      trailing: Icon(
-        Icons.open_in_new,
-        color: LiquidGlassTheme.getTextColor('secondary'),
-        size: 20,
-      ),
-      onTap: onTap,
-    );
-  }
-
   Widget _buildLegalTile(String title, VoidCallback onTap) {
     return ListTile(
       title: Text(
@@ -352,42 +267,15 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     );
   }
 
-  Future<void> _launchEmail(String email) async {
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      query: 'subject=SafeRoute Support',
-    );
-
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri);
-    } else {
-      _showErrorSnackBar('لا يمكن فتح تطبيق البريد الإلكتروني');
-    }
-  }
-
-  Future<void> _launchPhone(String phone) async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: phone);
-
-    if (await canLaunchUrl(phoneUri)) {
-      await launchUrl(phoneUri);
-    } else {
-      _showErrorSnackBar('لا يمكن إجراء المكالمة');
-    }
-  }
-
-  Future<void> _launchWebsite(String url) async {
-    final Uri uri = Uri.parse(url);
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showErrorSnackBar('لا يمكن فتح الرابط');
-    }
-  }
-
   void _sendFeedback() {
-    _launchEmail('feedback@saferoute.com');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('شكراً لك! سيتم توجيهك لإرسال الملاحظات'),
+        backgroundColor: LiquidGlassTheme.getGradientByName(
+          'success',
+        ).colors.first,
+      ),
+    );
   }
 
   void _rateApp() {
@@ -397,17 +285,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         content: const Text('شكراً لك! سيتم توجيهك لتقييم التطبيق'),
         backgroundColor: LiquidGlassTheme.getGradientByName(
           'success',
-        ).colors.first,
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: LiquidGlassTheme.getGradientByName(
-          'danger',
         ).colors.first,
       ),
     );
