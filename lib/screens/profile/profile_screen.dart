@@ -12,6 +12,8 @@ import '../../models/report_model.dart';
 import '../../models/rewards_model.dart';
 import '../../services/rewards_service.dart';
 import '../../services/user_service.dart';
+import '../../services/user_statistics_service.dart';
+import '../../models/user_statistics_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:saferoute/models/user_model.dart';
@@ -33,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // خدمة المستخدم للتعامل مع Firestore
   final UserService _userService = UserService();
+  final UserStatisticsService _statisticsService = UserStatisticsService();
 
   // متغيرات نظام النقاط والمكافآت
   final RewardsService _rewardsService = RewardsService();
@@ -42,6 +45,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isLoading = false;
 
   // متغيرات الإحصائيات
+  UserStatistics? _userStatistics;
   int _activeReports = 0;
   int _confirmedReports = 0;
   double _accuracyRate = 0.0;
@@ -52,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _setupUserStream();
     _loadUserData();
     _loadUserReports();
@@ -139,22 +143,62 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _loadUserReports() {
-    print('ProfileScreen: _loadUserReports called');
-    final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
-      context,
-      listen: false,
-    );
-    print('ProfileScreen: userId = ${authProvider.userId}');
-    if (authProvider.userId != null) {
-      final reportsProvider = Provider.of<ReportsProvider>(
+  Future<void> _loadUserReports() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      print('ProfileScreen: _loadUserReports called');
+      final authProvider = Provider.of<AuthProviderCustom.AuthProvider>(
         context,
         listen: false,
       );
-      print('ProfileScreen: Loading user reports for userId: ${authProvider.userId}');
-      reportsProvider.loadUserReports(authProvider.userId!);
-    } else {
-      print('ProfileScreen: userId is null, cannot load reports');
+      
+      print('ProfileScreen: userId = ${authProvider.userId}');
+      
+      if (authProvider.userId != null) {
+        final reportsProvider = Provider.of<ReportsProvider>(
+          context,
+          listen: false,
+        );
+        
+        print('ProfileScreen: Loading user reports for userId: ${authProvider.userId}');
+        await reportsProvider.loadUserReports(authProvider.userId!);
+        
+        // حساب الإحصائيات بعد تحميل البلاغات
+        if (reportsProvider.userReports.isNotEmpty) {
+          _calculateUserStatistics(reportsProvider.userReports);
+          print('ProfileScreen: Calculated statistics for ${reportsProvider.userReports.length} reports');
+        } else {
+          print('ProfileScreen: No reports found for user');
+          // إنشاء إحصائيات فارغة
+          if (mounted) {
+            setState(() {
+              _userStatistics = UserStatistics(
+                totalReports: 0,
+                confirmedReports: 0,
+                rejectedReports: 0,
+                activeReports: 0,
+                expiredReports: 0,
+                confirmationRate: 0.0,
+                reportsByType: {},
+                reportsByStatus: {},
+              );
+            });
+          }
+        }
+      } else {
+        print('ProfileScreen: userId is null, cannot load reports');
+      }
+    } catch (e) {
+      print('ProfileScreen: Error loading user reports: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -194,6 +238,18 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         _showErrorSnackBar('خطأ في تحديث الملف الشخصي');
       }
+    }
+  }
+
+  // حساب إحصائيات المستخدم
+  void _calculateUserStatistics(List<ReportModel> reports) {
+    if (mounted) {
+      setState(() {
+        _userStatistics = _statisticsService.calculateUserStatistics(reports);
+        _activeReports = _userStatistics?.activeReports ?? 0;
+        _confirmedReports = _userStatistics?.confirmedReports ?? 0;
+        _accuracyRate = _userStatistics?.confirmationRate ?? 0.0;
+      });
     }
   }
 
@@ -449,10 +505,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   text: 'البلاغات',
                                 ),
                                 Tab(
-                                  icon: Icon(Icons.analytics, size: 20),
-                                  text: 'الإحصائيات',
-                                ),
-                                Tab(
                                   icon: Icon(Icons.card_giftcard, size: 20),
                                   text: 'المكافآت',
                                 ),
@@ -480,7 +532,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         children: [
           _buildProfileTab(),
           _buildReportsTab(),
-          _buildAchievementsTab(),
           _buildRewardsTab(),
         ],
       ),
@@ -614,7 +665,197 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildAchievementsTab() {
+  Widget _buildDetailedStatsSection() {
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
+      isInteractive: false,
+      borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'الإحصائيات المفصلة',
+            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          
+          // الإحصائيات الأساسية
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'إجمالي البلاغات',
+                  value: '${_userStatistics!.totalReports}',
+                  icon: Icons.report,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'البلاغات المؤكدة',
+                  value: '${_userStatistics!.confirmedReports}',
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  title: 'البلاغات المرفوضة',
+                  value: '${_userStatistics!.rejectedReports}',
+                  icon: Icons.cancel,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildStatCard(
+                  title: 'معدل التأكيد',
+                  value: '${_userStatistics!.confirmationRate.toStringAsFixed(1)}%',
+                  icon: Icons.analytics,
+                  color: Colors.purple,
+                ),
+              ),
+            ],
+          ),
+          
+          // إحصائيات حسب النوع
+          if (_userStatistics!.reportsByType.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text(
+              'البلاغات حسب النوع',
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            ..._userStatistics!.reportsByType.entries.map((entry) => 
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(entry.key, style: LiquidGlassTheme.bodyTextStyle),
+                    Text('${entry.value}', style: LiquidGlassTheme.bodyTextStyle.copyWith(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserLevelSection() {
+    final points = _statisticsService.calculateUserPoints(_userStatistics!);
+    final level = _statisticsService.getUserLevel(points);
+    final levelColor = Color(int.parse(_statisticsService.getUserLevelColor(level).replaceFirst('#', '0xFF')));
+    
+    return LiquidGlassContainer(
+      type: LiquidGlassType.ultraLight,
+      isInteractive: false,
+      borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'مستوى المستخدم',
+            style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: levelColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.star,
+                  color: levelColor,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      level,
+                      style: LiquidGlassTheme.headerTextStyle.copyWith(
+                        fontSize: 16,
+                        color: levelColor,
+                      ),
+                    ),
+                    Text(
+                      '$points نقطة',
+                      style: LiquidGlassTheme.bodyTextStyle,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'الإنجازات',
+          style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          children: [
+            _buildBadge(
+              title: 'المبلغ النشط',
+              description: 'قم بإرسال 5 بلاغات',
+              icon: Icons.star,
+              isUnlocked: (_userStatistics?.totalReports ?? 0) >= 5,
+            ),
+            _buildBadge(
+              title: 'المبلغ الخبير',
+              description: 'قم بإرسال 20 بلاغ',
+              icon: Icons.workspace_premium,
+              isUnlocked: (_userStatistics?.totalReports ?? 0) >= 20,
+            ),
+            _buildBadge(
+              title: 'دقة عالية',
+              description: 'حقق نسبة دقة 80%',
+              icon: Icons.verified,
+              isUnlocked: (_userStatistics?.confirmationRate ?? 0) >= 80,
+            ),
+            _buildBadge(
+              title: 'مبلغ موثوق',
+              description: 'حقق 10 بلاغات مؤكدة',
+              icon: Icons.security,
+              isUnlocked: (_userStatistics?.confirmedReports ?? 0) >= 10,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOldAchievementsTab() {
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : ListView(
@@ -1289,6 +1530,114 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildReportsTab() {
+    return Consumer<ReportsProvider>(
+      builder: (context, reportsProvider, child) {
+        final userReports = reportsProvider.userReports;
+
+        return RefreshIndicator(
+          onRefresh: _loadUserReports,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // إحصائيات مفصلة
+                if (_userStatistics != null) ...[
+                  _buildDetailedStatsSection(),
+                  const SizedBox(height: 16),
+                ],
+                
+                // مستوى المستخدم
+                if (_userStatistics != null) ...[
+                  _buildUserLevelSection(),
+                  const SizedBox(height: 16),
+                ],
+                
+                // الإنجازات
+                _buildAchievementsSection(),
+                const SizedBox(height: 24),
+                
+                // قائمة البلاغات
+                Text(
+                  'بلاغاتي',
+                  style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+                ),
+                const SizedBox(height: 16),
+                
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (userReports.isEmpty)
+                  _buildEmptyReportsState()
+                else
+                  _buildReportsListSection(userReports),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyReportsState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: (LiquidGlassTheme.getTextColor('secondary') ?? Colors.grey)
+                    .withAlpha(25),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.report_outlined,
+                size: 48,
+                color: LiquidGlassTheme.getTextColor('secondary'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'لا توجد بلاغات',
+              style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'ابدأ بالإبلاغ عن المخاطر لتحسين السلامة',
+              style: LiquidGlassTheme.bodyTextStyle,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReportsListSection(List<ReportModel> userReports) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'بلاغاتي (${userReports.length})',
+          style: LiquidGlassTheme.headerTextStyle.copyWith(fontSize: 16),
+        ),
+        const SizedBox(height: 12),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: userReports.length,
+          itemBuilder: (context, index) {
+            final report = userReports[index];
+            return _buildReportCard(report);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOldReportsTab() {
     return Consumer<ReportsProvider>(
       builder: (context, reportsProvider, child) {
         final userReports = reportsProvider.userReports;
