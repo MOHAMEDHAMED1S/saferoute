@@ -209,12 +209,6 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
                         borderRadius: BorderRadius.circular(25),
                         borderSide: BorderSide.none,
                       ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
                     ),
                     maxLines: null,
                     textInputAction: TextInputAction.send,

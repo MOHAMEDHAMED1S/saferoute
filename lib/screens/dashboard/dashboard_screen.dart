@@ -962,7 +962,7 @@ class _DashboardHomeWidgetState extends State<DashboardHomeWidget>
           end: Alignment.bottomRight,
           colors: [
             Colors.blue.shade50.withValues(alpha: 0.8),
-            const Color.fromARGB(16, 157, 35, 198).withValues(alpha: 0.1),
+            const Color.fromARGB(16, 61, 128, 244).withValues(alpha: 0.1),
             const Color.fromARGB(255, 228, 233, 252).withValues(alpha: 0.4),
           ],
         ),

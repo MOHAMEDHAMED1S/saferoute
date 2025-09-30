@@ -394,7 +394,7 @@ class _BasicMapScreenState extends State<BasicMapScreen> {
               ignoring: false,
               child: LiquidGlassContainer(
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  icon: const Icon(Icons.arrow_forward, color: Colors.black),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

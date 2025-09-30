@@ -691,11 +691,11 @@ class _CommunityScreenState extends State<CommunityScreen>
               child: TextField(
                 controller: _messageController,
                 focusNode: _messageFocusNode,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(color: Color.fromARGB(255, 24, 24, 24), fontSize: 16),
                 decoration: InputDecoration(
                   hintText: 'اكتب رسالة...',
                   hintStyle: TextStyle(
-                    color: Color.fromRGBO(255, 255, 255, 0.7),
+                    color: Color.fromRGBO(71, 70, 70, 0.698),
                     fontSize: 16,
                   ),
                   border: InputBorder.none,
