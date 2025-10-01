@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../utils/validators.dart';
 import '../../theme/liquid_glass_theme.dart';
@@ -320,9 +319,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Password Field
                 CustomTextField(
                   controller: _passwordController,
-                  label: 'كلمة المرور',
+                  label: 'كلمة المرور (6 أحرف على الأقل)',
                   obscureText: !_isPasswordVisible,
-                  validator: Validators.validateStrongPassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'يرجى إدخال كلمة المرور';
+                    }
+                    if (value.length < 6) {
+                      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                    }
+                    return null;
+                  },
                   prefixIcon: Icons.lock_outline,
                   suffixIcon: IconButton(
                     icon: Icon(

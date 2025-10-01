@@ -132,6 +132,48 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleDemoLogin() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      bool success = await authProvider.signInWithEmailAndPassword(
+        email: 'mmop9909@icloud.com',
+        password: 'Mm@0897',
+      );
+
+      if (mounted) {
+        if (success && authProvider.isLoggedIn) {
+          Navigator.of(context).pushReplacementNamed('/dashboard');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل في تسجيل الدخول التجريبي'),
+              backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تسجيل الدخول التجريبي: ${e.toString()}'),
+            backgroundColor: LiquidGlassTheme.getGradientByName('danger').colors.first,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
@@ -623,6 +665,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   type: LiquidGlassType.primary,
                   borderRadius: 12,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                const SizedBox(height: 16),
+                // Demo Login Button
+                LiquidGlassButton(
+                  text: 'تسجيل دخول تجريبي',
+                  onPressed: _isLoading ? null : _handleDemoLogin,
+                  type: LiquidGlassType.secondary,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  icon: Icons.person,
                 ),
                 const SizedBox(height: 16),
                 // Divider
