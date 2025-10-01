@@ -5,7 +5,6 @@ import '../../widgets/glass_container.dart';
 import '../../providers/app_settings_provider.dart';
 import '../../widgets/language_settings_widget.dart';
 import '../language/language_settings_screen.dart';
-import '../ar/ar_settings_screen.dart';
 import '../performance/performance_settings_screen.dart';
 import '../driving/driving_settings_screen.dart';
 import '../reports/advanced_reports_screen.dart';
@@ -375,12 +374,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               const Divider(color: Colors.white24),
               
-              _buildSettingCard(
-                'الواقع المعزز',
-                'إعدادات ميزات AR',
-                Icons.view_in_ar,
-                () => _navigateToARSettings(),
-              ),
+
               const Divider(color: Colors.white24),
               
               _buildSettingCard(
@@ -673,14 +667,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
   
-  void _navigateToARSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ARSettingsScreen(),
-      ),
-    );
-  }
+
   
   void _navigateToPerformanceSettings() {
     Navigator.push(
